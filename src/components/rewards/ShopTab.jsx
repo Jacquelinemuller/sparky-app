@@ -74,16 +74,14 @@ export default function ShopTab() {
     const isFree = item.unlock.type === 'free';
     const isAchievement = item.unlock.type === 'achievement';
 
-    if (isAchievement) return; // no debería pasar, ya filtrado
+    if (isAchievement) return;
 
     if (isFree) {
-      // Gratis → desbloquear directo
       applyPurchase(item, catalogType, 0);
       return;
     }
 
     if (xp < cost) {
-      // No alcanza el XP
       setFeedback({
         type: 'error',
         message: `Te faltan ${cost - xp} XP para "${item.label}"`
@@ -92,7 +90,6 @@ export default function ShopTab() {
       return;
     }
 
-    // Abrir modal de confirmación
     setConfirmItem({ item, catalogType });
   };
 
@@ -126,17 +123,10 @@ export default function ShopTab() {
     setConfirmItem(null);
   };
 
-  // ============================================
-  // FILTRAR CATÁLOGOS
-  // ============================================
-  // Accesorios: excluye los que se desbloquean por logro
   const accessoriesFiltered = ACCESSORIES_CATALOG.filter(
     (a) => a.unlock.type !== 'achievement'
   );
 
-  // ============================================
-  // RENDER CARD
-  // ============================================
   const renderItemCard = (item, catalogType, isUnlocked) => {
     const cost = item.unlock.cost || 0;
     const isFree = item.unlock.type === 'free';
@@ -157,7 +147,6 @@ export default function ShopTab() {
           }`
         }}
       >
-        {/* Ícono */}
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-2"
           style={{
@@ -167,12 +156,10 @@ export default function ShopTab() {
           <span>{item.icon}</span>
         </div>
 
-        {/* Nombre */}
         <span className="text-[11px] font-black text-white text-center leading-tight mb-2 min-h-[26px]">
           {item.label}
         </span>
 
-        {/* Estado / Botón */}
         {isUnlocked ? (
           <span
             className="w-full py-2 rounded-xl text-[10px] font-black text-center"
@@ -212,9 +199,6 @@ export default function ShopTab() {
     );
   };
 
-  // ============================================
-  // RENDER
-  // ============================================
   return (
     <div className="w-full flex flex-col gap-3">
 
@@ -385,7 +369,6 @@ export default function ShopTab() {
         </div>
       )}
 
-      {/* Animación fadeIn */}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }

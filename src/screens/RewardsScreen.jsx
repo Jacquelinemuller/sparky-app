@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
+import ShopTab from '../components/rewards/ShopTab';
 
 // ============================================
 // CONFIGURACIÓN DE PESTAÑAS
@@ -236,24 +237,7 @@ export const RewardsScreen = () => {
           )}
 
           {/* TIENDA */}
-          {activeRewardsTab === 'shop' && (
-            <div
-              className="w-full p-6 rounded-2xl text-center"
-              style={{
-                background: ARCADE_COLORS.card,
-                border: '1px solid rgba(255, 45, 135, 0.3)',
-                boxShadow: '0 0 20px rgba(255, 45, 135, 0.1)'
-              }}
-            >
-              <span className="text-5xl block mb-3">🛒</span>
-              <h2 className="text-lg font-black text-white mb-1">
-                Tienda
-              </h2>
-              <p className="text-xs font-medium" style={{ color: ARCADE_COLORS.textMuted }}>
-                Próximamente: accesorios, sonidos y minijuegos desbloqueables.
-              </p>
-            </div>
-          )}
+          {activeRewardsTab === 'shop' && <ShopTab />}
 
           {/* COLECCIÓN */}
           {activeRewardsTab === 'collection' && (
