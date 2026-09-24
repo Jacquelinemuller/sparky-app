@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes sparkyBounce {
+  0% { transform: scale(1); }
+  25% { transform: scale(0.88) rotate(-6deg); }
+  50% { transform: scale(1.18) rotate(6deg) translateY(-6px); }
+  75% { transform: scale(0.98) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.sparky-tap-bounce {
+  animation: sparkyBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes floatBurst {
+  0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  50% { opacity: 0.95; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(var(--rot)); }
+  100% { opacity: 0; transform: translate(calc(var(--tx) * 1.4), calc(var(--ty) - 28px)) scale(0.8) rotate(calc(var(--rot) * 1.5)); }
+}
+
+.burst-particle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  animation: floatBurst 0.85s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes speechPop {
+  0% { transform: scale(0.96); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.speech-pop {
+  animation: speechPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}

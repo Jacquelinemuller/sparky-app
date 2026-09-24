@@ -1,0 +1,380 @@
+<!DOCTYPE html><html lang="es" style=""><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizador de Misiones Diarias - Sparky</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #fef8f5;
+      color: #1e130c;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    @keyframes subtleFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(255, 107, 0, 0); }
+    }
+    
+    @keyframes popActive {
+      0% { transform: scale(0.96); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    .sparky-float {
+      animation: subtleFloat 3s ease-in-out infinite;
+    }
+
+    .active-card {
+      animation: popActive 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#fef8f5] flex justify-center p-0 sm:p-4 text-[#26180f]">
+  <!-- Mobile Container -->
+  <main class="w-full max-w-[420px] bg-[#fef8f5] min-h-screen flex flex-col justify-between shadow-2xl relative overflow-hidden pb-8 border-x border-[#ffedd5]/50">
+    
+    <!-- Top Header -->
+    <header class="px-5 pt-4 pb-3 flex items-center justify-between border-b border-[#fed7aa]/30 bg-[#fef8f5]/90 backdrop-blur sticky top-0 z-30"><div class="flex items-center gap-2"><a href="#" title="Volver al Inicio" class="w-8 h-8 rounded-full bg-[#ffedd5] text-[#ea580c] hover:bg-[#fed7aa] flex items-center justify-center font-bold text-base transition active:scale-95 shadow-sm flex-shrink-0">←</a><div class="flex items-center gap-1.5 bg-[#fff7ed] px-2.5 py-1.5 rounded-full border border-[#fed7aa] shadow-sm shadow-[#ff6b00]/10"><span class="text-xs leading-none text-[#ea580c] mr-0.5">⚡</span><div class="w-2.5 h-2.5 rounded-full bg-[#ff6b00] shadow-[0_0_6px_#ff6b00] flex-shrink-0"></div><div class="w-2.5 h-2.5 rounded-full bg-[#ff6b00] shadow-[0_0_6px_#ff6b00] flex-shrink-0"></div><div class="w-2.5 h-2.5 rounded-full bg-[#ff6b00] shadow-[0_0_6px_#ff6b00] flex-shrink-0"></div><div class="w-2.5 h-2.5 rounded-full border border-dashed border-[#ff6b00]/40 bg-[#ffedd5]/50 flex-shrink-0"></div></div></div><div class="flex items-center gap-1.5 bg-[#fff7ed] border-2 border-[#fed7aa] px-3 py-1 rounded-full text-xs font-black text-[#c2410c] shadow-sm shadow-[#ff6b00]/10"><span class="text-[11px] font-black text-[#ea580c] flex items-center gap-0.5">🔥 5d</span><span class="text-[#fdba74] mx-0.5">•</span><span class="text-xs leading-none">⭐</span><span class="tracking-tight font-extrabold text-[#ea580c]">240 XP</span></div><div class="relative flex-shrink-0"><div class="w-9 h-9 rounded-full overflow-hidden border-2 border-[#ff6b00] bg-[#fed7aa] shadow-sm"><img src="https://lh3.googleusercontent.com/aida/AEtjO1VBtklwyQzbbzFcA88z2AUvEP1DGQlYrGr38rRqaJVNw1BfIRKhUQJhsjB1sCpyG731g1AeNu912ZIlTGY3AZ_9I8KNF17HAM25WMWvPKuKMUHHTZXku_FwletBhDSRk-IbXWAOAJyJrtGRpG4ZCinix2fmh2m90DTaloy2nXN17fjy8uC0Nq90fee4jl9h5BPQjh-gxLKmixkAnB8N-YjfApA4SXEDnEu7qFbCb2zFUdfwssa2C641UJBB" alt="Alex" class="w-full h-full object-cover"></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full shadow-sm"></span></div></header>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 px-5 pt-3 pb-24 overflow-y-auto space-y-4">
+      
+      <!-- Sparky Planner Advice Bubble -->
+      <section class="bg-white rounded-2xl p-3.5 border-2 border-[#fed7aa] shadow-sm flex items-start gap-3 relative">
+        <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-[#ff6b00] flex-shrink-0 bg-[#fff7ed] sparky-float">
+          <img src="https://lh3.googleusercontent.com/aida/AEtjO1XE3p9pqRlaj9Fw8vzlHq56chPdnjgiXFaCT_vT7NNWy0tJ3DlfRWv3Rj7M4IIW01w_BGBkuKoiXXeZUtsWjguPgPqU4zbqewTJfnBqpH3rDOktIJHOOSg_kSjvSvnl12_9EzcVuSWtC9lURc9cJY7bj8a1qLC80hRcQSmQnXfgk7jnZ-0rNXz2-7WxOq5UUGFkJRUFkq62nrfsRPxa-mf-l2tb3PxZHxAJ6JbV0qqlaYMbH8QDie3tOLw" alt="Sparky consejero" class="w-full h-full object-cover">
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-extrabold text-[#ea580c] uppercase tracking-wider flex items-center gap-1">
+              <span class="">🐶 Sparky te acompaña</span>
+            </h2>
+            <span class="text-[10px] bg-[#fff1e7] text-[#c2410c] font-bold px-2 py-0.5 rounded-full">Sin agobios</span>
+          </div>
+          <p id="sparky-advice" class="text-xs font-semibold text-[#442c1e] mt-1 leading-snug">
+            "¡Elige <span class="text-[#ff6b00] font-black underline decoration-2">solo 1 tarea</span> para empezar ahora! El resto las guardo yo a salvo para luego."
+          </p>
+        </div>
+      </section><div id="energy-ball-widget" class="rounded-2xl p-3.5 border-2 border-[#ff6b00]/40 shadow-md relative overflow-hidden bg-white/95 backdrop-blur-md text-[#1e130c]"><div class="absolute -right-8 -top-8 w-28 h-28 bg-[#ff6b00]/20 rounded-full blur-2xl pointer-events-none"></div><div class="absolute -left-6 -bottom-6 w-24 h-24 bg-[#00e5ff]/20 rounded-full blur-xl pointer-events-none"></div><div class="flex items-center justify-between gap-3 relative z-10"><div class="flex items-center gap-3"><div class="relative flex items-center justify-center w-12 h-12 rounded-full bg-[#fff7ed] border-2 border-[#ff2d87] shadow-[0_0_18px_#ff2d87] sparky-float flex-shrink-0"><div class="absolute inset-0 rounded-full bg-gradient-to-tr from-[#ff2d87] via-[#00e5ff] to-[#22c55e] opacity-40 animate-spin" style="animation-duration: 6s;"></div><div class="w-7 h-7 rounded-full bg-gradient-to-br from-[#00e5ff] via-[#ff2d87] to-[#ff6b00] flex items-center justify-center shadow-[0_0_12px_#00e5ff] z-10"><span class="text-sm leading-none drop-shadow-[0_0_4px_#ffffff]">⚡</span></div></div><div class="flex-1"><div class="flex items-center gap-2"><span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff2d87]/20 border border-[#ff2d87]/60 text-[#ff2d87]">Modo Arcade Neón</span><span class="text-[11px] font-extrabold text-[#0369a1]">65% CARGADA</span></div><h3 class="text-xs font-black text-[#1e130c] mt-0.5 flex items-center gap-1.5">Bola de Energía Flow <span class="text-[10px] text-[#16a34a] font-extrabold">+30 XP</span></h3><p class="text-[11px] text-[#7c5e48] font-medium leading-tight mt-0.5">Selecciona tu misión para activar el hiper-flujo diario.</p></div></div><div class="flex flex-col items-end flex-shrink-0 gap-1"><div class="w-10 h-2 bg-[#ffedd5] rounded-full border border-[#00e5ff]/40 overflow-hidden p-0.5"><div class="h-full bg-gradient-to-r from-[#00e5ff] via-[#ff2d87] to-[#22c55e] rounded-full w-[65%]"></div></div><span class="text-[9px] font-black text-[#16a34a] uppercase tracking-tighter">Listo</span></div></div></div>
+
+      <!-- Section Title & Quick Filter -->
+      <div class="flex items-center justify-between pt-1">
+        <div>
+          <h1 class="text-lg font-black text-[#26180f] flex items-center gap-1.5">
+            Tus misiones de hoy <span class="">📋</span>
+          </h1>
+          <p class="text-xs text-[#785942] font-medium">Toca la estrella ⭐ para convertirla en tu objetivo principal</p>
+        </div>
+        <button id="btn-add-task" class="w-8 h-8 rounded-full bg-[#ffedd5] text-[#ea580c] hover:bg-[#fed7aa] flex items-center justify-center font-black text-lg transition active:scale-95 shadow-sm" title="Añadir nueva tarea">
+          +
+        </button>
+      </div>
+
+      <!-- Task List: Interactive selection -->
+      <div id="task-container" class="space-y-3">
+        
+        <!-- Mission Card 1 (Current Active / Main Objective) -->
+        <article class="task-card active-card bg-white rounded-2xl p-4 border-2 border-[#ff6b00] shadow-md shadow-[#ff6b00]/10 relative transition-all duration-200" data-id="task-1" data-time="12 min" data-xp="30" data-category="Colegio">
+          <!-- Active Badge -->
+          <div class="active-badge absolute -top-2.5 right-4 bg-[#ff6b00] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+            <span class="">⚡ EN PANTALLA PRINCIPAL</span>
+          </div>
+
+          <div class="flex items-start justify-between gap-3 mt-1">
+            <button class="set-main-btn flex-shrink-0 w-8 h-8 rounded-full bg-[#ff6b00] text-white flex items-center justify-center shadow transition active:scale-90" title="Tarea activa">
+              <span class="text-base font-black">★</span>
+            </button>
+
+            <div class="flex-1 cursor-pointer select-task-trigger">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#ffedd5] text-[#c2410c]">Matemáticas</span>
+                <span class="text-[11px] font-bold text-[#9a6a4c] flex items-center gap-1">
+                  ⏱️ 12 min
+                </span>
+                <span class="text-[11px] font-extrabold text-[#16a34a] bg-green-50 px-1.5 py-0.2 rounded">+30 XP</span>
+              </div>
+              <h3 class="task-title text-base font-black text-[#1e130c] mt-1 leading-snug">
+                Hacer problema 3 de mates
+              </h3>
+              <p class="text-xs text-[#7c5e48] font-medium mt-0.5">Página 42: fracciones con dibujos</p>
+            </div>
+
+            <div class="flex flex-col items-end gap-1">
+              <button class="drag-handle text-[#c2a28d] hover:text-[#7c5e48] p-1 text-sm font-bold" title="Reordenar">
+                ⋮⋮
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-[#ffedd5] flex items-center justify-between text-xs">
+            <span class="text-[#c2410c] font-bold flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#ff6b00] animate-ping"></span>
+              En progreso en el Círculo de Enfoque
+            </span>
+            <span class="text-[11px] font-bold text-[#ff6b00] bg-[#fff1e7] px-2 py-0.5 rounded-md">
+              Seleccionada
+            </span>
+          </div>
+        </article>
+
+        <!-- Mission Card 2 (In Reserve) -->
+        <article class="task-card bg-white rounded-2xl p-4 border border-[#fed7aa]/80 shadow-sm hover:border-[#fdba74] relative transition-all duration-200" data-id="task-2" data-time="15 min" data-xp="25" data-category="Creativo">
+          <div class="active-badge hidden absolute -top-2.5 right-4 bg-[#ff6b00] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+            <span class="">⚡ EN PANTALLA PRINCIPAL</span>
+          </div>
+
+          <div class="flex items-start justify-between gap-3">
+            <button class="set-main-btn flex-shrink-0 w-8 h-8 rounded-full border-2 border-[#fed7aa] bg-[#fffaf5] text-[#c2a28d] hover:text-[#ea580c] hover:border-[#ea580c] flex items-center justify-center transition active:scale-90" title="Marcar como objetivo principal">
+              <span class="text-base">☆</span>
+            </button>
+
+            <div class="flex-1 cursor-pointer select-task-trigger">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#fef3c7] text-[#b45309]">Lectura</span>
+                <span class="text-[11px] font-bold text-[#9a6a4c] flex items-center gap-1">
+                  ⏱️ 15 min
+                </span>
+                <span class="text-[11px] font-extrabold text-[#16a34a] bg-green-50 px-1.5 py-0.2 rounded">+25 XP</span>
+              </div>
+              <h3 class="task-title text-base font-extrabold text-[#382315] mt-1 leading-snug">
+                Leer 5 páginas del cómic
+              </h3>
+              <p class="text-xs text-[#7c5e48] font-medium mt-0.5">Capítulo 3 de Asterix o Naruto</p>
+            </div>
+
+            <div class="flex flex-col items-end gap-1">
+              <button class="drag-handle text-[#c2a28d] hover:text-[#7c5e48] p-1 text-sm font-bold" title="Reordenar">
+                ⋮⋮
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-[#f8f0ea] flex items-center justify-between text-xs">
+            <span class="text-[#8c6d56] font-medium">🛡️ En espera (segura con Sparky)</span>
+            <button class="quick-set-text text-[11px] font-bold text-[#ea580c] hover:underline">
+              Poner como objetivo →
+            </button>
+          </div>
+        </article>
+
+        <!-- Mission Card 3 (In Reserve) -->
+        <article class="task-card bg-white rounded-2xl p-4 border border-[#fed7aa]/80 shadow-sm hover:border-[#fdba74] relative transition-all duration-200" data-id="task-3" data-time="8 min" data-xp="20" data-category="Casa">
+          <div class="active-badge hidden absolute -top-2.5 right-4 bg-[#ff6b00] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+            <span class="">⚡ EN PANTALLA PRINCIPAL</span>
+          </div>
+
+          <div class="flex items-start justify-between gap-3">
+            <button class="set-main-btn flex-shrink-0 w-8 h-8 rounded-full border-2 border-[#fed7aa] bg-[#fffaf5] text-[#c2a28d] hover:text-[#ea580c] hover:border-[#ea580c] flex items-center justify-center transition active:scale-90" title="Marcar como objetivo principal">
+              <span class="text-base">☆</span>
+            </button>
+
+            <div class="flex-1 cursor-pointer select-task-trigger">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#e0f2fe] text-[#0369a1]">Orden</span>
+                <span class="text-[11px] font-bold text-[#9a6a4c] flex items-center gap-1">
+                  ⏱️ 8 min
+                </span>
+                <span class="text-[11px] font-extrabold text-[#16a34a] bg-green-50 px-1.5 py-0.2 rounded">+20 XP</span>
+              </div>
+              <h3 class="task-title text-base font-extrabold text-[#382315] mt-1 leading-snug">
+                Guardar mochila y estuche
+              </h3>
+              <p class="text-xs text-[#7c5e48] font-medium mt-0.5">Dejar lista la mesa para mañana</p>
+            </div>
+
+            <div class="flex flex-col items-end gap-1">
+              <button class="drag-handle text-[#c2a28d] hover:text-[#7c5e48] p-1 text-sm font-bold" title="Reordenar">
+                ⋮⋮
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-[#f8f0ea] flex items-center justify-between text-xs">
+            <span class="text-[#8c6d56] font-medium">🛡️ En espera (segura con Sparky)</span>
+            <button class="quick-set-text text-[11px] font-bold text-[#ea580c] hover:underline">
+              Poner como objetivo →
+            </button>
+          </div>
+        </article>
+
+        <!-- Mission Card 4 (Break / Reward) -->
+        <article class="task-card bg-[#fffaf5] rounded-2xl p-4 border border-dashed border-[#fdba74] shadow-none hover:border-[#ea580c] relative transition-all duration-200" data-id="task-4" data-time="10 min" data-xp="15" data-category="Cuidado">
+          <div class="active-badge hidden absolute -top-2.5 right-4 bg-[#ff6b00] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+            <span class="">⚡ EN PANTALLA PRINCIPAL</span>
+          </div>
+
+          <div class="flex items-start justify-between gap-3">
+            <button class="set-main-btn flex-shrink-0 w-8 h-8 rounded-full border-2 border-[#fed7aa] bg-white text-[#c2a28d] hover:text-[#ea580c] hover:border-[#ea580c] flex items-center justify-center transition active:scale-90" title="Marcar como objetivo principal">
+              <span class="text-base">☆</span>
+            </button>
+
+            <div class="flex-1 cursor-pointer select-task-trigger">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#fef2f2] text-[#b91c1c]">Merienda / Pausa</span>
+                <span class="text-[11px] font-bold text-[#9a6a4c] flex items-center gap-1">
+                  ⏱️ 10 min
+                </span>
+                <span class="text-[11px] font-extrabold text-[#16a34a] bg-green-50 px-1.5 py-0.2 rounded">+15 XP</span>
+              </div>
+              <h3 class="task-title text-base font-extrabold text-[#382315] mt-1 leading-snug">
+                Tomar agua y fruta con música
+              </h3>
+              <p class="text-xs text-[#7c5e48] font-medium mt-0.5">Recargar energía para seguir genial</p>
+            </div>
+
+            <div class="flex flex-col items-end gap-1">
+              <button class="drag-handle text-[#c2a28d] hover:text-[#7c5e48] p-1 text-sm font-bold" title="Reordenar">
+                ⋮⋮
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-[#f8f0ea] flex items-center justify-between text-xs">
+            <span class="text-[#8c6d56] font-medium">🛡️ En espera (segura con Sparky)</span>
+            <button class="quick-set-text text-[11px] font-bold text-[#ea580c] hover:underline">
+              Poner como objetivo →
+            </button>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Quick Advice Footer Alert -->
+      <div class="bg-[#ffedd5]/50 border border-[#fed7aa] rounded-xl p-3 flex items-center gap-2.5 text-xs text-[#7c5e48]">
+        <span class="text-base">💡</span>
+        <span class=""><b>Protección TDAH:</b> Las tareas que no selecciones no te molestarán en la pantalla principal. Solo verás una.</span>
+      </div>
+
+    </div>
+
+    <!-- Persistent Bottom Action Bar (Launch to Home Button) -->
+    <div class="fixed bottom-16 max-w-[420px] w-full px-5 z-20">
+      <div class="bg-white/95 backdrop-blur-md p-3 rounded-2xl border-2 border-[#ff6b00]/30 shadow-xl shadow-[#ea580c]/15">
+        
+        <div class="flex items-center justify-between mb-2 px-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#ea580c]">Objetivo seleccionado para el Círculo:</span>
+          <span id="selected-preview-time" class="text-xs font-black text-[#c2410c] bg-[#ffedd5] px-2 py-0.5 rounded-full">⏱️ 12 min</span>
+        </div>
+
+        <button id="btn-launch-home" class="w-full bg-[#ff6b00] hover:bg-[#ea580c] active:scale-[0.98] transition-all duration-150 text-white font-black text-base py-3.5 px-4 rounded-xl shadow-lg shadow-[#ff6b00]/35 flex items-center justify-center gap-2 group"><span class="text-lg">🎯</span><span id="launch-button-text" class="">Enviar al Círculo de Enfoque (Ir a Inicio)</span><span class="text-sm font-black transition-transform group-hover:translate-x-1">→</span></button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar (Matched to Sparky Suite) -->
+    <nav class="fixed bottom-0 max-w-[420px] w-full bg-white/95 backdrop-blur-md border-t border-[#fed7aa]/50 py-2 px-6 flex justify-between items-center z-30 shadow-lg"><a href="#" title="Inicio / Círculo de Enfoque" class="flex flex-col items-center gap-1 text-[#a3795b] hover:text-[#ff6b00] transition active:scale-95"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg><span class="text-[10px] font-bold">Today</span></a><a href="#" title="Agenda Diaria / Calendario" class="flex flex-col items-center gap-1 text-[#a3795b] hover:text-[#ff6b00] transition active:scale-95"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><span class="text-[10px] font-bold">Schedule</span></a><a href="#" title="Organizador de Misiones (activo)" class="flex flex-col items-center gap-1 text-[#ff6b00] transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg><span class="text-[10px] font-black">Missions</span></a><a href="#" title="Premios y Logros" class="flex flex-col items-center gap-1 text-[#a3795b] hover:text-[#ff6b00] transition active:scale-95"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H7.5a1.5 1.5 0 0 1-1.5-1.5V14"></path><path d="M14 14.66V17c0 .55.45 1 1 1h1.5a1.5 1.5 0 0 0 1.5-1.5V14"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg><span class="text-[10px] font-bold">Rewards</span></a></nav>
+
+    <!-- Toast Notification for feedback -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-[#1e130c] text-white text-xs font-black px-4 py-2 rounded-full shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2">
+      <span class="">⭐</span>
+      <span id="toast-text" class="">¡Objetivo actualizado para tu pantalla de inicio!</span>
+    </div>
+
+  </main>
+
+  <script>
+    // State management & Interactive Task Selection
+    const cards = document.querySelectorAll('.task-card');
+    const launchButtonText = document.getElementById('launch-button-text');
+    const selectedPreviewTime = document.getElementById('selected-preview-time');
+    const sparkyAdvice = document.getElementById('sparky-advice');
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toast-text');
+
+    function showToast(msg) {
+      toastText.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2200);
+    }
+
+    function selectMainTask(selectedCard) {
+      cards.forEach(card => {
+        card.classList.remove('border-2', 'border-[#ff6b00]', 'shadow-md', 'shadow-[#ff6b00]/10', 'active-card');
+        card.classList.add('border', 'border-[#fed7aa]/80', 'shadow-sm');
+        
+        const badge = card.querySelector('.active-badge');
+        if (badge) badge.classList.add('hidden');
+        
+        const starBtn = card.querySelector('.set-main-btn');
+        if (starBtn) {
+          starBtn.classList.remove('bg-[#ff6b00]', 'text-white', 'shadow');
+          starBtn.classList.add('bg-[#fffaf5]', 'border-2', 'border-[#fed7aa]', 'text-[#c2a28d]');
+          starBtn.innerHTML = '<span class="text-base">☆</span>';
+        }
+
+        const bottomText = card.querySelector('.quick-set-text');
+        if (bottomText) {
+          bottomText.classList.remove('hidden');
+        }
+      });
+
+      // Activate clicked card
+      selectedCard.classList.remove('border', 'border-[#fed7aa]/80');
+      selectedCard.classList.add('border-2', 'border-[#ff6b00]', 'shadow-md', 'shadow-[#ff6b00]/10', 'active-card');
+      
+      const badge = selectedCard.querySelector('.active-badge');
+      if (badge) badge.classList.remove('hidden');
+
+      const starBtn = selectedCard.querySelector('.set-main-btn');
+      if (starBtn) {
+        starBtn.classList.add('bg-[#ff6b00]', 'text-white', 'shadow');
+        starBtn.classList.remove('bg-[#fffaf5]', 'border-2', 'border-[#fed7aa]', 'text-[#c2a28d]');
+        starBtn.innerHTML = '<span class="text-base font-black">★</span>';
+      }
+
+      // Update CTA button
+      const title = selectedCard.querySelector('.task-title').innerText.trim();
+      const time = selectedCard.getAttribute('data-time') || '10 min';
+      launchButtonText.innerText = `Ir a hacer: "${title}"`;
+      selectedPreviewTime.innerText = `⏱️ ${time}`;
+
+      // Update Sparky dynamic reaction
+      sparkyAdvice.innerHTML = `"¡Perfecto, Alex! He enviado <span class="text-[#ff6b00] font-black underline decoration-2">${title}</span> a tu Círculo de Enfoque. ¡A por ello!"`;
+
+      showToast(`🎯 ¡"${title}" es ahora tu objetivo activo!`);
+    }
+
+    // Attach listeners
+    cards.forEach(card => {
+      const triggers = card.querySelectorAll('.set-main-btn, .select-task-trigger, .quick-set-text');
+      triggers.forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectMainTask(card);
+        });
+      });
+    });
+
+    // Launch button action
+    document.getElementById('btn-launch-home').addEventListener('click', () => {
+      showToast('🚀 Abriendo Círculo de Enfoque con tu tarea...');
+    });
+
+    // Add task quick prompt
+    document.getElementById('btn-add-task').addEventListener('click', () => {
+      showToast('➕ Nueva misión añadida al plan de hoy');
+    });
+  </script>
+
+
+
+
+
+
+
+
+</body></html>
