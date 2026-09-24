@@ -65,14 +65,14 @@ export const RewardsScreen = () => {
       style={{ background: ARCADE_COLORS.bg }}
     >
       {/* ============ HEADER ARCADE ============ */}
-      <header
-        className="fixed top-0 w-full z-50 pt-safe backdrop-blur-xl"
-        style={{
-          background: 'rgba(9, 9, 15, 0.9)',
-          borderBottom: '1px solid rgba(6, 182, 212, 0.2)',
-          boxShadow: '0 4px 25px rgba(0, 0, 0, 0.8)'
-        }}
-      >
+<header
+  className="fixed top-0 w-full z-50 pt-safe"
+  style={{
+    background: '#09090f',
+    borderBottom: '1px solid rgba(6, 182, 212, 0.2)',
+    boxShadow: '0 4px 25px rgba(0, 0, 0, 0.8)'
+  }}
+>
         <div className="h-16 px-4 flex items-center justify-between gap-2 max-w-lg mx-auto">
           {/* Esferas de energía */}
           <div
