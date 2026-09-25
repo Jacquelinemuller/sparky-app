@@ -60,7 +60,7 @@ export const TodayScreen = () => {
   const [isCompletedAnim, setIsCompletedAnim] = useState(false);
 
   // ========== TIMER DE ENFOQUE ==========
-  const [timerState, setTimerState] = useState('idle'); // 'idle' | 'running' | 'paused' | 'finished'
+  const [timerState, setTimerState] = useState('idle');
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0);
   const timerRef = useRef(null);
@@ -68,9 +68,7 @@ export const TodayScreen = () => {
 
   const queuedTasks = tasks.filter((t) => t.status === 'queued');
 
-  // Resetear timer cuando cambia la tarea activa
   useEffect(() => {
-    // Limpiar intervalo
     if (timerRef.current) clearInterval(timerRef.current);
     setTimerState('idle');
     setShowTimeUpModal(false);
@@ -85,7 +83,6 @@ export const TodayScreen = () => {
     }
   }, [activeTask?.id]);
 
-  // Correr el timer
   useEffect(() => {
     if (timerState === 'running') {
       timerRef.current = setInterval(() => {
@@ -109,7 +106,6 @@ export const TodayScreen = () => {
     };
   }, [timerState]);
 
-  // Cleanup al desmontar
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -129,7 +125,6 @@ export const TodayScreen = () => {
       try { audioService.playPop(); } catch (e) {}
       setTimerState('running');
     } else if (timerState === 'finished') {
-      // Reiniciar
       try { audioService.playPop(); } catch (e) {}
       setSecondsLeft(totalSeconds);
       setTimerState('running');
@@ -143,7 +138,6 @@ export const TodayScreen = () => {
     setShowTimeUpModal(false);
   };
 
-  // ========== COMPLETAR MISIÓN ==========
   const handleComplete = () => {
     if (!activeTask) return;
 
@@ -174,7 +168,13 @@ export const TodayScreen = () => {
 
   const handleTimeUpNo = () => {
     setShowTimeUpModal(false);
-    // Se queda en 'finished', puede tocar la burbuja para reanudar
+  };
+
+  // 🎤 Ir a Notas de voz (bug corregido: antes usaba setActiveScreen)
+  const goToNotes = () => {
+    try { audioService.playClick(); } catch (e) {}
+    setActiveScreen('none');
+    setActiveTab('notes');
   };
 
   const activePriority = activeTask?.priority || 'yellow';
@@ -185,7 +185,6 @@ export const TodayScreen = () => {
   const doneSteps = activeMicroSteps.filter((s) => s.done).length;
   const bonusXp = (activeMicroSteps.length - doneSteps) * 2;
 
-  // Progreso del círculo
   const progressPercent = totalSeconds > 0
     ? Math.min(100, Math.max(0, ((totalSeconds - secondsLeft) / totalSeconds) * 100))
     : 0;
@@ -240,14 +239,14 @@ export const TodayScreen = () => {
           BLOQUE 2: 🎤 + Círculo con timer + 🍅
           ============================================ */}
       <section className="w-full flex items-start justify-center my-3">
-        {/* 🎤 Micrófono (izquierda) */}
+        {/* 🎤 Micrófono (izquierda) — AHORA EN NEGRO Y FUNCIONAL */}
         <button
           type="button"
-          onClick={() => setActiveScreen('notes')}
-          className="relative z-20 flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-[#8b5cf6] shadow-[0_3px_0_0_#5b21b6] flex items-center justify-center active:translate-y-0.5 active:shadow-none transition-all cursor-pointer -mr-3"
+          onClick={goToNotes}
+          className="relative z-20 flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-[#1a1a1a] shadow-[0_3px_0_0_#000000] flex items-center justify-center active:translate-y-0.5 active:shadow-none transition-all cursor-pointer -mr-3"
           title="Mis notas de voz"
         >
-          <span className="material-symbols-outlined text-[#8b5cf6] text-[22px]" style={{ fontVariationSettings: '"FILL" 1' }}>
+          <span className="material-symbols-outlined text-[#1a1a1a] text-[22px]" style={{ fontVariationSettings: '"FILL" 1' }}>
             mic
           </span>
         </button>
@@ -284,7 +283,6 @@ export const TodayScreen = () => {
             </svg>
 
             <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 w-full h-full">
-              {/* Badge superior */}
               <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm border border-[#fed7aa] shadow-[0_1px_0_0_#fed7aa] mb-2 ${
                 timerState === 'idle' && activeTask ? 'animate-[pulseSoft_2s_ease-in-out_infinite]' : ''
               }`}>
@@ -302,7 +300,6 @@ export const TodayScreen = () => {
                 </span>
               </div>
 
-              {/* Título o timer */}
               {activeTask ? (
                 <>
                   {timerState === 'idle' ? (
@@ -320,7 +317,6 @@ export const TodayScreen = () => {
                     </>
                   )}
 
-                  {/* Info de tiempo + dificultad */}
                   <div className="flex items-center gap-1.5 flex-wrap justify-center mt-1">
                     <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm border border-[#fed7aa] text-on-surface-variant">
                       <span className="material-symbols-outlined text-[#ea580c] text-[17px]">timer</span>
@@ -339,7 +335,6 @@ export const TodayScreen = () => {
                     </div>
                   </div>
 
-                  {/* Indicador de toque */}
                   {timerState === 'idle' && (
                     <p className="font-label-sm text-[10px] text-[#ea580c] font-black mt-2 opacity-70">
                       👆 Tocar para empezar
@@ -369,7 +364,6 @@ export const TodayScreen = () => {
             </div>
           </button>
 
-          {/* Botón reset timer (visible cuando corre) */}
           {activeTask && timerState !== 'idle' && (
             <button
               type="button"
@@ -408,7 +402,7 @@ export const TodayScreen = () => {
         </div>
       )}
 
-      {/* Banner de evento próximo (DEBAJO del completado) */}
+      {/* Banner de evento próximo */}
       <div className="w-full mt-3">
         <UpcomingEventBanner />
       </div>
@@ -539,16 +533,6 @@ export const TodayScreen = () => {
             )}
           </div>
         )}
-
-        <button
-          onClick={() => setActiveTab('missions')}
-          className="w-full mt-3 min-h-target-min h-14 rounded-2xl bg-[#fff7ed] hover:bg-[#ffedd5] border-2 border-[#fed7aa] text-[#ea580c] font-label-md text-label-md font-extrabold flex items-center justify-center gap-2 shadow-[0_3px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-[0_1px_0_0_#fed7aa] transition-all cursor-pointer select-none"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[22px] text-[#ea580c]">format_list_bulleted</span>
-          <span className="font-black">📋 Abrir Organizador de Tareas</span>
-          <span className="material-symbols-outlined text-[18px] text-[#ea580c]">arrow_forward</span>
-        </button>
       </section>
 
       {/* Modal "¡Tiempo cumplido!" */}
@@ -583,7 +567,6 @@ export const TodayScreen = () => {
         </div>
       )}
 
-      {/* Animación pulseSoft */}
       <style>{`
         @keyframes pulseSoft {
           0%, 100% { opacity: 1; transform: scale(1); }

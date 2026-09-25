@@ -19,8 +19,8 @@ export const SparkyCompanion = () => {
   const [badgeIcon, setBadgeIcon] = useState('⚡');
   const [isBouncing, setIsBouncing] = useState(false);
   const [speechPopState, setSpeechPopState] = useState(false);
-  const [mode, setMode] = useState('tip'); // 'tip' | 'normal'
-  const [tipView, setTipView] = useState('tip'); // 'tip' | 'reto'
+  const [mode, setMode] = useState('tip');
+  const [tipView, setTipView] = useState('tip');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const videoRef = useRef(null);
@@ -205,60 +205,29 @@ export const SparkyCompanion = () => {
     return renderTipView();
   };
 
-  // ==================== BOTONES ====================
+  // ==================== BOTONES (SIN GUAU — ahora va debajo del video) ====================
 
   const renderButtons = () => {
     if (justCompleted) {
-      return (
-        <button
-          type="button"
-          onClick={handleBark}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff7ed] hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-label-sm font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer"
-          title="¡Guau guau!"
-        >
-          <span className="material-symbols-outlined text-[18px]">pets</span>
-          <span>¡Guau!</span>
-        </button>
-      );
+      return null;
     }
 
     if (mode === 'normal') {
       return (
-        <>
-          <button
-            type="button"
-            onClick={handleBark}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff7ed] hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-label-sm font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer"
-            title="¡Guau guau!"
-          >
-            <span className="material-symbols-outlined text-[18px]">pets</span>
-            <span>¡Guau!</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSparkyTouch}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full hover:bg-[#ffedd5] text-[#9a3412] font-label-sm text-label-sm font-bold transition-all cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[17px] text-[#ea580c]">auto_awesome</span>
-            <span>Otro consejo</span>
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={handleSparkyTouch}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full hover:bg-[#ffedd5] text-[#9a3412] font-label-sm text-label-sm font-bold transition-all cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[17px] text-[#ea580c]">auto_awesome</span>
+          <span>Otro consejo</span>
+        </button>
       );
     }
 
     if (tipView === 'tip') {
       return (
         <>
-          <button
-            type="button"
-            onClick={handleBark}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff7ed] hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-label-sm font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer"
-            title="¡Guau guau!"
-          >
-            <span className="material-symbols-outlined text-[18px]">pets</span>
-            <span>¡Guau!</span>
-          </button>
-
           {hasSheet && (
             <button
               type="button"
@@ -344,38 +313,50 @@ export const SparkyCompanion = () => {
           )}
         </div>
 
-        {/* Fila superior: Avatar + Burbuja */}
-        <div className="flex items-start gap-4">
-          <div
-            onClick={handleSparkyTouch}
-            className="relative flex-shrink-0 cursor-pointer group"
-            role="button"
-            tabIndex={0}
-            title="¡Tócame para un saludo!"
-          >
+        {/* Fila superior: Avatar + Botón Guau + Burbuja */}
+        <div className="flex items-start gap-3">
+          {/* Columna del Avatar: video + botón Guau debajo */}
+          <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div
-              className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full ring-4 ring-[#ff6b00] shadow-[0_6px_16px_rgba(255,107,0,0.35)] overflow-hidden bg-white transition-all duration-300 group-hover:scale-105 group-active:scale-90 ${
-                isBouncing ? 'sparky-tap-bounce' : ''
-              }`}
+              onClick={handleSparkyTouch}
+              className="relative cursor-pointer group"
+              role="button"
+              tabIndex={0}
+              title="¡Tócame para un saludo!"
             >
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover bg-amber-50"
-                autoPlay
-                loop
-                muted
-                playsInline
-                src={sparkyVideo}
-              />
+              <div
+                className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full ring-4 ring-[#ff6b00] shadow-[0_6px_16px_rgba(255,107,0,0.35)] overflow-hidden bg-white transition-all duration-300 group-hover:scale-105 group-active:scale-90 ${
+                  isBouncing ? 'sparky-tap-bounce' : ''
+                }`}
+              >
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover bg-amber-50"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  src={sparkyVideo}
+                />
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-white border-2 border-[#fed7aa] rounded-full px-2 py-0.5 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span className="text-[15px] leading-none">{badgeIcon}</span>
+              </div>
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-white border-2 border-[#fed7aa] rounded-full px-2 py-0.5 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-[15px] leading-none">{badgeIcon}</span>
-            </div>
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#ff6b00] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              ¡Tócame! 🐾
-            </span>
+
+            {/* 🐾 Botón Guau — debajo del video */}
+            <button
+              type="button"
+              onClick={handleBark}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border-2 border-[#fed7aa] text-[#ea580c] font-label-sm text-[11px] font-black shadow-[0_2px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              title="¡Guau guau!"
+            >
+              <span className="material-symbols-outlined text-[16px]">pets</span>
+              <span>¡Guau!</span>
+            </button>
           </div>
 
+          {/* Burbuja de diálogo */}
           <div className="relative flex-1 min-w-0">
             <div
               className={`relative bg-white border-2 p-3.5 sm:p-4 rounded-2xl shadow-[0_2px_0_0_#fed7aa] transition-all overflow-hidden ${
@@ -397,7 +378,7 @@ export const SparkyCompanion = () => {
           </div>
         </div>
 
-        {/* Botones abajo, ancho completo, centrados */}
+        {/* Botones restantes */}
         <div className="flex items-center justify-center gap-2 w-full flex-wrap">
           {renderButtons()}
         </div>
