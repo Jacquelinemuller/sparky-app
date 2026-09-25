@@ -205,7 +205,7 @@ export const SparkyCompanion = () => {
     return renderTipView();
   };
 
-  // ==================== BOTONES (SIN GUAU — ahora va debajo del video) ====================
+  // ==================== BOTONES ====================
 
   const renderButtons = () => {
     if (justCompleted) {
@@ -313,9 +313,8 @@ export const SparkyCompanion = () => {
           )}
         </div>
 
-        {/* Fila superior: Avatar + Botón Guau + Burbuja */}
+        {/* Fila superior: Avatar + Guau + Burbuja */}
         <div className="flex items-start gap-3">
-          {/* Columna del Avatar: video + botón Guau debajo */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div
               onClick={handleSparkyTouch}
@@ -344,7 +343,6 @@ export const SparkyCompanion = () => {
               </div>
             </div>
 
-            {/* 🐾 Botón Guau — debajo del video */}
             <button
               type="button"
               onClick={handleBark}
@@ -356,7 +354,6 @@ export const SparkyCompanion = () => {
             </button>
           </div>
 
-          {/* Burbuja de diálogo */}
           <div className="relative flex-1 min-w-0">
             <div
               className={`relative bg-white border-2 p-3.5 sm:p-4 rounded-2xl shadow-[0_2px_0_0_#fed7aa] transition-all overflow-hidden ${

@@ -59,7 +59,6 @@ export const TodayScreen = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCompletedAnim, setIsCompletedAnim] = useState(false);
 
-  // ========== TIMER DE ENFOQUE ==========
   const [timerState, setTimerState] = useState('idle');
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0);
@@ -170,11 +169,16 @@ export const TodayScreen = () => {
     setShowTimeUpModal(false);
   };
 
-  // 🎤 Ir a Notas de voz (bug corregido: antes usaba setActiveScreen)
   const goToNotes = () => {
     try { audioService.playClick(); } catch (e) {}
     setActiveScreen('none');
     setActiveTab('notes');
+  };
+
+  const goToMissions = () => {
+    try { audioService.playPop(); } catch (e) {}
+    setActiveScreen('none');
+    setActiveTab('missions');
   };
 
   const activePriority = activeTask?.priority || 'yellow';
@@ -203,7 +207,7 @@ export const TodayScreen = () => {
       id="focus-screen-root"
     >
       {/* ============================================
-          BLOQUE 1: Sparky + burbuja de saludo
+          BLOQUE 1: Sparky + burbuja de saludo (clickeable)
           ============================================ */}
       <section className="w-full flex items-start gap-3 mb-4">
         <div className="relative flex-shrink-0">
@@ -224,14 +228,22 @@ export const TodayScreen = () => {
         </div>
 
         <div className="relative flex-1 min-w-0">
-          <div className="relative bg-white border-2 border-[#fed7aa] rounded-2xl shadow-[0_2px_0_0_#fed7aa] px-3.5 py-3">
+          <button
+            type="button"
+            onClick={goToMissions}
+            className="relative w-full text-left bg-white border-2 border-[#fed7aa] rounded-2xl shadow-[0_2px_0_0_#fed7aa] px-3.5 py-3 active:scale-[0.98] transition-all cursor-pointer hover:border-[#ff6b00]"
+            title="Ir a mis planes del día"
+          >
             <span className="absolute -left-2.5 top-5 w-0 h-0 border-y-[9px] border-y-transparent border-r-[11px] border-r-white z-10 pointer-events-none" />
             <span className="absolute -left-3 top-5 w-0 h-0 border-y-[9px] border-y-transparent border-r-[11px] border-r-[#fed7aa] pointer-events-none" />
 
             <p className="font-body-md text-body-md text-[#ea580c] font-bold leading-snug">
               {getGreeting(userName)}
             </p>
-          </div>
+            <p className="font-label-sm text-[10px] text-[#ea580c]/70 font-black mt-1">
+              👆 Tocar para ver mis planes
+            </p>
+          </button>
         </div>
       </section>
 
@@ -239,7 +251,6 @@ export const TodayScreen = () => {
           BLOQUE 2: 🎤 + Círculo con timer + 🍅
           ============================================ */}
       <section className="w-full flex items-start justify-center my-3">
-        {/* 🎤 Micrófono (izquierda) — AHORA EN NEGRO Y FUNCIONAL */}
         <button
           type="button"
           onClick={goToNotes}
@@ -251,7 +262,6 @@ export const TodayScreen = () => {
           </span>
         </button>
 
-        {/* Círculo de enfoque — clickeable */}
         <div className="relative flex-shrink-0">
           <div className="absolute w-72 h-72 rounded-full bg-[#ff6b00]/15 blur-2xl -z-10 pointer-events-none"></div>
 
@@ -377,7 +387,6 @@ export const TodayScreen = () => {
           )}
         </div>
 
-        {/* 🍅 Tomate (derecha) */}
         <button
           type="button"
           onClick={() => setActiveScreen('pomodoro')}
