@@ -19,8 +19,7 @@ const BACKGROUNDS = {
   today: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)',
   schedule: 'radial-gradient(circle at 50% 0%, #f7fee7 0%, #ecfccb 50%, #d9f99d 100%)',
   notes: 'radial-gradient(circle at 50% 0%, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%)',
-  missions: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)',
-  rewards: 'linear-gradient(135deg, #0B0F19 0%, #111827 50%, #0B0F19 100%)'
+  missions: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)'
 };
 
 export function AppContent() {
@@ -55,6 +54,19 @@ export function AppContent() {
 
   const isMiniCelebration = celebration?.type === 'mini';
 
+  // Premios tiene su propio layout full-screen (arcade oscuro)
+  if (activeTab === 'rewards') {
+    return (
+      <>
+        <RewardsScreen />
+        <MiniToast
+          celebration={isMiniCelebration ? celebration : null}
+          onClose={closeCelebration}
+        />
+      </>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-background font-body-md text-on-surface flex flex-col antialiased selection:bg-primary-fixed"
@@ -66,7 +78,6 @@ export function AppContent() {
         {activeTab === 'schedule' && <ScheduleScreen />}
         {activeTab === 'notes' && <NotesScreen />}
         {activeTab === 'missions' && <MissionsScreen />}
-        {activeTab === 'rewards' && <RewardsScreen />}
       </main>
       <BottomNav />
 

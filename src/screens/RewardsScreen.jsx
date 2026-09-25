@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
 import ShopTab from '../components/rewards/ShopTab';
+import CollectionTab from '../components/rewards/CollectionTab';
 
 // ============================================
 // CONFIGURACIÓN DE PESTAÑAS
@@ -17,6 +18,7 @@ const TABS = [
 // ============================================
 const ARCADE_COLORS = {
   bg: '#09090f',
+  panel: '#1a1a2e',
   card: '#131322',
   cardHover: '#1a1a2e',
   lime: '#22c55e',
@@ -65,14 +67,14 @@ export const RewardsScreen = () => {
       style={{ background: ARCADE_COLORS.bg }}
     >
       {/* ============ HEADER ARCADE ============ */}
-<header
-  className="fixed top-0 w-full z-50 pt-safe"
-  style={{
-    background: '#09090f',
-    borderBottom: '1px solid rgba(6, 182, 212, 0.2)',
-    boxShadow: '0 4px 25px rgba(0, 0, 0, 0.8)'
-  }}
->
+      <header
+        className="fixed top-0 w-full z-50 pt-safe"
+        style={{
+          background: ARCADE_COLORS.panel,
+          borderBottom: '1px solid rgba(6, 182, 212, 0.3)',
+          boxShadow: '0 4px 25px rgba(0, 0, 0, 0.8)'
+        }}
+      >
         <div className="h-16 px-4 flex items-center justify-between gap-2 max-w-lg mx-auto">
           {/* Esferas de energía */}
           <div
@@ -240,34 +242,17 @@ export const RewardsScreen = () => {
           {activeRewardsTab === 'shop' && <ShopTab />}
 
           {/* COLECCIÓN */}
-          {activeRewardsTab === 'collection' && (
-            <div
-              className="w-full p-6 rounded-2xl text-center"
-              style={{
-                background: ARCADE_COLORS.card,
-                border: '1px solid rgba(250, 204, 21, 0.3)',
-                boxShadow: '0 0 20px rgba(250, 204, 21, 0.1)'
-              }}
-            >
-              <span className="text-5xl block mb-3">📜</span>
-              <h2 className="text-lg font-black text-white mb-1">
-                Colección
-              </h2>
-              <p className="text-xs font-medium" style={{ color: ARCADE_COLORS.textMuted }}>
-                Próximamente: logros y accesorios desbloqueados.
-              </p>
-            </div>
-          )}
+          {activeRewardsTab === 'collection' && <CollectionTab />}
         </div>
 
       </main>
 
       {/* ============ BOTTOM NAV ARCADE ============ */}
       <nav
-        className="fixed bottom-0 w-full z-50 pb-safe backdrop-blur-xl"
+        className="fixed bottom-0 w-full z-50 pb-safe"
         style={{
-          background: 'rgba(9, 9, 15, 0.95)',
-          borderTop: '1px solid rgba(6, 182, 212, 0.2)',
+          background: ARCADE_COLORS.panel,
+          borderTop: '1px solid rgba(6, 182, 212, 0.3)',
           boxShadow: '0 -4px 25px rgba(0, 0, 0, 0.8)'
         }}
       >
