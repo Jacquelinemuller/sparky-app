@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
+import MemoriaGame from './games/MemoriaGame';
 
 const C = {
   card: '#131322',
@@ -18,6 +19,7 @@ const C = {
 export default function ArcadeTab() {
   const { unlockedGames } = useApp();
   const [feedback, setFeedback] = useState(null);
+  const [activeGame, setActiveGame] = useState(null);
 
   const handlePlayAttempt = (game, isUnlocked) => {
     try { audioService.playClick(); } catch (e) {}
@@ -28,10 +30,23 @@ export default function ArcadeTab() {
       return;
     }
 
-    // TODO: conectar con el juego real
+    if (game.id === 'memory') {
+      setActiveGame('memory');
+      return;
+    }
+
     setFeedback(`¡${game.label} próximamente! 🎮`);
     setTimeout(() => setFeedback(null), 3000);
   };
+
+  const handleExitGame = () => {
+    try { audioService.playClick(); } catch (e) {}
+    setActiveGame(null);
+  };
+
+  if (activeGame === 'memory') {
+    return <MemoriaGame onExit={handleExitGame} />;
+  }
 
   const totalUnlocked =
     GAMES_CATALOG.filter(
@@ -41,7 +56,6 @@ export default function ArcadeTab() {
   return (
     <div className="w-full flex flex-col gap-3">
 
-      {/* Banner de progreso */}
       <div
         className="w-full px-3 py-2 rounded-xl flex items-center justify-between"
         style={{
@@ -57,7 +71,6 @@ export default function ArcadeTab() {
         </span>
       </div>
 
-      {/* Feedback temporal */}
       {feedback && (
         <div
           className="w-full px-3 py-2.5 rounded-xl flex items-center gap-2"
@@ -73,7 +86,6 @@ export default function ArcadeTab() {
         </div>
       )}
 
-      {/* Grid de 2 columnas */}
       <div className="grid grid-cols-2 gap-2.5">
         {GAMES_CATALOG.map((game) => {
           const isUnlocked =
@@ -107,7 +119,6 @@ function GameCard({ game, isUnlocked, onPlay }) {
         opacity: isUnlocked ? 1 : 0.7
       }}
     >
-      {/* Header: ícono + badge */}
       <div className="flex items-start justify-between mb-2">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl relative"
@@ -124,7 +135,6 @@ function GameCard({ game, isUnlocked, onPlay }) {
           )}
         </div>
 
-        {/* Badge superior */}
         {isUnlocked ? (
           <span
             className="text-[9px] font-black px-2 py-0.5 rounded-full"
@@ -161,7 +171,6 @@ function GameCard({ game, isUnlocked, onPlay }) {
         )}
       </div>
 
-      {/* Título y subtítulo */}
       <div className="mb-3">
         <h4
           className="text-sm font-black leading-tight mb-0.5"
@@ -174,7 +183,6 @@ function GameCard({ game, isUnlocked, onPlay }) {
         </p>
       </div>
 
-      {/* Botón */}
       <button
         type="button"
         onClick={() => onPlay(game, isUnlocked)}
