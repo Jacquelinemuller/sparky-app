@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { ACCESSORIES_CATALOG } from '../../services/storageService';
+import { GAMES_CATALOG } from '../../services/gamesCatalog';
 
 // ============================================
-// CATÁLOGOS ADICIONALES (Sonidos y Minijuegos)
+// CATÁLOGO DE SONIDOS
 // ============================================
 const SOUNDS_CATALOG = [
   { id: 'rain',       label: 'Lluvia',           icon: '🌧️', unlock: { type: 'free' } },
@@ -14,15 +15,8 @@ const SOUNDS_CATALOG = [
   { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'xp', cost: 180 } }
 ];
 
-const GAMES_CATALOG = [
-  { id: 'memory',      label: 'Memoria',      icon: '🧠', unlock: { type: 'xp', cost: 100 } },
-  { id: 'minesweeper', label: 'Buscaminas',   icon: '💣', unlock: { type: 'xp', cost: 150 } },
-  { id: 'sudoku',      label: 'Sudoku',       icon: '🔢', unlock: { type: 'xp', cost: 200 } },
-  { id: 'chess',       label: 'Ajedrez',      icon: '♟️', unlock: { type: 'xp', cost: 250 } }
-];
-
 // ============================================
-// COLORES ARCADE (mismos que RewardsScreen)
+// COLORES ARCADE
 // ============================================
 const C = {
   bg: '#09090f',
@@ -53,9 +47,7 @@ export default function ShopTab() {
     unlockedGames,
     unlockAccessory,
     unlockSound,
-    unlockGame,
-    userAvatar,
-    userName
+    unlockGame
   } = useApp();
 
   const [subTab, setSubTab] = useState('accessories');

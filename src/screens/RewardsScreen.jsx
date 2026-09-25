@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
+import ArcadeTab from '../components/rewards/ArcadeTab';
 import ShopTab from '../components/rewards/ShopTab';
 import CollectionTab from '../components/rewards/CollectionTab';
 
@@ -20,7 +21,6 @@ const ARCADE_COLORS = {
   bg: '#09090f',
   panel: '#1a1a2e',
   card: '#131322',
-  cardHover: '#1a1a2e',
   lime: '#22c55e',
   limeBright: '#4ade80',
   magenta: '#ff2d87',
@@ -218,30 +218,8 @@ export const RewardsScreen = () => {
 
         {/* ============ CONTENIDO DE CADA PESTAÑA ============ */}
         <div className="w-full flex flex-col gap-3">
-          {/* ARCADE */}
-          {activeRewardsTab === 'arcade' && (
-            <div
-              className="w-full p-6 rounded-2xl text-center"
-              style={{
-                background: ARCADE_COLORS.card,
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                boxShadow: '0 0 20px rgba(34, 197, 94, 0.1)'
-              }}
-            >
-              <span className="text-5xl block mb-3">🎮</span>
-              <h2 className="text-lg font-black text-white mb-1">
-                Zona Arcade
-              </h2>
-              <p className="text-xs font-medium" style={{ color: ARCADE_COLORS.textMuted }}>
-                Próximamente: minijuegos para ganar XP mientras descansás.
-              </p>
-            </div>
-          )}
-
-          {/* TIENDA */}
+          {activeRewardsTab === 'arcade' && <ArcadeTab />}
           {activeRewardsTab === 'shop' && <ShopTab />}
-
-          {/* COLECCIÓN */}
           {activeRewardsTab === 'collection' && <CollectionTab />}
         </div>
 
