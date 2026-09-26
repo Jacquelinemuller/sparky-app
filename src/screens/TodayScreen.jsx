@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { SparkyCompanion } from '../components/SparkyCompanion';
 import UpcomingEventBanner from '../components/UpcomingEventBanner';
 import { audioService } from '../services/audioService';
 import confetti from 'canvas-confetti';
+import sparkyVideo from '../assets/sparky.mp4';
 
 const PRIORITY_CONFIG = {
   red:    { color: '#ef4444', label: 'Urgente' },
@@ -31,11 +31,14 @@ function PriorityDot({ priority }) {
   );
 }
 
-function getGreeting(userName) {
-  const now = new Date();
-  const dayName = DAY_NAMES[now.getDay()];
-  const day = now.getDate();
-  return `¡hola ${userName}! hoy es ${dayName} ${day}. ¿qué planes tenés para hoy?`;
+function getGreetingMessage(userName, index) {
+  if (index === 0) {
+    const now = new Date();
+    const dayName = DAY_NAMES[now.getDay()];
+    const day = now.getDate();
+    return `¡hola ${userName}! hoy es ${dayName} ${day}. ¿qué planes tenés para hoy?`;
+  }
+  return `¿Querés ver el tip de hoy, ${userName}? 💡`;
 }
 
 function formatTime(seconds) {
@@ -59,6 +62,10 @@ export const TodayScreen = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCompletedAnim, setIsCompletedAnim] = useState(false);
 
+  // Alternancia de mensajes del saludo
+  const [greetingIndex, setGreetingIndex] = useState(0);
+  const [isSparkyBouncing, setIsSparkyBouncing] = useState(false);
+
   const [timerState, setTimerState] = useState('idle');
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0);
@@ -66,6 +73,14 @@ export const TodayScreen = () => {
   const [showTimeUpModal, setShowTimeUpModal] = useState(false);
 
   const queuedTasks = tasks.filter((t) => t.status === 'queued');
+
+  // Auto-rotación del saludo cada 6 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGreetingIndex((i) => (i === 0 ? 1 : 0));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -175,10 +190,30 @@ export const TodayScreen = () => {
     setActiveTab('notes');
   };
 
-  const goToMissions = () => {
+  // Tocar la burbuja → navega según el mensaje activo
+  const handleGreetingClick = () => {
     try { audioService.playPop(); } catch (e) {}
     setActiveScreen('none');
-    setActiveTab('missions');
+    if (greetingIndex === 0) {
+      setActiveTab('missions');
+    } else {
+      setActiveScreen('tips');
+    }
+  };
+
+  // Tocar a Sparky → alterna el diálogo + rebote + sonido
+  const handleSparkyTap = () => {
+    try { audioService.playBark(); } catch (e) {}
+
+    setIsSparkyBouncing(false);
+    setTimeout(() => setIsSparkyBouncing(true), 10);
+
+    setGreetingIndex((i) => (i === 0 ? 1 : 0));
+  };
+
+  const handleDotClick = (index) => {
+    try { audioService.playClick(); } catch (e) {}
+    setGreetingIndex(index);
   };
 
   const activePriority = activeTask?.priority || 'yellow';
@@ -207,43 +242,71 @@ export const TodayScreen = () => {
       id="focus-screen-root"
     >
       {/* ============================================
-          BLOQUE 1: Sparky + burbuja de saludo (clickeable)
+          BLOQUE 1: Sparky animado + burbuja alternante
           ============================================ */}
       <section className="w-full flex items-start gap-3 mb-4">
-        <div className="relative flex-shrink-0">
-          <div className="w-16 h-16 rounded-full ring-3 ring-[#ff6b00] shadow-[0_4px_12px_rgba(255,107,0,0.3)] overflow-hidden bg-white">
-            <img
-              src="/sparky.png"
-              alt="Sparky"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-3xl">🐶</div>';
-              }}
+        {/* Sparky animado (video) — tocar alterna el diálogo */}
+        <button
+          type="button"
+          onClick={handleSparkyTap}
+          className="relative flex-shrink-0 cursor-pointer group"
+          title="¡Tócame para cambiar el mensaje!"
+        >
+        <div
+  className={`w-[70px] h-[70px] rounded-full ring-3 ring-[#ff6b00] shadow-[0_4px_12px_rgba(255,107,0,0.3)] overflow-hidden bg-white transition-transform duration-300 group-active:scale-90 ${
+    isSparkyBouncing ? 'sparky-tap-bounce' : ''
+  }`}
+>
+            <video
+              className="w-full h-full object-cover bg-amber-50"
+              autoPlay
+              loop
+              muted
+              playsInline
+              src={sparkyVideo}
             />
           </div>
           <span className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 rounded-full text-[11px] p-0.5 shadow-md font-black border-2 border-white">
             ⚡
           </span>
-        </div>
+        </button>
 
         <div className="relative flex-1 min-w-0">
           <button
             type="button"
-            onClick={goToMissions}
+            onClick={handleGreetingClick}
             className="relative w-full text-left bg-white border-2 border-[#fed7aa] rounded-2xl shadow-[0_2px_0_0_#fed7aa] px-3.5 py-3 active:scale-[0.98] transition-all cursor-pointer hover:border-[#ff6b00]"
-            title="Ir a mis planes del día"
+            title={greetingIndex === 0 ? 'Ir a mis planes del día' : 'Ver tip de hoy'}
           >
             <span className="absolute -left-2.5 top-5 w-0 h-0 border-y-[9px] border-y-transparent border-r-[11px] border-r-white z-10 pointer-events-none" />
             <span className="absolute -left-3 top-5 w-0 h-0 border-y-[9px] border-y-transparent border-r-[11px] border-r-[#fed7aa] pointer-events-none" />
 
-            <p className="font-body-md text-body-md text-[#ea580c] font-bold leading-snug">
-              {getGreeting(userName)}
+            <p className="font-body-md text-body-md text-[#ea580c] font-bold leading-snug transition-opacity duration-500">
+              {getGreetingMessage(userName, greetingIndex)}
             </p>
             <p className="font-label-sm text-[10px] text-[#ea580c]/70 font-black mt-1">
-              👆 Tocar para ver mis planes
+              {greetingIndex === 0 ? '👆 Tocar para ver mis planes' : '👆 Tocar para ver el tip'}
             </p>
           </button>
+
+          {/* Puntitos indicadores */}
+          <div className="flex items-center justify-center gap-1.5 mt-2">
+            {[0, 1].map((i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleDotClick(i)}
+                className="transition-all cursor-pointer"
+                aria-label={`Ver mensaje ${i + 1}`}
+                style={{
+                  width: greetingIndex === i ? '20px' : '6px',
+                  height: '6px',
+                  borderRadius: '9999px',
+                  backgroundColor: greetingIndex === i ? '#ea580c' : '#fed7aa'
+                }}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -494,11 +557,6 @@ export const TodayScreen = () => {
         </section>
       )}
 
-      {/* Sparky con tips integrados */}
-      <section aria-label="Soporte y pausas" className="w-full flex flex-col gap-3 mt-4 px-2">
-        <SparkyCompanion />
-      </section>
-
       {/* Tareas guardadas */}
       <section aria-label="Tareas en espera protegidas" className="w-full mt-5 px-2 flex flex-col items-center">
         <button
@@ -580,6 +638,15 @@ export const TodayScreen = () => {
         @keyframes pulseSoft {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.6; transform: scale(1.03); }
+        }
+        @keyframes sparkyTapBounce {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(0.88); }
+          70%  { transform: scale(1.08); }
+          100% { transform: scale(1); }
+        }
+        .sparky-tap-bounce {
+          animation: sparkyTapBounce 0.5s ease-out;
         }
       `}</style>
     </div>

@@ -14,6 +14,7 @@ import { StatsScreen } from './screens/StatsScreen';
 import { ParentsScreen } from './screens/ParentsScreen';
 import { MonthlyCalendarScreen } from './screens/MonthlyCalendarScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { TipsScreen } from './screens/TipsScreen';
 
 const BACKGROUNDS = {
   today: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)',
@@ -31,6 +32,7 @@ export function AppContent() {
   if (activeScreen === 'stats') return <StatsScreen />;
   if (activeScreen === 'monthly') return <MonthlyCalendarScreen />;
   if (activeScreen === 'profile') return <ProfileScreen />;
+  if (activeScreen === 'tips') return <TipsScreen />;
 
   if (activeScreen === 'parents') {
     if (!parentsUnlocked) {
