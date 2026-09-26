@@ -504,42 +504,43 @@ export const TodayScreen = () => {
 
             <div className="flex flex-col gap-2">
               {activeMicroSteps.map((step, idx) => (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => toggleMicroStep(activeTask.id, step.id)}
-                  className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 text-left transition-all cursor-pointer active:scale-[0.98] ${
-                    step.done
-                      ? 'bg-[#f0fdf4] border-[#10b981]/40'
-                      : 'bg-[#fff7ed] border-[#fed7aa] hover:border-[#ff6b00]'
-                  }`}
-                >
-                  <span
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${
-                      step.done
-                        ? 'bg-[#10b981] text-white'
-                        : 'bg-white text-[#ea580c] border-2 border-[#fed7aa]'
-                    }`}
-                  >
-                    {step.done ? (
-                      <span className="material-symbols-outlined text-[18px]">check</span>
-                    ) : (
-                      idx + 1
-                    )}
-                  </span>
-                  <span
-                    className={`font-body-md text-body-md font-bold flex-1 ${
-                      step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
-                    }`}
-                  >
-                    {step.text}
-                  </span>
-                  {!step.done && (
-                    <span className="text-[10px] font-black text-[#ea580c] px-1.5 py-0.5 rounded-full bg-[#ffedd5] border border-[#fed7aa] flex-shrink-0">
-                      +2 XP
-                    </span>
-                  )}
-                </button>
+               <button
+  key={step.id}
+  type="button"
+  onClick={() => toggleMicroStep(activeTask.id, step.id)}
+  className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 text-left transition-all cursor-pointer active:scale-[0.98] overflow-hidden ${
+    step.done
+      ? 'bg-[#f0fdf4] border-[#10b981]/40'
+      : 'bg-[#fff7ed] border-[#fed7aa] hover:border-[#ff6b00]'
+  }`}
+>
+  <span
+    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${
+      step.done
+        ? 'bg-[#10b981] text-white'
+        : 'bg-white text-[#ea580c] border-2 border-[#fed7aa]'
+    }`}
+  >
+    {step.done ? (
+      <span className="material-symbols-outlined text-[18px]">check</span>
+    ) : (
+      idx + 1
+    )}
+  </span>
+  {/* 🆕 min-w-0 permite que el texto se achique; break-words lo parte */}
+  <span
+    className={`font-body-md text-body-md font-bold flex-1 min-w-0 break-words ${
+      step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
+    }`}
+  >
+    {step.text}
+  </span>
+  {!step.done && (
+    <span className="text-[10px] font-black text-[#ea580c] px-1.5 py-0.5 rounded-full bg-[#ffedd5] border border-[#fed7aa] flex-shrink-0">
+      +2 XP
+    </span>
+  )}
+</button>
               ))}
             </div>
 
