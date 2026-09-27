@@ -31,11 +31,6 @@ export const Header = () => {
 
   const dots = useMemo(() => getHeaderDots(progress.total), [progress.total]);
 
-  const openStats = () => {
-    setActiveTab('today');
-    setActiveScreen('stats');
-  };
-
   const openParents = () => {
     setActiveScreen('parents');
   };
@@ -75,7 +70,7 @@ export const Header = () => {
             </div>
           </div>
 
-          {/* XP + Stats + Padres + Avatar */}
+          {/* XP + Padres + Avatar */}
           <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border-2 border-[#fed7aa] shadow-[0_2px_0_0_#fed7aa,0_2px_8px_rgba(255,107,0,0.12)]">
               <span className="text-[15px] leading-none drop-shadow-[0_1px_4px_rgba(245,158,11,0.5)]">⭐</span>
@@ -84,30 +79,15 @@ export const Header = () => {
               </span>
             </div>
 
-            {/* Botón Stats */}
-            <button
-              onClick={openStats}
-              className="flex-shrink-0 focus:outline-none min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer transition-transform active:scale-95"
-              title="Ver mi progreso semanal"
-              type="button"
-            >
-              <span
-                className="material-symbols-outlined text-[#ea580c] text-[22px]"
-                style={{ fontVariationSettings: '"FILL" 1' }}
-              >
-                trending_up
-              </span>
-            </button>
-
             {/* Botón Padres (semi-transparente) */}
             <button
               onClick={openParents}
-              className="flex-shrink-0 focus:outline-none min-w-[32px] min-h-[32px] flex items-center justify-center cursor-pointer transition-all active:scale-95 opacity-30 hover:opacity-100"
+              className="flex-shrink-0 focus:outline-none min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer transition-all active:scale-95 opacity-30 hover:opacity-100"
               title="Sección Padres"
               type="button"
             >
               <span
-                className="material-symbols-outlined text-[#8b5cf6] text-[20px]"
+                className="material-symbols-outlined text-[#8b5cf6] text-[22px]"
                 style={{ fontVariationSettings: '"FILL" 1' }}
               >
                 supervisor_account

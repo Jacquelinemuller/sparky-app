@@ -23,6 +23,11 @@ export const ParentsScreen = ({ onClose }) => {
     else setActiveScreen('none');
   };
 
+  const openStats = () => {
+    try { audioService.playClick(); } catch (e) {}
+    setActiveScreen('stats');
+  };
+
   const handleNew = () => {
     try { audioService.playClick(); } catch (e) {}
     setEditingTip(null);
@@ -96,8 +101,42 @@ export const ParentsScreen = ({ onClose }) => {
         {/* Intro */}
         <div className="mb-4">
           <h1 className="font-headline-lg-mobile text-headline-lg-mobile font-black text-on-surface leading-tight">
-            Tips personalizados
+            Panel de Padres
           </h1>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
+            Seguimiento del progreso y tips personalizados.
+          </p>
+        </div>
+
+        {/* 🆕 Botón Ver Progreso Semanal */}
+        <button
+          type="button"
+          onClick={openStats}
+          className="w-full mb-5 p-4 rounded-2xl bg-white border-2 border-[#c4b5fd] shadow-[0_4px_0_0_#ddd6fe] active:translate-y-0.5 active:shadow-[0_2px_0_0_#ddd6fe] transition-all cursor-pointer flex items-center gap-3"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-[#ede9fe] flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-[#8b5cf6] text-[26px]" style={{ fontVariationSettings: '"FILL" 1' }}>
+              insights
+            </span>
+          </div>
+          <div className="flex flex-col items-start flex-1 min-w-0 text-left">
+            <span className="font-title-md text-title-md font-black text-on-surface">
+              Ver progreso semanal
+            </span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              Tareas, XP ganados y días activos
+            </span>
+          </div>
+          <span className="material-symbols-outlined text-[#8b5cf6] text-[22px] flex-shrink-0">
+            arrow_forward
+          </span>
+        </button>
+
+        {/* Título sección tips */}
+        <div className="mb-3 mt-1">
+          <h2 className="font-title-lg text-title-lg font-black text-on-surface leading-tight">
+            Tips personalizados
+          </h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
             Cargá consejos o desafíos propios que aparecerán cada semana en la sección de tips.
           </p>

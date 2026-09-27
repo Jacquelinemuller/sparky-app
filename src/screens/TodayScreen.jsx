@@ -528,13 +528,13 @@ export const TodayScreen = () => {
     )}
   </span>
   {/* 🆕 min-w-0 permite que el texto se achique; break-words lo parte */}
-  <span
-    className={`font-body-md text-body-md font-bold flex-1 min-w-0 break-words ${
-      step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
-    }`}
-  >
-    {step.text}
-  </span>
+ <span
+  className={`font-body-md text-body-md font-bold flex-1 min-w-0 break-all ${
+    step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
+  }`}
+>
+  {step.text}
+</span>
   {!step.done && (
     <span className="text-[10px] font-black text-[#ea580c] px-1.5 py-0.5 rounded-full bg-[#ffedd5] border border-[#fed7aa] flex-shrink-0">
       +2 XP
