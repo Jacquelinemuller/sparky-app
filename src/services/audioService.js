@@ -28,22 +28,17 @@ class AudioService {
     }
   }
 
-  // Ladrido de Sparky (reproduce /sounds/bark.wav)
   playBark() {
     if (!this.enabled) return;
     try {
-      // Reutilizamos el mismo objeto Audio para no recrearlo cada vez
       if (!this.barkAudio) {
         this.barkAudio = new Audio('/sounds/bark.wav');
         this.barkAudio.preload = 'auto';
       }
-      // Reiniciar la reproducción si ya estaba sonando
       this.barkAudio.currentTime = 0;
       this.barkAudio.volume = 0.8;
       this.barkAudio.play().catch(() => {});
-    } catch (e) {
-      // Si falla, no rompemos
-    }
+    } catch (e) {}
   }
 
   playClick() {
@@ -172,6 +167,54 @@ class AudioService {
     });
   }
 
+  // 🆕 Tono puro a una frecuencia dada (para Simon Dice y otros juegos)
+  playTone(freq = 440, duration = 0.35) {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  // 🆕 Sonido de error (barrido descendente)
+  playError() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+
   startAmbient(type = 'whitenoise') {
     if (!this.enabled) return;
     this.init();
@@ -215,9 +258,7 @@ class AudioService {
       try {
         this.ambientNode.stop();
         this.ambientNode.disconnect();
-      } catch (e) {
-        // ignore if already stopped
-      }
+      } catch (e) {}
       this.ambientNode = null;
     }
   }

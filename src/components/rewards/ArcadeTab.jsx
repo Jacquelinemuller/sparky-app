@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
 import MemoriaGame from './games/MemoriaGame';
+import SimonGame from './games/SimonGame';
 
 const C = {
   card: '#131322',
@@ -35,6 +36,11 @@ export default function ArcadeTab() {
       return;
     }
 
+    if (game.id === 'simon') {
+      setActiveGame('simon');
+      return;
+    }
+
     setFeedback(`¡${game.label} próximamente! 🎮`);
     setTimeout(() => setFeedback(null), 3000);
   };
@@ -46,6 +52,10 @@ export default function ArcadeTab() {
 
   if (activeGame === 'memory') {
     return <MemoriaGame onExit={handleExitGame} />;
+  }
+
+  if (activeGame === 'simon') {
+    return <SimonGame onExit={handleExitGame} />;
   }
 
   const totalUnlocked =
