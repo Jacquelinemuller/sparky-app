@@ -60,23 +60,8 @@ export const TipsScreen = () => {
         </div>
       </header>
 
-      {/* Contenido */}
+      {/* Contenido — sin "Tu tip del día" */}
       <main className="flex-1 flex flex-col relative w-full pt-20 pb-10 px-4 max-w-md mx-auto">
-        <div className="w-full mb-3">
-          <h1
-            className="font-headline-lg-mobile text-headline-lg-mobile font-black leading-tight"
-            style={{ color: '#0f172a' }}
-          >
-            Tu tip del día
-          </h1>
-          <p
-            className="font-body-sm text-body-sm mt-1"
-            style={{ color: '#64748b' }}
-          >
-            Un descubrimiento por día. Sin apuro 🐾
-          </p>
-        </div>
-
         <SparkyCompanion />
       </main>
     </div>

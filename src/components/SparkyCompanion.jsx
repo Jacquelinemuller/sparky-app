@@ -235,10 +235,7 @@ export const SparkyCompanion = () => {
   const renderButtons = () => {
     if (justCompleted) return null;
 
-    // 🆕 En modo interactivo, la burbuja NO muestra ningún botón
-    if (isInteractiveMode) {
-      return null;
-    }
+    if (isInteractiveMode) return null;
 
     if (mode === 'normal') {
       return (
@@ -312,34 +309,8 @@ export const SparkyCompanion = () => {
   return (
     <>
       <div className="w-full p-5 rounded-2xl bg-gradient-to-b from-[#fff7ed] to-[#ffedd5] border-2 border-[#fed7aa] flex flex-col gap-4 shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(255,107,0,0.08)] relative overflow-visible">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2 border-b border-[#fed7aa]/50 pb-2.5">
-          <span className="font-headline-md text-headline-md font-extrabold text-[#ea580c] leading-tight">
-            Sparky
-          </span>
 
-          {mode === 'tip' ? (
-            <button
-              type="button"
-              onClick={handleSwitchToNormal}
-              className="px-2.5 py-1 rounded-full bg-white border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black active:scale-95 transition-all cursor-pointer hover:bg-[#fff7ed]"
-            >
-              🐾 Otro consejo
-            </button>
-          ) : (
-            !isTipCompleted && (
-              <button
-                type="button"
-                onClick={handleSwitchToTip}
-                className="px-2.5 py-1 rounded-full bg-white border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black active:scale-95 transition-all cursor-pointer hover:bg-[#fff7ed]"
-              >
-                📚 Ver tip del día
-              </button>
-            )
-          )}
-        </div>
-
-        {/* Fila: Avatar + Guau + Burbuja */}
+        {/* Fila: Avatar + Guau + Otro consejo + Burbuja */}
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div
@@ -378,6 +349,29 @@ export const SparkyCompanion = () => {
               <span className="material-symbols-outlined text-[16px]">pets</span>
               <span>¡Guau!</span>
             </button>
+
+            {/* 🆕 Botón de cambio tip/normal — debajo de Guau */}
+            {mode === 'tip' ? (
+              <button
+                type="button"
+                onClick={handleSwitchToNormal}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                title="Volver a los consejos normales"
+              >
+                🐾 Otro consejo
+              </button>
+            ) : (
+              !isTipCompleted && (
+                <button
+                  type="button"
+                  onClick={handleSwitchToTip}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                  title="Ver el tip del día"
+                >
+                  📚 Ver tip del día
+                </button>
+              )
+            )}
           </div>
 
           <div className="relative flex-1 min-w-0">
@@ -401,7 +395,7 @@ export const SparkyCompanion = () => {
           </div>
         </div>
 
-        {/* Botones (ocultos en modo interactivo) */}
+        {/* Botones de acción (no en modo interactivo) */}
         {!isInteractiveMode && (
           <div className="flex items-center justify-center gap-2 w-full flex-wrap">
             {renderButtons()}
@@ -409,7 +403,6 @@ export const SparkyCompanion = () => {
         )}
       </div>
 
-      {/* 🆕 CONTENIDO INTERACTIVO — FUERA de la tarjeta de Sparky */}
       {isInteractiveMode && (
         <div className="w-full mt-3">
           <InteractiveTip
