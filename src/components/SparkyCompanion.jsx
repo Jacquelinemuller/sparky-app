@@ -3,6 +3,8 @@ import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
 import { useSparkyTips } from '../hooks/useSparkyTips';
 import SheetViewerModal from './tips/SheetViewerModal';
+import InteractiveTip from './tips/InteractiveTip';
+import { getInteractiveTip } from '../data/interactiveTips';
 import { audioService } from '../services/audioService';
 import sparkyVideo from '../assets/sparky.mp4';
 
@@ -12,6 +14,8 @@ export const SparkyCompanion = () => {
     currentWeekGuide,
     currentDailyTip,
     currentTipKey,
+    activeWeekId,
+    activeDay,
     isTipCompleted,
     completeTipChallenge
   } = useSparkyTips();
@@ -24,6 +28,9 @@ export const SparkyCompanion = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const videoRef = useRef(null);
+
+  const interactiveTip = getInteractiveTip(activeWeekId, activeDay);
+  const isInteractiveMode = !!interactiveTip && mode === 'tip' && tipView === 'tip';
 
   const affectionPhrases = [
     `¡Guau guau! Me alegra que me toques, ${userName}. ¡Vamos que tú puedes con todo!`,
@@ -135,7 +142,20 @@ export const SparkyCompanion = () => {
 
   // ==================== VISTAS ====================
 
-  const renderTipView = () => (
+  const renderSparkyIntroBubble = () => (
+    <div className="flex flex-col gap-2 w-full">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
+          🧠 Sparky te cuenta
+        </span>
+      </div>
+      <p className="font-body-sm text-body-sm text-on-surface font-bold leading-snug break-words">
+        {interactiveTip.sparkyIntro}
+      </p>
+    </div>
+  );
+
+  const renderTipViewLegacy = () => (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
@@ -158,6 +178,11 @@ export const SparkyCompanion = () => {
       </p>
     </div>
   );
+
+  const renderTipView = () => {
+    if (isInteractiveMode) return renderSparkyIntroBubble();
+    return renderTipViewLegacy();
+  };
 
   const renderRetoView = () => (
     <div className="flex flex-col gap-2 w-full">
@@ -208,7 +233,10 @@ export const SparkyCompanion = () => {
   // ==================== BOTONES ====================
 
   const renderButtons = () => {
-    if (justCompleted) {
+    if (justCompleted) return null;
+
+    // 🆕 En modo interactivo, la burbuja NO muestra ningún botón
+    if (isInteractiveMode) {
       return null;
     }
 
@@ -295,7 +323,6 @@ export const SparkyCompanion = () => {
               type="button"
               onClick={handleSwitchToNormal}
               className="px-2.5 py-1 rounded-full bg-white border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black active:scale-95 transition-all cursor-pointer hover:bg-[#fff7ed]"
-              title="Volver a los consejos normales"
             >
               🐾 Otro consejo
             </button>
@@ -305,7 +332,6 @@ export const SparkyCompanion = () => {
                 type="button"
                 onClick={handleSwitchToTip}
                 className="px-2.5 py-1 rounded-full bg-white border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black active:scale-95 transition-all cursor-pointer hover:bg-[#fff7ed]"
-                title="Ver el tip del día"
               >
                 📚 Ver tip del día
               </button>
@@ -313,7 +339,7 @@ export const SparkyCompanion = () => {
           )}
         </div>
 
-        {/* Fila superior: Avatar + Guau + Burbuja */}
+        {/* Fila: Avatar + Guau + Burbuja */}
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div
@@ -375,11 +401,26 @@ export const SparkyCompanion = () => {
           </div>
         </div>
 
-        {/* Botones restantes */}
-        <div className="flex items-center justify-center gap-2 w-full flex-wrap">
-          {renderButtons()}
-        </div>
+        {/* Botones (ocultos en modo interactivo) */}
+        {!isInteractiveMode && (
+          <div className="flex items-center justify-center gap-2 w-full flex-wrap">
+            {renderButtons()}
+          </div>
+        )}
       </div>
+
+      {/* 🆕 CONTENIDO INTERACTIVO — FUERA de la tarjeta de Sparky */}
+      {isInteractiveMode && (
+        <div className="w-full mt-3">
+          <InteractiveTip
+            data={interactiveTip}
+            isCompleted={isTipCompleted}
+            onComplete={handleCompleteTip}
+            hasSheet={hasSheet}
+            onOpenSheet={openSheet}
+          />
+        </div>
+      )}
 
       <SheetViewerModal
         isOpen={isSheetOpen}
