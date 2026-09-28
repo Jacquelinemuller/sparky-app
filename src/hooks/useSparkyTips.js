@@ -23,11 +23,11 @@ export function useSparkyTips() {
     return day === 0 ? 7 : day;
   }, []);
 
- const [activeDay, setActiveDay] = useState(6);
+ const [activeDay, setActiveDay] = useState(1);
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
 
   // Semana activa persistida en el AppContext
-  const effectiveWeekId = activeWeek || getWeekFromDate();
+  const effectiveWeekId = 2
 
   // Guía semanal activa
   const currentWeekGuide = useMemo(() => {

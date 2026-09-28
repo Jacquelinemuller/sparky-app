@@ -128,64 +128,76 @@ export default function InteractiveTip({
   // ============================================
   return (
     <div className="flex flex-col gap-4 w-full">
-
-      {/* TÍTULO */}
-      <div
-        className="w-full rounded-2xl p-4 relative overflow-hidden"
-        style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0'
-        }}
-      >
-        <div className="relative z-10 flex items-center gap-3">
-          <span
-            className="font-black leading-none flex-shrink-0"
-            style={{
-              fontSize: '40px',
-              color: '#ea580c',
-              fontFamily: 'Outfit, sans-serif',
-              letterSpacing: '-0.02em',
-              textShadow: '2px 2px 0 rgba(234, 88, 12, 0.12)',
-              display: 'inline-block',
-              transform: 'scaleX(1.05)',
-              transformOrigin: 'left center'
-            }}
-          >
-            TDAH
-          </span>
-
-          <div className="flex flex-col flex-1 min-w-0">
+      {/* ============================================
+          TÍTULO COMO IMAGEN (si existe)
+          ============================================ */}
+      {data.titleImage ? (
+        <img
+          src={data.titleImage}
+          alt={data.titleAccent || 'Título'}
+          className="w-full h-auto block rounded-2xl"
+          draggable={false}
+        />
+      ) : (
+        <div
+          className="w-full rounded-2xl p-4 relative overflow-hidden"
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0'
+          }}
+        >
+          <div className="relative z-10 flex items-center gap-3">
             <span
-              className="font-black leading-tight"
+              className="font-black leading-none flex-shrink-0"
               style={{
-                fontSize: '17px',
-                color: '#1e3a8a',
-                fontFamily: 'Outfit, sans-serif'
+                fontSize: '40px',
+                color: '#ea580c',
+                fontFamily: 'Outfit, sans-serif',
+                letterSpacing: '-0.02em',
+                textShadow: '2px 2px 0 rgba(234, 88, 12, 0.12)',
+                display: 'inline-block',
+                transform: 'scaleX(1.05)',
+                transformOrigin: 'left center'
               }}
             >
-              {data.titleAccent}
+              TDAH
             </span>
-            <span
-              className="font-medium leading-snug mt-1"
-              style={{ fontSize: '11px', color: '#64748b' }}
+
+            <div className="flex flex-col flex-1 min-w-0">
+              <span
+                className="font-black leading-tight"
+                style={{
+                  fontSize: '17px',
+                  color: '#1e3a8a',
+                  fontFamily: 'Outfit, sans-serif'
+                }}
+              >
+                {data.titleAccent}
+              </span>
+              <span
+                className="font-medium leading-snug mt-1"
+                style={{ fontSize: '11px', color: '#64748b' }}
+              >
+                {data.subtitle}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="w-full mt-3 px-3 py-2 rounded-lg"
+            style={{ background: '#1e3a8a' }}
+          >
+            <p
+              className="font-bold text-center leading-tight"
+              style={{ color: '#f1f5f9', fontSize: '11px' }}
             >
-              {data.subtitle}
-            </span>
+              {data.disclaimer}
+            </p>
           </div>
         </div>
+      )}
 
-        <div
-          className="w-full mt-3 px-3 py-2 rounded-lg"
-          style={{ background: '#1e3a8a' }}
-        >
-          <p
-            className="font-bold text-center leading-tight"
-            style={{ color: '#f1f5f9', fontSize: '11px' }}
-          >
-            {data.disclaimer}
-          </p>
-        </div>
-      </div>
+     
 
       {/* CONTENIDO */}
       {isSingle ? (

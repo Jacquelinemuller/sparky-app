@@ -2,10 +2,12 @@
 // Clave: 'w{semana}-d{día}'
 //
 // layout: 'twoColumns' (default) | 'single' | 'quiz'
+// titleImage: (opcional) ruta a una imagen que reemplaza el título HTML
 
 // ============================================
-// DÍA 1: Agenda visual
+// SEMANA 1
 // ============================================
+
 const DIA_1 = {
   layout: 'twoColumns',
   sparkyIntro:
@@ -23,9 +25,6 @@ const DIA_1 = {
   reward: 15
 };
 
-// ============================================
-// DÍA 2: Carpetas por materia
-// ============================================
 const DIA_2 = {
   layout: 'twoColumns',
   sparkyIntro:
@@ -43,9 +42,6 @@ const DIA_2 = {
   reward: 15
 };
 
-// ============================================
-// DÍA 3: Manejo del tiempo + abrumado
-// ============================================
 const DIA_3 = {
   layout: 'twoColumns',
   sparkyIntro: [
@@ -65,9 +61,6 @@ const DIA_3 = {
   reward: 15
 };
 
-// ============================================
-// DÍA 4: Terminar lo que empieza + frustración
-// ============================================
 const DIA_4 = {
   layout: 'twoColumns',
   sparkyIntro: [
@@ -87,9 +80,6 @@ const DIA_4 = {
   reward: 15
 };
 
-// ============================================
-// DÍA 5: Single column — estrategia + cierre semanal
-// ============================================
 const DIA_5 = {
   layout: 'single',
   sparkyIntro: [
@@ -112,16 +102,6 @@ const DIA_5 = {
   reward: 15
 };
 
-// ============================================
-// DÍA 6: Autoevaluación — Mi espejo de la semana
-// ============================================
-
-// ============================================
-// REGISTRO DE TIPS INTERACTIVOS
-// ============================================
-// ============================================
-// DÍA 6: Autoevaluación — Mi espejo de la semana
-// ============================================
 const DIA_6 = {
   layout: 'quiz',
   sparkyIntro: [
@@ -150,13 +130,39 @@ const DIA_6 = {
   reward: 15
 };
 
+// ============================================
+// SEMANA 2: TDAH y procrastinación
+// ============================================
+
+const W2_DIA_1 = {
+  layout: 'twoColumns',
+  titleImage: '/tips/w2/titulosem2.png',
+  sparkyIntro:
+    'No es flojera: es dificultad para iniciar. Tu cerebro busca recompensa inmediata y las tareas grandes no la dan. Con estrategias, sí se puede empezar.',
+  titleAccent: 'y procrastinación',
+  subtitle: 'Por qué postergo y cómo empezar.',
+  disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
+  pairs: [
+    {
+      id: 'p1',
+      problemImage: '/tips/w2/sem2d1pro.png',
+      solutionImage: '/tips/w2/sem2d1sol.png'
+    }
+  ],
+  reward: 15
+};
+
+// ============================================
+// REGISTRO
+// ============================================
 export const INTERACTIVE_TIPS = {
   'w1-d1': DIA_1,
   'w1-d2': DIA_2,
   'w1-d3': DIA_3,
   'w1-d4': DIA_4,
   'w1-d5': DIA_5,
-  'w1-d6': DIA_6
+  'w1-d6': DIA_6,
+  'w2-d1': W2_DIA_1
 };
 
 export function getInteractiveTip(weekId, day) {
