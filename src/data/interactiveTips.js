@@ -138,7 +138,7 @@ const W2_DIA_1 = {
   layout: 'twoColumns',
   titleImage: '/tips/w2/titulosem2.png',
   sparkyIntro:
-    'No es flojera: es dificultad para iniciar. Tu cerebro busca recompensa inmediata y las tareas grandes no la dan. Con estrategias, sí se puede empezar.',
+    'El TDAH puede hacer que iniciar tareas sea difícil porque el cerebro busca estimulación inmediata. Entenderlo es el primer paso, actuar es el cambio.',
   titleAccent: 'y procrastinación',
   subtitle: 'Por qué postergo y cómo empezar.',
   disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
@@ -151,7 +151,6 @@ const W2_DIA_1 = {
   ],
   reward: 15
 };
-
 // ============================================
 // REGISTRO
 // ============================================
