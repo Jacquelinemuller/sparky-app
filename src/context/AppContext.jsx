@@ -509,6 +509,19 @@ export const AppProvider = ({ children }) => {
       return { ...prev, completedTips: [...prev.completedTips, tipKey] };
     });
   }, [recordActivity]);
+    const saveQuizAnswers = useCallback((key, payload) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      quizAnswers: {
+        ...(prev.quizAnswers || {}),
+        [key]: {
+          ...payload,
+          completedAt: Date.now()
+        }
+      }
+    }));
+  }, [recordActivity]);
 
   const addCustomTip = useCallback((tip) => {
     recordActivity();
@@ -765,6 +778,8 @@ export const AppProvider = ({ children }) => {
         setActiveWeek,
         addCompletedTip,
         customTips: state.customTips,
+            quizAnswers: state.quizAnswers || {},
+        saveQuizAnswers,
         addCustomTip,
         updateCustomTip,
         deleteCustomTip,

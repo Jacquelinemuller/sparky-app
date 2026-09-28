@@ -27,10 +27,24 @@ export const SparkyCompanion = () => {
   const [tipView, setTipView] = useState('tip');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
+  const [introIndex, setIntroIndex] = useState(0);
   const videoRef = useRef(null);
 
   const interactiveTip = getInteractiveTip(activeWeekId, activeDay);
   const isInteractiveMode = !!interactiveTip && mode === 'tip' && tipView === 'tip';
+
+  const rawIntro = interactiveTip?.sparkyIntro;
+  const introMessages = Array.isArray(rawIntro)
+    ? rawIntro
+    : rawIntro
+    ? [rawIntro]
+    : [];
+  const introCount = introMessages.length;
+
+  // Resetear índice cuando cambia el día
+  useEffect(() => {
+    setIntroIndex(0);
+  }, [activeWeekId, activeDay]);
 
   const affectionPhrases = [
     `¡Guau guau! Me alegra que me toques, ${userName}. ¡Vamos que tú puedes con todo!`,
@@ -93,8 +107,16 @@ export const SparkyCompanion = () => {
     }
   };
 
-  const handleSwitchToNormal = () => {
+  // Botón "Otro consejo": si hay varios mensajes en el día, alterna.
+  // Si hay solo uno, va a modo normal (comportamiento anterior).
+  const handleOtroConsejo = () => {
     try { audioService.playClick(); } catch (e) {}
+
+    if (isInteractiveMode && introCount > 1) {
+      setIntroIndex((prev) => (prev + 1) % introCount);
+      return;
+    }
+
     setMode('normal');
   };
 
@@ -103,6 +125,7 @@ export const SparkyCompanion = () => {
     setMode('tip');
     setTipView('tip');
     setJustCompleted(false);
+    setIntroIndex(0);
   };
 
   const handleShowReto = () => {
@@ -142,18 +165,42 @@ export const SparkyCompanion = () => {
 
   // ==================== VISTAS ====================
 
-  const renderSparkyIntroBubble = () => (
-    <div className="flex flex-col gap-2 w-full">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
-          🧠 Sparky te cuenta
-        </span>
+  const renderSparkyIntroBubble = () => {
+    const currentMessage = introMessages[introIndex] || '';
+    const hasMultiple = introCount > 1;
+
+    return (
+      <div className="flex flex-col gap-2 w-full">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
+            🧠 Sparky te cuenta
+          </span>
+        </div>
+        <p
+          key={introIndex}
+          className="font-body-sm text-body-sm text-on-surface font-bold leading-snug break-words animate-[fadeIn_0.4s_ease-out]"
+        >
+          {currentMessage}
+        </p>
+
+        {hasMultiple && (
+          <div className="flex items-center gap-1.5 mt-1">
+            {introMessages.map((_, i) => (
+              <span
+                key={i}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: introIndex === i ? '16px' : '5px',
+                  height: '5px',
+                  backgroundColor: introIndex === i ? '#ea580c' : '#fed7aa'
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      <p className="font-body-sm text-body-sm text-on-surface font-bold leading-snug break-words">
-        {interactiveTip.sparkyIntro}
-      </p>
-    </div>
-  );
+    );
+  };
 
   const renderTipViewLegacy = () => (
     <div className="flex flex-col gap-2 w-full">
@@ -230,11 +277,8 @@ export const SparkyCompanion = () => {
     return renderTipView();
   };
 
-  // ==================== BOTONES ====================
-
   const renderButtons = () => {
     if (justCompleted) return null;
-
     if (isInteractiveMode) return null;
 
     if (mode === 'normal') {
@@ -310,7 +354,6 @@ export const SparkyCompanion = () => {
     <>
       <div className="w-full p-5 rounded-2xl bg-gradient-to-b from-[#fff7ed] to-[#ffedd5] border-2 border-[#fed7aa] flex flex-col gap-4 shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(255,107,0,0.08)] relative overflow-visible">
 
-        {/* Fila: Avatar + Guau + Otro consejo + Burbuja */}
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div
@@ -350,13 +393,11 @@ export const SparkyCompanion = () => {
               <span>¡Guau!</span>
             </button>
 
-            {/* 🆕 Botón de cambio tip/normal — debajo de Guau */}
             {mode === 'tip' ? (
               <button
                 type="button"
-                onClick={handleSwitchToNormal}
+                onClick={handleOtroConsejo}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                title="Volver a los consejos normales"
               >
                 🐾 Otro consejo
               </button>
@@ -366,7 +407,6 @@ export const SparkyCompanion = () => {
                   type="button"
                   onClick={handleSwitchToTip}
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                  title="Ver el tip del día"
                 >
                   📚 Ver tip del día
                 </button>
@@ -395,7 +435,6 @@ export const SparkyCompanion = () => {
           </div>
         </div>
 
-        {/* Botones de acción (no en modo interactivo) */}
         {!isInteractiveMode && (
           <div className="flex items-center justify-center gap-2 w-full flex-wrap">
             {renderButtons()}

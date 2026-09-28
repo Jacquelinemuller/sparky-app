@@ -23,7 +23,7 @@ export function useSparkyTips() {
     return day === 0 ? 7 : day;
   }, []);
 
-  const [activeDay, setActiveDay] = useState(currentDayOfWeek);
+ const [activeDay, setActiveDay] = useState(6);
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
 
   // Semana activa persistida en el AppContext
