@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import QuizTip from './QuizTip';
+import ChallengeTip from './ChallengeTip';
 
 export default function InteractiveTip({
   data,
@@ -9,12 +11,14 @@ export default function InteractiveTip({
   hasSheet,
   onOpenSheet
 }) {
+  const { activeChallenges } = useApp();
   const [revealed, setRevealed] = useState({});
 
   const pairs = data?.pairs || [];
   const layout = data?.layout || 'twoColumns';
   const isSingle = layout === 'single';
   const isQuiz = layout === 'quiz';
+  const isChallenge = layout === 'challenge';
 
   const revealedCount = pairs.filter((p) => revealed[p.id]).length;
   const allRevealed = revealedCount === pairs.length;
@@ -32,68 +36,127 @@ export default function InteractiveTip({
   };
 
   // ============================================
-  // MODO QUIZ — derivamos a QuizTip
+  // TÍTULO (HTML o Imagen)
+  // ============================================
+  const renderTitle = () => {
+    if (data.titleImage) {
+      return (
+        <img
+          src={data.titleImage}
+          alt={data.titleAccent || 'Título'}
+          className="w-full h-auto block rounded-2xl"
+          draggable={false}
+        />
+      );
+    }
+    return (
+      <div
+        className="w-full rounded-2xl p-4 relative overflow-hidden"
+        style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0'
+        }}
+      >
+        <div className="relative z-10 flex items-center gap-3">
+          <span
+            className="font-black leading-none flex-shrink-0"
+            style={{
+              fontSize: '40px',
+              color: '#ea580c',
+              fontFamily: 'Outfit, sans-serif',
+              letterSpacing: '-0.02em',
+              textShadow: '2px 2px 0 rgba(234, 88, 12, 0.12)',
+              display: 'inline-block',
+              transform: 'scaleX(1.05)',
+              transformOrigin: 'left center'
+            }}
+          >
+            TDAH
+          </span>
+
+          <div className="flex flex-col flex-1 min-w-0">
+            <span
+              className="font-black leading-tight"
+              style={{
+                fontSize: '17px',
+                color: '#1e3a8a',
+                fontFamily: 'Outfit, sans-serif'
+              }}
+            >
+              {data.titleAccent}
+            </span>
+            <span
+              className="font-medium leading-snug mt-1"
+              style={{ fontSize: '11px', color: '#64748b' }}
+            >
+              {data.subtitle}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="w-full mt-3 px-3 py-2 rounded-lg"
+          style={{ background: '#1e3a8a' }}
+        >
+          <p
+            className="font-bold text-center leading-tight"
+            style={{ color: '#f1f5f9', fontSize: '11px' }}
+          >
+            {data.disclaimer}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // ============================================
+  // BANNER DEL RETO (arriba del contenido, si aplica)
+  // ============================================
+  const renderChallengeBanner = () => {
+    if (isChallenge) return null;
+    if (!activeChallenges || activeChallenges.length === 0) return null;
+
+    const pending = activeChallenges.find(
+      (c) => c.status === 'pending' || c.status === 'accepted'
+    );
+    if (!pending) return null;
+
+    return (
+      <ChallengeTip
+        data={{ challenge: pending }}
+        variant="banner"
+        onComplete={() => {}}
+      />
+    );
+  };
+
+  // ============================================
+  // MODO CHALLENGE (reto semanal)
+  // ============================================
+  if (isChallenge) {
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        {renderTitle()}
+
+        <ChallengeTip
+          data={data}
+          isCompleted={isCompleted}
+          onComplete={onComplete}
+          onGoToNotes={() => {
+            if (onOpenSheet) onOpenSheet();
+          }}
+        />
+      </div>
+    );
+  }
+
+  // ============================================
+  // MODO QUIZ
   // ============================================
   if (isQuiz) {
     return (
       <div className="flex flex-col gap-4 w-full">
-        {/* Título */}
-        <div
-          className="w-full rounded-2xl p-4 relative overflow-hidden"
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0'
-          }}
-        >
-          <div className="relative z-10 flex items-center gap-3">
-            <span
-              className="font-black leading-none flex-shrink-0"
-              style={{
-                fontSize: '40px',
-                color: '#ea580c',
-                fontFamily: 'Outfit, sans-serif',
-                letterSpacing: '-0.02em',
-                textShadow: '2px 2px 0 rgba(234, 88, 12, 0.12)',
-                display: 'inline-block',
-                transform: 'scaleX(1.05)',
-                transformOrigin: 'left center'
-              }}
-            >
-              TDAH
-            </span>
-
-            <div className="flex flex-col flex-1 min-w-0">
-              <span
-                className="font-black leading-tight"
-                style={{
-                  fontSize: '17px',
-                  color: '#1e3a8a',
-                  fontFamily: 'Outfit, sans-serif'
-                }}
-              >
-                {data.titleAccent}
-              </span>
-              <span
-                className="font-medium leading-snug mt-1"
-                style={{ fontSize: '11px', color: '#64748b' }}
-              >
-                {data.subtitle}
-              </span>
-            </div>
-          </div>
-
-          <div
-            className="w-full mt-3 px-3 py-2 rounded-lg"
-            style={{ background: '#1e3a8a' }}
-          >
-            <p
-              className="font-bold text-center leading-tight"
-              style={{ color: '#f1f5f9', fontSize: '11px' }}
-            >
-              {data.disclaimer}
-            </p>
-          </div>
-        </div>
+        {renderTitle()}
 
         <QuizTip
           data={data}
@@ -101,7 +164,6 @@ export default function InteractiveTip({
           onComplete={onComplete}
         />
 
-        {/* Botón ver lámina completa */}
         {isCompleted && hasSheet && (
           <button
             type="button"
@@ -128,76 +190,12 @@ export default function InteractiveTip({
   // ============================================
   return (
     <div className="flex flex-col gap-4 w-full">
-      {/* ============================================
-          TÍTULO COMO IMAGEN (si existe)
-          ============================================ */}
-      {data.titleImage ? (
-        <img
-          src={data.titleImage}
-          alt={data.titleAccent || 'Título'}
-          className="w-full h-auto block rounded-2xl"
-          draggable={false}
-        />
-      ) : (
-        <div
-          className="w-full rounded-2xl p-4 relative overflow-hidden"
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0'
-          }}
-        >
-          <div className="relative z-10 flex items-center gap-3">
-            <span
-              className="font-black leading-none flex-shrink-0"
-              style={{
-                fontSize: '40px',
-                color: '#ea580c',
-                fontFamily: 'Outfit, sans-serif',
-                letterSpacing: '-0.02em',
-                textShadow: '2px 2px 0 rgba(234, 88, 12, 0.12)',
-                display: 'inline-block',
-                transform: 'scaleX(1.05)',
-                transformOrigin: 'left center'
-              }}
-            >
-              TDAH
-            </span>
 
-            <div className="flex flex-col flex-1 min-w-0">
-              <span
-                className="font-black leading-tight"
-                style={{
-                  fontSize: '17px',
-                  color: '#1e3a8a',
-                  fontFamily: 'Outfit, sans-serif'
-                }}
-              >
-                {data.titleAccent}
-              </span>
-              <span
-                className="font-medium leading-snug mt-1"
-                style={{ fontSize: '11px', color: '#64748b' }}
-              >
-                {data.subtitle}
-              </span>
-            </div>
-          </div>
+      {/* BANNER DEL RETO (arriba del título) */}
+      {renderChallengeBanner()}
 
-          <div
-            className="w-full mt-3 px-3 py-2 rounded-lg"
-            style={{ background: '#1e3a8a' }}
-          >
-            <p
-              className="font-bold text-center leading-tight"
-              style={{ color: '#f1f5f9', fontSize: '11px' }}
-            >
-              {data.disclaimer}
-            </p>
-          </div>
-        </div>
-      )}
-
-     
+      {/* TÍTULO */}
+      {renderTitle()}
 
       {/* CONTENIDO */}
       {isSingle ? (
@@ -250,7 +248,8 @@ export default function InteractiveTip({
           })}
         </div>
       ) : (
-        <div className="w-full flex" style={{ gap: 0 }}>
+        // ============ 2 COLUMNAS ============
+        <div className="w-full flex" style={{ gap: '6px' }}>
           <div className="flex flex-col" style={{ width: '50%' }}>
             {pairs.map((pair) => (
               <button
@@ -265,10 +264,16 @@ export default function InteractiveTip({
                   opacity: revealed[pair.id] ? 0.75 : 1
                 }}
               >
-                <img src={pair.problemImage} alt="" className="w-full h-auto block" draggable={false} />
+                <img
+                  src={pair.problemImage}
+                  alt=""
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
               </button>
             ))}
           </div>
+
           <div className="flex flex-col" style={{ width: '50%' }}>
             {pairs.map((pair) => {
               const isRevealed = revealed[pair.id];
@@ -290,7 +295,9 @@ export default function InteractiveTip({
                         aspectRatio: '1 / 1'
                       }}
                     >
-                      <span className="text-2xl" style={{ color: '#cbd5e1' }}>?</span>
+                      <span className="text-2xl" style={{ color: '#cbd5e1' }}>
+                        ?
+                      </span>
                     </div>
                   )}
                 </div>

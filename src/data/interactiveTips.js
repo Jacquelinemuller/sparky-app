@@ -129,6 +129,28 @@ const DIA_6 = {
   },
   reward: 15
 };
+// ============================================
+// DÍA 7 SEMANA 1: El reto de la semana
+// ============================================
+const DIA_7 = {
+  layout: 'challenge',
+  sparkyIntro: [
+    'Recorriste toda la semana. Ya sabés cosas sobre tu cerebro que muchos adultos no saben.',
+    'Ahora toca lo más importante: probar. Un reto chiquito para los próximos 7 días.'
+  ],
+  titleAccent: 'y organización escolar',
+  subtitle: 'El reto de la semana.',
+  disclaimer: 'No es una tarea. Es un experimento.',
+  challenge: {
+    id: 'ch-organizacion-escolar',
+    title: '3 cosas del día',
+    description: 'Antes de dormir, escribí las 3 cosas importantes para mañana.',
+    icon: '📝',
+    why: 'Porque escribir en papel lo que va a pasar mañana libera espacio en tu cabeza y te ayuda a arrancar el día más ordenado.',
+    durationDays: 7
+  },
+  reward: 15
+};
 
 // ============================================
 // SEMANA 2: TDAH y procrastinación
@@ -151,6 +173,47 @@ const W2_DIA_1 = {
   ],
   reward: 15
 };
+
+const W2_DIA_2 = {
+  layout: 'twoColumns',
+  titleImage: '/tips/w2/titulosem2.png',
+  sparkyIntro: [
+    'Las distracciones no ganan porque seas débil. Ganan porque tu cerebro busca dopamina rápida, y el celular la da más rápido que la tarea.',
+    'Cuando postergás y después te sentís culpable, no estás fallando: estás en un círculo. No empiezo → me siento mal → más cuesta empezar. Se rompe con pausas cortas y avisos amables.'
+  ],
+  titleAccent: 'y procrastinación',
+  subtitle: 'Por qué postergo y cómo empezar.',
+  disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
+  pairs: [
+    {
+      id: 'p1',
+      problemImage: '/tips/w2/sem2d2pro.png',
+      solutionImage: '/tips/w2/sem2d2sol.png'
+    }
+  ],
+  reward: 15
+};
+
+const W2_DIA_3 = {
+  layout: 'twoColumns',
+  titleImage: '/tips/w2/titulosem2.png',
+  sparkyIntro: [
+    'Terminar algo a medias no significa que no te importe. Significa que se hizo muy grande o muy perfecto en tu cabeza. A veces "hecho" vale más que "perfecto".',
+    'Cuando algo no tiene que ver con lo que te gusta, cuesta el doble. Conectar la tarea con algo que sí te mueve, aunque sea un poquito, cambia todo.'
+  ],
+  titleAccent: 'y procrastinación',
+  subtitle: 'Por qué postergo y cómo empezar.',
+  disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
+  pairs: [
+    {
+      id: 'p1',
+      problemImage: '/tips/w2/sem2d3pro.png',
+      solutionImage: '/tips/w2/sem2d3sol.png'
+    }
+  ],
+  reward: 15
+};
+
 // ============================================
 // REGISTRO
 // ============================================
@@ -161,7 +224,10 @@ export const INTERACTIVE_TIPS = {
   'w1-d4': DIA_4,
   'w1-d5': DIA_5,
   'w1-d6': DIA_6,
-  'w2-d1': W2_DIA_1
+  'w1-d7': DIA_7,
+  'w2-d1': W2_DIA_1,
+  'w2-d2': W2_DIA_2,
+  'w2-d3': W2_DIA_3
 };
 
 export function getInteractiveTip(weekId, day) {

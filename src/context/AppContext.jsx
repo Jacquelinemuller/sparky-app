@@ -509,6 +509,64 @@ export const AppProvider = ({ children }) => {
       return { ...prev, completedTips: [...prev.completedTips, tipKey] };
     });
   }, [recordActivity]);
+    const acceptChallenge = useCallback((challengeId) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      activeChallenges: (prev.activeChallenges || []).map((c) =>
+        c.id === challengeId ? { ...c, status: 'accepted' } : c
+      )
+    }));
+  }, [recordActivity]);
+  const setChallengeCheckIn = useCallback((challengeId, dateKey, value) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      activeChallenges: (prev.activeChallenges || []).map((c) =>
+        c.id === challengeId
+          ? {
+              ...c,
+              checkIns: {
+                ...(c.checkIns || {}),
+                [dateKey]: value
+              }
+            }
+          : c
+      )
+    }));
+  }, [recordActivity]);
+
+    const startChallenge = useCallback((challengeData) => {
+    recordActivity();
+    setState((prev) => {
+      const existing = (prev.activeChallenges || []).find(
+        (c) => c.id === challengeData.id
+      );
+      if (existing) return prev;
+
+      const todayKey = (() => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      })();
+
+      return {
+        ...prev,
+        activeChallenges: [
+          ...(prev.activeChallenges || []),
+          {
+            ...challengeData,
+            startDate: todayKey,
+            checkIns: {},
+              status: 'pending'
+          }
+        ]
+      };
+    });
+  }, [recordActivity]);
+
     const saveQuizAnswers = useCallback((key, payload) => {
     recordActivity();
     setState((prev) => ({
@@ -778,8 +836,11 @@ export const AppProvider = ({ children }) => {
         setActiveWeek,
         addCompletedTip,
         customTips: state.customTips,
-            quizAnswers: state.quizAnswers || {},
+        quizAnswers: state.quizAnswers || {},
         saveQuizAnswers,
+        activeChallenges: state.activeChallenges || [],
+        startChallenge,
+        acceptChallenge,
         addCustomTip,
         updateCustomTip,
         deleteCustomTip,
