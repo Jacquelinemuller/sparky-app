@@ -19,7 +19,7 @@ export default function InteractiveTip({
   const isSingle = layout === 'single';
   const isQuiz = layout === 'quiz';
   const isChallenge = layout === 'challenge';
-
+  const isChallengeClose = layout === 'challengeClose';
   const revealedCount = pairs.filter((p) => revealed[p.id]).length;
   const allRevealed = revealedCount === pairs.length;
 
@@ -108,27 +108,116 @@ export default function InteractiveTip({
       </div>
     );
   };
+  // ============================================
+  // TARJETA "PLAN DE ACCIÓN" (para solutionType: 'card')
+  // ============================================
+  const renderPlanCard = () => {
+    const steps = data.planSteps || [];
+    return (
+      <div
+        className="w-full rounded-2xl p-5 relative overflow-hidden animate-[fadeIn_0.4s_ease-out]"
+        style={{
+          background: 'linear-gradient(180deg, #fffbf5 0%, #fff7ed 100%)',
+          border: '2px solid #fed7aa',
+          boxShadow: '0 6px 0 0 #fed7aa, 0 10px 20px rgba(234, 88, 12, 0.08)'
+        }}
+      >
+        <span
+          className="absolute -top-1 left-1/2 w-16 h-4 rounded-sm opacity-70"
+          style={{ background: '#fbbf24', transform: 'translateX(-50%) rotate(-2deg)' }}
+        />
+
+        <h3
+          className="text-center font-black mb-1 mt-3"
+          style={{
+            fontSize: '22px',
+            color: '#1e293b',
+            fontFamily: 'Outfit, sans-serif',
+            letterSpacing: '0.02em'
+          }}
+        >
+          PLAN DE ACCIÓN
+        </h3>
+
+        <div className="w-full h-0.5 mb-4" style={{ background: '#ea580c', opacity: 0.5 }} />
+
+        <div className="flex flex-col gap-3">
+          {steps.map((step) => (
+            <div key={step.num} className="flex items-center gap-3">
+              <span
+                className="font-black flex-shrink-0"
+                style={{ fontSize: '16px', color: '#ea580c', width: '22px' }}
+              >
+                {step.num}.
+              </span>
+              <span className="text-xl flex-shrink-0">{step.emoji}</span>
+              <div className="flex flex-col min-w-0">
+                <span
+                  className="font-black uppercase tracking-wider"
+                  style={{ fontSize: '14px', color: '#0f172a' }}
+                >
+                  {step.label}
+                </span>
+                <span
+                  className="font-medium leading-snug"
+                  style={{ fontSize: '12px', color: '#64748b' }}
+                >
+                  {step.hint}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-center mt-4">
+          <span className="text-3xl">⭐</span>
+        </div>
+      </div>
+    );
+  };
 
   // ============================================
   // BANNER DEL RETO (arriba del contenido, si aplica)
   // ============================================
   const renderChallengeBanner = () => {
-    if (isChallenge) return null;
+    if (isChallenge || isChallengeClose) return null;
     if (!activeChallenges || activeChallenges.length === 0) return null;
 
-    const pending = activeChallenges.find(
+    const active = activeChallenges.filter(
       (c) => c.status === 'pending' || c.status === 'accepted'
     );
-    if (!pending) return null;
+    if (active.length === 0) return null;
 
     return (
-      <ChallengeTip
-        data={{ challenge: pending }}
-        variant="banner"
-        onComplete={() => {}}
-      />
+      <div className="flex flex-col gap-2">
+        {active.map((challenge) => (
+          <ChallengeTip
+            key={challenge.id}
+            data={{ challenge }}
+            variant="banner"
+            onComplete={() => {}}
+          />
+        ))}
+      </div>
     );
   };
+    // ============================================
+  // MODO CHALLENGE CLOSE (cierre + nuevo reto)
+  // ============================================
+  if (isChallengeClose) {
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        {renderTitle()}
+
+        <ChallengeTip
+          data={data}
+          variant="close"
+          onComplete={onComplete}
+        />
+      </div>
+    );
+  }
+
 
   // ============================================
   // MODO CHALLENGE (reto semanal)
@@ -235,6 +324,8 @@ export default function InteractiveTip({
                       </span>
                     </div>
                   </button>
+                                ) : data.solutionType === 'card' ? (
+                  renderPlanCard()
                 ) : (
                   <img
                     src={pair.solutionImage}
@@ -242,6 +333,7 @@ export default function InteractiveTip({
                     className="w-full h-auto block rounded-2xl animate-[fadeIn_0.4s_ease-out]"
                     draggable={false}
                   />
+                
                 )}
               </div>
             );

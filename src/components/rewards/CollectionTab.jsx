@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { ACCESSORIES_CATALOG } from '../../services/storageService';
+import { GAMES_CATALOG } from '../../services/gamesCatalog';
 
 // ============================================
-// CATÁLOGOS (mismos que ShopTab)
-// TODO: unificar en un solo archivo compartido
+// CATÁLOGO DE SONIDOS
 // ============================================
 const SOUNDS_CATALOG = [
   { id: 'rain',       label: 'Lluvia',           icon: '🌧️', unlock: { type: 'free' } },
@@ -13,13 +13,6 @@ const SOUNDS_CATALOG = [
   { id: 'forest',     label: 'Bosque',           icon: '🌲', unlock: { type: 'xp', cost: 90 } },
   { id: 'cafe',       label: 'Cafetería',        icon: '☕', unlock: { type: 'xp', cost: 120 } },
   { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'xp', cost: 180 } }
-];
-
-const GAMES_CATALOG = [
-  { id: 'memory',      label: 'Memoria',      icon: '🧠', unlock: { type: 'xp', cost: 100 } },
-  { id: 'minesweeper', label: 'Buscaminas',   icon: '💣', unlock: { type: 'xp', cost: 150 } },
-  { id: 'sudoku',      label: 'Sudoku',       icon: '🔢', unlock: { type: 'xp', cost: 200 } },
-  { id: 'chess',       label: 'Ajedrez',      icon: '♟️', unlock: { type: 'xp', cost: 250 } }
 ];
 
 // ============================================
@@ -58,9 +51,6 @@ export default function CollectionTab() {
     setSubTab(id);
   };
 
-  // ============================================
-  // FILTRAR CATÁLOGOS (sin logros)
-  // ============================================
   const accessoriesFiltered = ACCESSORIES_CATALOG.filter(
     (a) => a.unlock.type !== 'achievement'
   );
@@ -73,15 +63,14 @@ export default function CollectionTab() {
   const unlockedCount =
     accessoriesFiltered.filter((a) => unlockedAccessories?.includes(a.id)).length +
     SOUNDS_CATALOG.filter((s) => unlockedSounds?.includes(s.id)).length +
-    GAMES_CATALOG.filter((g) => unlockedGames?.includes(g.id)).length;
+    GAMES_CATALOG.filter(
+      (g) => g.unlock.type === 'free' || unlockedGames?.includes(g.id)
+    ).length;
 
   const progressPercent = totalItems > 0
     ? Math.round((unlockedCount / totalItems) * 100)
     : 0;
 
-  // ============================================
-  // RENDER CARD
-  // ============================================
   const renderItemCard = (item, isUnlocked) => {
     const cost = item.unlock.cost || 0;
     const isFree = item.unlock.type === 'free';
@@ -100,7 +89,6 @@ export default function CollectionTab() {
           opacity: isUnlocked ? 1 : 0.55
         }}
       >
-        {/* Ícono */}
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-2 relative"
           style={{
@@ -116,7 +104,6 @@ export default function CollectionTab() {
           )}
         </div>
 
-        {/* Nombre */}
         <span
           className="text-[11px] font-black text-center leading-tight mb-2 min-h-[26px]"
           style={{ color: isUnlocked ? C.text : C.textMuted }}
@@ -124,7 +111,6 @@ export default function CollectionTab() {
           {item.label}
         </span>
 
-        {/* Estado */}
         {isUnlocked ? (
           <span
             className="w-full py-2 rounded-xl text-[10px] font-black text-center"
@@ -159,9 +145,6 @@ export default function CollectionTab() {
     );
   };
 
-  // ============================================
-  // RENDER
-  // ============================================
   return (
     <div className="w-full flex flex-col gap-3">
 
@@ -251,7 +234,10 @@ export default function CollectionTab() {
       {subTab === 'games' && (
         <div className="grid grid-cols-3 gap-2.5">
           {GAMES_CATALOG.map((item) =>
-            renderItemCard(item, unlockedGames?.includes(item.id))
+            renderItemCard(
+              item,
+              item.unlock.type === 'free' || unlockedGames?.includes(item.id)
+            )
           )}
         </div>
       )}

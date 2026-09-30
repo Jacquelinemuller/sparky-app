@@ -42,7 +42,7 @@ export default function ViewSwitcher({ current }) {
             <span className="material-symbols-outlined text-[18px]">
               {view.icon}
             </span>
-            <span className="hidden xs:inline">{view.label}</span>
+            <span>{view.label}</span>
           </button>
         );
       })}

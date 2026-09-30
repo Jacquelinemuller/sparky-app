@@ -32,19 +32,21 @@ export const NotesScreen = () => {
 
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
+    const isRecordingRef = useRef(false);
   const [supported] = useState(() => !!SpeechRecognition);
 
   // Cleanup al desmontar
-  useEffect(() => {
+   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch (e) {}
+        try { recognitionRef.current.abort(); } catch (e) {}
+        recognitionRef.current = null;
       }
       clearInterval(timerRef.current);
+      isRecordingRef.current = false;
     };
   }, []);
-
-  const startRecording = () => {
+   const startRecording = () => {
     if (!supported) {
       setErrorMsg('Tu navegador no soporta grabación por voz. Usá la opción "Escribir" 📝');
       setShowManualInput(true);
@@ -63,19 +65,19 @@ export const NotesScreen = () => {
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
-      let finalText = '';
-
+      // ✅ FIX 1: Reconstruir el texto desde event.results, sin acumular
       recognition.onresult = (event) => {
+        let final = '';
         let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
-            finalText += result[0].transcript + ' ';
-            setFinalTranscript(finalText.trim());
+            final += result[0].transcript + ' ';
           } else {
             interim += result[0].transcript;
           }
         }
+        setFinalTranscript(final.trim());
         setLiveTranscript(interim);
       };
 
@@ -90,15 +92,16 @@ export const NotesScreen = () => {
         stopRecording();
       };
 
+      // ✅ FIX 2: Usar ref, no state, para no tener closure stale
       recognition.onend = () => {
-        if (isRecording) {
-          // Si se detuvo inesperadamente, intentar mantener vivo si seguimos grabando
+        if (isRecordingRef.current) {
           try { recognition.start(); } catch (e) {}
         }
       };
 
       recognition.start();
       recognitionRef.current = recognition;
+      isRecordingRef.current = true;
       setIsRecording(true);
 
       timerRef.current = setInterval(() => {
@@ -113,16 +116,17 @@ export const NotesScreen = () => {
 
   const stopRecording = () => {
     clearInterval(timerRef.current);
+    isRecordingRef.current = false;
     setIsRecording(false);
 
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (e) {}
+      try { recognitionRef.current.abort(); } catch (e) {}
       recognitionRef.current = null;
     }
 
     try { audioService.playClick(); } catch (e) {}
   };
-
   const cancelRecording = () => {
     stopRecording();
     setLiveTranscript('');

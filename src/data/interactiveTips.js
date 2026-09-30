@@ -213,6 +213,100 @@ const W2_DIA_3 = {
   ],
   reward: 15
 };
+const W2_DIA_4 = {
+  layout: 'single',
+  titleImage: '/tips/w2/titulosem2.png',
+  sparkyIntro: [
+    'Estas 6 estrategias no son para hacerlas todas. Son para elegir UNA. La que más te guste. Y probarla mañana. Solo una.',
+    'Empezar hoy es más fácil de lo que parece. No es una frase linda: es que tu cerebro necesita arrancar, no terminar todo junto.'
+  ],
+  titleAccent: 'y procrastinación',
+  subtitle: 'Por qué postergo y cómo empezar.',
+  disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
+  pairs: [
+    {
+      id: 'p1',
+      problemImage: '/tips/w2/sem2d4pro.png',
+      solutionImage: '/tips/w2/sem2d4sol.png'
+    }
+  ],
+  reward: 15
+};
+const W2_DIA_5 = {
+  layout: 'single',
+  solutionType: 'card',
+  titleImage: '/tips/w2/titulosem2.png',
+  sparkyIntro: [
+    'Empezar es lo más difícil. Una vez que arrancás, el resto fluye solo. No pienses en toda la tarea: pensá en el primer paso.',
+    'Elegí, dividí, empezá, descansá, seguí. No es una fórmula mágica: es solo el orden que calma al cerebro.'
+  ],
+  titleAccent: 'y procrastinación',
+  subtitle: 'Por qué postergo y cómo empezar.',
+  disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
+  pairs: [
+    {
+      id: 'p1',
+      problemImage: '/tips/w2/sem2d5.png'
+    }
+  ],
+  planSteps: [
+    { num: 1, emoji: '🎯', label: 'Elegir',    hint: 'Una tarea. No todas.' },
+    { num: 2, emoji: '✂️', label: 'Dividir',   hint: 'En pasos chiquitos.' },
+    { num: 3, emoji: '▶️', label: 'Empezar',   hint: 'Solo 5 minutos.' },
+    { num: 4, emoji: '☕', label: 'Descansar', hint: 'Cuando lo necesites.' },
+    { num: 5, emoji: '🔁', label: 'Seguir',    hint: 'Y volver a empezar.' }
+  ],
+  reward: 15
+};
+const W2_DIA_6 = {
+  layout: 'quiz',
+  titleImage: '/tips/w2/titulosem2.png',
+  sparkyIntro: [
+    'Otra vez, momento de mirarte por dentro. No hay respuestas correctas, solo sinceras.',
+    'Al final te voy a dar un mensaje pensado para vos.'
+  ],
+  titleAccent: 'mi espejo de la semana',
+  subtitle: 'Un momento para mirar lo que me pasa.',
+  disclaimer: 'No hay respuestas correctas ni incorrectas. Solo las tuyas.',
+  quiz: {
+    key: 'w2-d6',
+    questions: [
+      { id: 'q1', text: '¿Sentís que la tarea se hace gigante antes de empezar?' },
+      { id: 'q2', text: '¿Te pasa que el celular o la tele ganan siempre?' },
+      { id: 'q3', text: '¿Postergás y después te sentís culpable por eso?' },
+      { id: 'q4', text: '¿Empezás algo y lo dejás a medias cuando se pone difícil?' },
+      { id: 'q5', text: '¿Te cuesta conectar la tarea con algo que te interesa?' },
+      { id: 'q6', text: '¿Sentís que "empezar" es lo más difícil de todo?' }
+    ],
+    options: [
+      { id: 'siempre',    label: 'Siempre',    color: '#ea580c' },
+      { id: 'aVeces',     label: 'A veces',    color: '#facc15' },
+      { id: 'casiNunca',  label: 'Casi nunca', color: '#94a3b8' }
+    ]
+  },
+  reward: 15
+};
+const W2_DIA_7 = {
+  layout: 'challengeClose',
+  titleImage: '/tips/w2/titulosem2.png',
+  closingChallengeId: 'ch-organizacion-escolar',
+  newChallenge: {
+    id: 'ch-procrastinacion-5min',
+    title: 'Empezar por 5 minutos',
+    description: 'Cuando no querés empezar algo, comprometete a hacerlo solo 5 minutos. Si después querés seguir, seguís. Si no, ya está.',
+    icon: '⏱️',
+    why: 'Porque arrancar es lo más difícil. Una vez que el cerebro entra en modo tarea, seguir es mucho más fácil. Y 5 minutos no asustan a nadie.',
+    durationDays: 7
+  },
+  sparkyIntro: [
+    'Terminaste la Semana 2. Vamos a ver cómo te fue con el reto.',
+    'Y te tengo uno nuevo. Uno que hace magia cuando el cerebro se niega a arrancar.'
+  ],
+  titleAccent: 'y procrastinación',
+  subtitle: 'El cierre de la semana.',
+  disclaimer: 'No es una tarea. Es un experimento.',
+  reward: 15
+};
 
 // ============================================
 // REGISTRO
@@ -227,7 +321,11 @@ export const INTERACTIVE_TIPS = {
   'w1-d7': DIA_7,
   'w2-d1': W2_DIA_1,
   'w2-d2': W2_DIA_2,
-  'w2-d3': W2_DIA_3
+  'w2-d3': W2_DIA_3,
+    'w2-d4': W2_DIA_4,
+    'w2-d5': W2_DIA_5,
+    'w2-d6': W2_DIA_6,
+  'w2-d7': W2_DIA_7
 };
 
 export function getInteractiveTip(weekId, day) {

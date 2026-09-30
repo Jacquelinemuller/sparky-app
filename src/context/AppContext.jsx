@@ -517,7 +517,20 @@ export const AppProvider = ({ children }) => {
         c.id === challengeId ? { ...c, status: 'accepted' } : c
       )
     }));
+    
   }, [recordActivity]);
+    const completeChallenge = useCallback((challengeId) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      activeChallenges: (prev.activeChallenges || []).map((c) =>
+        c.id === challengeId
+          ? { ...c, status: 'completed', completedAt: Date.now() }
+          : c
+      )
+    }));
+  }, [recordActivity]);
+
   const setChallengeCheckIn = useCallback((challengeId, dateKey, value) => {
     recordActivity();
     setState((prev) => ({
@@ -580,6 +593,74 @@ export const AppProvider = ({ children }) => {
       }
     }));
   }, [recordActivity]);
+    // ==========================================
+  // CHECKLISTS (rutinas paso a paso)
+  // ==========================================
+  const addChecklist = useCallback((data) => {
+    recordActivity();
+    try { audioService.playPop(); } catch (e) {}
+    const newList = {
+      id: 'cl_' + Date.now(),
+      title: data.title || 'Nueva rutina',
+      emoji: data.emoji || '📋',
+      steps: data.steps || []
+    };
+    setState((prev) => ({
+      ...prev,
+      checklists: [...(prev.checklists || []), newList]
+    }));
+    return newList;
+  }, [recordActivity]);
+
+  const updateChecklist = useCallback((listId, updates) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      checklists: (prev.checklists || []).map((c) =>
+        c.id === listId ? { ...c, ...updates } : c
+      )
+    }));
+  }, [recordActivity]);
+
+  const deleteChecklist = useCallback((listId) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      checklists: (prev.checklists || []).filter((c) => c.id !== listId)
+    }));
+  }, [recordActivity]);
+
+  const toggleChecklistStep = useCallback((listId, stepId) => {
+    recordActivity();
+    try { audioService.playPop(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      checklists: (prev.checklists || []).map((c) => {
+        if (c.id !== listId) return c;
+        return {
+          ...c,
+          steps: (c.steps || []).map((s) =>
+            s.id === stepId ? { ...s, done: !s.done } : s
+          )
+        };
+      })
+    }));
+  }, [recordActivity]);
+
+  const resetChecklist = useCallback((listId) => {
+    recordActivity();
+    try { audioService.playSuccess(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      checklists: (prev.checklists || []).map((c) =>
+        c.id === listId
+          ? { ...c, steps: (c.steps || []).map((s) => ({ ...s, done: false })) }
+          : c
+      )
+    }));
+  }, [recordActivity]);
+
 
   const addCustomTip = useCallback((tip) => {
     recordActivity();
@@ -839,8 +920,16 @@ export const AppProvider = ({ children }) => {
         quizAnswers: state.quizAnswers || {},
         saveQuizAnswers,
         activeChallenges: state.activeChallenges || [],
+            checklists: state.checklists || [],
+    addChecklist,
+    updateChecklist,
+    deleteChecklist,
+    toggleChecklistStep,
+    resetChecklist,
         startChallenge,
         acceptChallenge,
+        setChallengeCheckIn,
+        completeChallenge,
         addCustomTip,
         updateCustomTip,
         deleteCustomTip,

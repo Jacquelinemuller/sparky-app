@@ -5,15 +5,21 @@ export const BottomNav = () => {
   const { activeTab, setActiveTab, setActiveScreen } = useApp();
 
   const navItems = [
-    { id: 'today',    label: 'Inicio',   icon: 'home',           fill: true },
-    { id: 'missions', label: 'Misiones', icon: 'task_alt',       fill: false },
-    { id: 'schedule', label: 'Agenda',   icon: 'calendar_month', fill: false },
-    { id: 'rewards',  label: 'Premios',  icon: 'trophy',         fill: false },
+    { id: 'today',      label: 'Inicio',   icon: 'home',           fill: true  },
+    { id: 'missions',   label: 'Misiones', icon: 'task_alt',       fill: false },
+    { id: 'schedule',   label: 'Agenda',   icon: 'calendar_month', fill: false },
+    { id: 'checklists', label: 'Check',    icon: 'checklist',      fill: false, isScreen: true },
+    { id: 'rewards',    label: 'Premios',  icon: 'trophy',         fill: false },
   ];
 
-  const handleNavClick = (id) => {
+  const handleNavClick = (item) => {
+    if (item.isScreen) {
+      // Es una pantalla independiente (con su propio header), no un tab
+      setActiveScreen(item.id);
+      return;
+    }
     setActiveScreen('none');
-    setActiveTab(id);
+    setActiveTab(item.id);
   };
 
   return (
@@ -27,12 +33,12 @@ export const BottomNav = () => {
     >
       <div className="flex items-center justify-around h-14 px-space-xs max-w-lg mx-auto">
         {navItems.map((item) => {
-          const isActive = activeTab === item.id;
+          const isActive = !item.isScreen && activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 min-w-[60px] min-h-[48px] px-2 py-0.5 rounded-2xl transition-transform active:scale-95 cursor-pointer ${
+              onClick={() => handleNavClick(item)}
+              className={`flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[48px] px-1.5 py-0.5 rounded-2xl transition-transform active:scale-95 cursor-pointer ${
                 isActive
                   ? 'text-[#ea580c] font-black'
                   : 'text-on-surface-variant hover:text-on-surface'

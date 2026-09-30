@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -15,6 +15,7 @@ import { ParentsScreen } from './screens/ParentsScreen';
 import { MonthlyCalendarScreen } from './screens/MonthlyCalendarScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { TipsScreen } from './screens/TipsScreen';
+import { ChecklistsScreen } from './screens/ChecklistsScreen';
 
 const BACKGROUNDS = {
   today: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)',
@@ -27,12 +28,20 @@ export function AppContent() {
   const { activeTab, activeScreen, setActiveScreen, celebration, closeCelebration } = useApp();
   const [parentsUnlocked, setParentsUnlocked] = useState(false);
 
+  // Re-bloquear Padres al salir de esa pantalla
+  useEffect(() => {
+    if (activeScreen !== 'parents' && parentsUnlocked) {
+      setParentsUnlocked(false);
+    }
+  }, [activeScreen, parentsUnlocked]);
+
   // Pantallas internas
   if (activeScreen === 'pomodoro') return <PomodoroScreen />;
   if (activeScreen === 'stats') return <StatsScreen />;
   if (activeScreen === 'monthly') return <MonthlyCalendarScreen />;
   if (activeScreen === 'profile') return <ProfileScreen />;
   if (activeScreen === 'tips') return <TipsScreen />;
+  if (activeScreen === 'checklists') return <ChecklistsScreen />;
 
   if (activeScreen === 'parents') {
     if (!parentsUnlocked) {

@@ -34,10 +34,10 @@ export default function ChallengeTip({
   const [isOpen, setIsOpen] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
 
-  const challenge = data.challenge;
-  const activeChallenge = (activeChallenges || []).find(
-    (c) => c.id === challenge.id
-  );
+  const challenge = data?.challenge;
+  const activeChallenge = challenge
+    ? (activeChallenges || []).find((c) => c.id === challenge.id)
+    : null;
   const isPending = activeChallenge?.status === 'pending';
   const isAccepted = activeChallenge?.status === 'accepted';
 
@@ -47,7 +47,7 @@ export default function ChallengeTip({
 
   // Auto-crear el reto como pendiente cuando se ve en modo full
   useEffect(() => {
-    if (variant === 'full' && !activeChallenge) {
+    if (variant === 'full' && !activeChallenge && challenge) {
       startChallenge({
         id: challenge.id,
         title: challenge.title,
@@ -63,7 +63,7 @@ export default function ChallengeTip({
     try { audioService.playSuccess(); } catch (e) {}
     if (isPending) {
       acceptChallenge(challenge.id);
-    } else {
+    } else if (challenge) {
       startChallenge({
         id: challenge.id,
         title: challenge.title,
@@ -94,10 +94,267 @@ export default function ChallengeTip({
     : 0;
 
   // ============================================
-  // VARIANTE "BANNER" (S2, arriba del tip)
+  // VARIANTE "CLOSE" (Día 7 S2: resumen del reto anterior + nuevo reto)
+  // ============================================
+  if (variant === 'close') {
+    const closingId = data.closingChallengeId;
+    const newCh = data.newChallenge;
+
+    const closingChallenge = (activeChallenges || []).find(
+      (c) => c.id === closingId
+    );
+
+    const done = closingChallenge
+      ? Object.values(closingChallenge.checkIns || {}).filter(
+          (v) => v === 'si' || v === 'masOMenos'
+        ).length
+      : 0;
+
+    const duration = closingChallenge?.durationDays || 7;
+
+    let closeMessage;
+    if (done >= 5) {
+      closeMessage = '¡Lo hiciste un montón! Esto ya empieza a ser tuyo. No es suerte: es constancia. 💪';
+    } else if (done >= 3) {
+      closeMessage = 'Probaste. Eso ya es más de lo que hace la mayoría. Y lo mejor: ya sabés que podés.';
+    } else if (done >= 1) {
+      closeMessage = 'Probaste al menos una vez. Eso no es poco. La próxima vas por más.';
+    } else {
+      closeMessage = 'No importa cuántas veces. Importa que la seguís teniendo presente. Se puede reintentar.';
+    }
+
+    const alreadyAccepted = (activeChallenges || []).some(
+      (c) => c.id === newCh.id
+    );
+
+    const handleAcceptNew = () => {
+      try { audioService.playSuccess(); } catch (e) {}
+
+      // Si el reto nuevo ya existe, solo lo aceptamos
+      if (alreadyAccepted) {
+        if (onComplete) onComplete();
+        return;
+      }
+
+      // Crear el reto nuevo como pendiente primero
+      startChallenge({
+        id: newCh.id,
+        title: newCh.title,
+        description: newCh.description,
+        icon: newCh.icon,
+        why: newCh.why,
+        durationDays: newCh.durationDays
+      });
+
+      // Y aceptarlo al toque
+      setTimeout(() => {
+        acceptChallenge(newCh.id);
+        if (onComplete) onComplete();
+      }, 100);
+    };
+
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        {/* Encabezado */}
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🎯</span>
+          <span
+            className="font-black uppercase tracking-wider"
+            style={{ color: '#ea580c', fontSize: '11px' }}
+          >
+            Cierre de la semana
+          </span>
+        </div>
+
+        {/* Resumen del reto 1 */}
+        <div
+          className="w-full rounded-2xl p-5 flex flex-col gap-4"
+          style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}
+            >
+              <span className="text-3xl">{closingChallenge?.icon || '📝'}</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span
+                className="font-black uppercase tracking-wider"
+                style={{ color: '#64748b', fontSize: '10px' }}
+              >
+                Tu primer reto
+              </span>
+              <span
+                className="font-black leading-tight"
+                style={{ color: '#0f172a', fontSize: '17px' }}
+              >
+                {closingChallenge?.title || '3 cosas del día'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: duration }).map((_, i) => (
+              <span
+                key={i}
+                className="flex-1 h-2 rounded-full"
+                style={{ background: i < done ? '#10b981' : '#e2e8f0' }}
+              />
+            ))}
+          </div>
+
+          <div className="text-center">
+            <span
+              className="font-black"
+              style={{ color: '#ea580c', fontSize: '24px' }}
+            >
+              {done}/{duration}
+            </span>
+            <p
+              className="font-bold mt-1"
+              style={{ color: '#64748b', fontSize: '11px' }}
+            >
+              días completados
+            </p>
+          </div>
+
+          <div
+            className="w-full p-3 rounded-xl"
+            style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
+          >
+            <p
+              className="font-medium leading-snug text-center"
+              style={{ color: '#065f46', fontSize: '13px' }}
+            >
+              {closeMessage}
+            </p>
+          </div>
+
+          {done >= 3 && (
+            <div
+              className="w-full p-3 rounded-xl flex items-center gap-2 justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                border: '1.5px solid #fbbf24'
+              }}
+            >
+              <span className="text-2xl">🎟️</span>
+              <span
+                className="font-black"
+                style={{ color: '#78350f', fontSize: '12px' }}
+              >
+                ¡Ganaste 1 día de juego libre!
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Nuevo reto propuesto */}
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-lg">✨</span>
+          <span
+            className="font-black uppercase tracking-wider"
+            style={{ color: '#10b981', fontSize: '11px' }}
+          >
+            Tu nuevo reto
+          </span>
+        </div>
+
+        <div
+          className="w-full rounded-2xl p-5 flex flex-col gap-4"
+          style={{
+            background: '#ffffff',
+            border: '2px solid #10b981',
+            boxShadow: '0 3px 0 0 rgba(16, 185, 129, 0.3)'
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
+            >
+              <span className="text-3xl">{newCh.icon}</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span
+                className="font-black leading-tight"
+                style={{ color: '#0f172a', fontSize: '19px' }}
+              >
+                {newCh.title}
+              </span>
+              <span
+                className="font-medium leading-snug mt-0.5"
+                style={{ color: '#64748b', fontSize: '11px' }}
+              >
+                Dura {newCh.durationDays} días · 1 vez por día
+              </span>
+            </div>
+          </div>
+
+          <p
+            className="font-bold leading-snug"
+            style={{ color: '#1e293b', fontSize: '14px' }}
+          >
+            {newCh.description}
+          </p>
+
+          <div
+            className="w-full p-3 rounded-xl"
+            style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+          >
+            <span
+              className="font-black uppercase tracking-wider block mb-1"
+              style={{ color: '#475569', fontSize: '10px' }}
+            >
+              🧠 ¿Por qué este reto?
+            </span>
+            <p
+              className="font-medium leading-snug"
+              style={{ color: '#334155', fontSize: '12px' }}
+            >
+              {newCh.why}
+            </p>
+          </div>
+
+          {alreadyAccepted ? (
+            <span
+              className="w-full py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2"
+              style={{
+                background: '#d1fae5',
+                color: '#065f46',
+                border: '1.5px solid #10b981'
+              }}
+            >
+              <span>✅</span>
+              <span>¡Ya está en curso!</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAcceptNew}
+              className="w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                color: '#fff',
+                boxShadow: '0 3px 0 0 #047857'
+              }}
+            >
+              <span>✅</span>
+              <span>Acepto el nuevo reto</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // VARIANTE "BANNER" (S2+, arriba del tip)
   // ============================================
   if (variant === 'banner') {
-    // Si está ACEPTADO → tarjeta con progreso + check-in diario
+    if (!challenge) return null;
+
     if (isAccepted) {
       return (
         <div
@@ -107,7 +364,6 @@ export default function ChallengeTip({
             border: '1.5px solid rgba(16, 185, 129, 0.4)'
           }}
         >
-          {/* Cabecera con progreso */}
           <div className="p-3 flex items-center gap-3">
             <span className="text-2xl flex-shrink-0">🎯</span>
             <div className="flex flex-col flex-1 min-w-0">
@@ -132,23 +388,18 @@ export default function ChallengeTip({
             </span>
           </div>
 
-          {/* Barra de progreso */}
           <div className="flex items-center gap-1 px-3 pb-2">
             {Array.from({ length: challenge.durationDays }).map((_, i) => (
               <span
                 key={i}
                 className="flex-1 h-1.5 rounded-full"
-                style={{
-                  background: i < completedDays ? '#10b981' : '#d1fae5'
-                }}
+                style={{ background: i < completedDays ? '#10b981' : '#d1fae5' }}
               />
             ))}
           </div>
 
-          {/* Check-in de hoy */}
           <div className="px-3 pb-3">
             {hasCheckedToday ? (
-              // Ya marcó hoy → mostrar el resultado
               (() => {
                 const opt = CHECK_IN_OPTIONS.find((o) => o.id === todayCheckIn);
                 return (
@@ -170,7 +421,6 @@ export default function ChallengeTip({
                 );
               })()
             ) : !showCheckIn ? (
-              // No marcó → botón para abrir check-in
               <button
                 type="button"
                 onClick={() => {
@@ -188,7 +438,6 @@ export default function ChallengeTip({
                 <span>¿Cómo te fue hoy?</span>
               </button>
             ) : (
-              // Mostrar 3 opciones de check-in
               <div className="flex flex-col gap-1.5 animate-[fadeIn_0.2s_ease-out]">
                 {CHECK_IN_OPTIONS.map((opt) => (
                   <button
@@ -213,10 +462,8 @@ export default function ChallengeTip({
       );
     }
 
-    // Si NO está pendiente, no mostrar nada
     if (!isPending) return null;
 
-    // Pendiente: colapsado o desplegado
     return (
       <div
         className="w-full rounded-2xl overflow-hidden"
@@ -348,6 +595,8 @@ export default function ChallengeTip({
   // ============================================
   // VARIANTE "FULL" (Día 7 S1)
   // ============================================
+  if (!challenge) return null;
+
   if (isAccepted) {
     return (
       <div className="flex flex-col gap-4 w-full">
@@ -442,7 +691,6 @@ export default function ChallengeTip({
     );
   }
 
-  // Pendiente en modo full → mostrar contenido completo
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center gap-2">
