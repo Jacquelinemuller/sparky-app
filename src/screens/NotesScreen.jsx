@@ -46,13 +46,18 @@ export const NotesScreen = () => {
       isRecordingRef.current = false;
     };
   }, []);
-   const startRecording = () => {
-    if (!supported) {
-      setErrorMsg('Tu navegador no soporta grabación por voz. Usá la opción "Escribir" 📝');
-      setShowManualInput(true);
-      return;
+     const stopRecording = () => {
+    clearInterval(timerRef.current);
+    isRecordingRef.current = false;
+    setIsRecording(false);
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
+      recognitionRef.current = null;
     }
 
+    try { audioService.playClick(); } catch (e) {}
+  };
     setErrorMsg('');
     setLiveTranscript('');
     setFinalTranscript('');
