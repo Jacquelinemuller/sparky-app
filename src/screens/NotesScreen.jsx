@@ -20,8 +20,7 @@ export const NotesScreen = () => {
   const { notes, addNote, updateNote, deleteNote, convertNoteToTask, setActiveTab } = useApp();
 
   const [isRecording, setIsRecording] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState('');
-  const [finalTranscript, setFinalTranscript] = useState('');
+  const [recordedText, setRecordedText] = useState(''); // Texto final, se llena al terminar
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [selectedColor, setSelectedColor] = useState('yellow');
   const [errorMsg, setErrorMsg] = useState('');
@@ -33,12 +32,11 @@ export const NotesScreen = () => {
   const timerRef = useRef(null);
   const isRecordingRef = useRef(false);
 
-  // ✅ NUEVO: array de fragmentos únicos. Cada frase se guarda UNA sola vez.
-  const fragmentsRef = useRef([]);
+  // ✅ Acumulador invisible: Set de fragmentos únicos
+  const fragmentsRef = useRef(new Set());
 
   const [supported] = useState(() => !!SpeechRecognition);
 
-  // Cleanup al desmontar
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -50,9 +48,6 @@ export const NotesScreen = () => {
     };
   }, []);
 
-  // ==========================================
-  // GRABACIÓN DE VOZ
-  // ==========================================
   const startRecording = () => {
     if (!supported) {
       setErrorMsg('Tu navegador no soporta grabación por voz. Usá la opción "Escribir" 📝');
@@ -61,10 +56,9 @@ export const NotesScreen = () => {
     }
 
     setErrorMsg('');
-    setLiveTranscript('');
-    setFinalTranscript('');
+    setRecordedText('');
     setRecordingSeconds(0);
-    fragmentsRef.current = [];
+    fragmentsRef.current = new Set();
 
     try {
       const recognition = new SpeechRecognition();
@@ -73,25 +67,16 @@ export const NotesScreen = () => {
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
-      // ✅ FIX DEFINITIVO: guardar fragmentos únicos en un array.
-      // Si el motor reenvía el mismo texto, lo ignora.
+      // ✅ Solo tomamos el ÚLTIMO resultado final. No acumulamos visualmente.
       recognition.onresult = (event) => {
-        let interim = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            const text = result[0].transcript.trim();
-            if (text && !fragmentsRef.current.includes(text)) {
-              fragmentsRef.current.push(text);
-            }
-          } else {
-            interim += result[0].transcript;
+        // Solo el último resultado (event.results.length - 1)
+        const last = event.results[event.results.length - 1];
+        if (last && last.isFinal) {
+          const text = last[0].transcript.trim();
+          if (text) {
+            fragmentsRef.current.add(text);
           }
         }
-
-        setFinalTranscript(fragmentsRef.current.join(' '));
-        setLiveTranscript(interim);
       };
 
       recognition.onerror = (e) => {
@@ -100,16 +85,16 @@ export const NotesScreen = () => {
           isRecordingRef.current = false;
           setIsRecording(false);
         } else if (e.error === 'no-speech') {
-          // silencio, no es error grave
+          // silencio
+        } else if (e.error === 'aborted') {
+          // abortado
         } else {
-          setErrorMsg('Hubo un problema con la grabación');
+          // ignorar otros errores silenciosamente
         }
       };
 
       recognition.onend = () => {
-        if (isRecordingRef.current) {
-          try { recognition.start(); } catch (e) {}
-        }
+        // Sin restart automático
       };
 
       recognition.start();
@@ -137,19 +122,29 @@ export const NotesScreen = () => {
       recognitionRef.current = null;
     }
 
+    // ✅ Acá recién construimos el texto final
+    const finalText = Array.from(fragmentsRef.current).join(' ').trim();
+    setRecordedText(finalText);
+
     try { audioService.playClick(); } catch (e) {}
   };
 
   const cancelRecording = () => {
-    stopRecording();
-    setLiveTranscript('');
-    setFinalTranscript('');
+    clearInterval(timerRef.current);
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    setRecordedText('');
     setRecordingSeconds(0);
-    fragmentsRef.current = [];
+    fragmentsRef.current = new Set();
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
+      recognitionRef.current = null;
+    }
   };
 
   const saveRecording = () => {
-    const text = (fragmentsRef.current.join(' ') + ' ' + liveTranscript).trim();
+    const text = recordedText.trim();
     if (!text) {
       setErrorMsg('No se escuchó nada. Probá de nuevo 🎤');
       return;
@@ -161,10 +156,9 @@ export const NotesScreen = () => {
       isVoice: true
     });
 
-    setLiveTranscript('');
-    setFinalTranscript('');
+    setRecordedText('');
     setRecordingSeconds(0);
-    fragmentsRef.current = [];
+    fragmentsRef.current = new Set();
     setErrorMsg('');
   };
 
@@ -181,14 +175,6 @@ export const NotesScreen = () => {
     setManualText('');
     setShowManualInput(false);
     setSelectedColor('yellow');
-  };
-
-  // ✅ NUEVO: Botón para limpiar manualmente el texto si algo se duplicó
-  const handleClearTranscript = () => {
-    try { audioService.playClick(); } catch (e) {}
-    fragmentsRef.current = [];
-    setFinalTranscript('');
-    setLiveTranscript('');
   };
 
   const handleConvert = (noteId) => {
@@ -208,8 +194,6 @@ export const NotesScreen = () => {
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto select-none pb-8 px-2 pt-4">
-
-      {/* Header */}
       <div className="w-full flex items-center justify-between mb-4">
         <div className="flex flex-col">
           <h1 className="font-headline-lg font-black text-on-surface leading-tight">
@@ -221,9 +205,9 @@ export const NotesScreen = () => {
         </div>
       </div>
 
-      {/* Card de grabación de voz */}
       <div className="w-full bg-white rounded-3xl p-5 shadow-[0_5px_0_0_#fed7aa] border-2 border-[#fed7aa] mb-4">
-        {!isRecording && !finalTranscript && !liveTranscript && (
+        {/* ESTADO 1: Reposo */}
+        {!isRecording && !recordedText && (
           <>
             <div className="flex flex-col items-center">
               <button
@@ -253,7 +237,6 @@ export const NotesScreen = () => {
               </div>
             )}
 
-            {/* Selector de color */}
             <div className="w-full mt-4 pt-3 border-t border-[#fed7aa]/50">
               <p className="font-label-sm text-[11px] font-black text-on-surface-variant uppercase tracking-wider mb-2 text-center">
                 Color de la nota
@@ -289,7 +272,6 @@ export const NotesScreen = () => {
               </div>
             </div>
 
-            {/* Alternativa: escribir manualmente */}
             <button
               type="button"
               onClick={() => setShowManualInput(true)}
@@ -301,7 +283,7 @@ export const NotesScreen = () => {
           </>
         )}
 
-        {/* Grabando */}
+        {/* ESTADO 2: Grabando (sin mostrar transcripción) */}
         {isRecording && (
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -320,29 +302,33 @@ export const NotesScreen = () => {
               Estoy escuchando... 🎧
             </p>
 
-            {/* Transcripción en vivo */}
-            <div className="w-full mt-4 p-3 rounded-2xl bg-[#fff7ed] border border-dashed border-[#ff6b00] min-h-[60px] max-h-[140px] overflow-y-auto">
-              <p className="font-body-sm text-body-sm text-on-surface leading-snug">
-                {finalTranscript}{' '}
-                <span className="text-on-surface-variant italic">{liveTranscript}</span>
-                {!finalTranscript && !liveTranscript && (
-                  <span className="text-on-surface-variant/50 italic">Tu voz aparecerá aquí...</span>
-                )}
-              </p>
+            <div className="w-full mt-4 p-4 rounded-2xl bg-[#fff7ed] border border-dashed border-[#ff6b00] flex items-center justify-center gap-1.5">
+              <span
+                className="w-2 h-6 rounded-full bg-[#ff6b00]"
+                style={{ animation: 'soundWave 0.9s ease-in-out infinite' }}
+              />
+              <span
+                className="w-2 h-8 rounded-full bg-[#ff6b00]"
+                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.15s' }}
+              />
+              <span
+                className="w-2 h-4 rounded-full bg-[#ff6b00]"
+                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.3s' }}
+              />
+              <span
+                className="w-2 h-7 rounded-full bg-[#ff6b00]"
+                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.45s' }}
+              />
+              <span
+                className="w-2 h-5 rounded-full bg-[#ff6b00]"
+                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.6s' }}
+              />
             </div>
 
-            {/* Botón para limpiar transcripción */}
-            {(finalTranscript || liveTranscript) && (
-              <button
-                type="button"
-                onClick={handleClearTranscript}
-                className="mt-2 text-[11px] font-black uppercase tracking-wider text-[#ea580c] underline cursor-pointer"
-              >
-                🔄 Limpiar texto
-              </button>
-            )}
+            <p className="font-label-sm text-[11px] text-on-surface-variant text-center mt-2">
+              Hablá tranquilo. Al terminar vas a ver lo que dijiste.
+            </p>
 
-            {/* Botones de acción mientras graba */}
             <div className="flex items-center gap-2 mt-4 w-full">
               <button
                 type="button"
@@ -363,8 +349,8 @@ export const NotesScreen = () => {
           </div>
         )}
 
-        {/* Terminó de grabar, listo para guardar */}
-        {!isRecording && (finalTranscript || liveTranscript) && (
+        {/* ESTADO 3: Terminó, se muestra el texto */}
+        {!isRecording && recordedText && (
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-[#10b981] text-[22px]">check_circle</span>
@@ -375,11 +361,10 @@ export const NotesScreen = () => {
 
             <div className="w-full p-3 rounded-2xl bg-[#fff7ed] border border-[#fed7aa] mb-3">
               <p className="font-body-md text-body-md text-on-surface font-semibold leading-snug">
-                {(finalTranscript + ' ' + liveTranscript).trim()}
+                {recordedText}
               </p>
             </div>
 
-            {/* Selector de color rápido */}
             <div className="flex items-center justify-center gap-2.5 mb-3">
               {COLOR_OPTIONS.map((c) => {
                 const isSelected = selectedColor === c.id;
@@ -570,6 +555,13 @@ export const NotesScreen = () => {
           );
         })}
       </div>
+
+      <style>{`
+        @keyframes soundWave {
+          0%, 100% { transform: scaleY(0.5); }
+          50% { transform: scaleY(1.2); }
+        }
+      `}</style>
     </div>
   );
 };
