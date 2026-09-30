@@ -11,7 +11,6 @@ const COLOR_OPTIONS = [
 
 const COLOR_MAP = Object.fromEntries(COLOR_OPTIONS.map((c) => [c.id, c]));
 
-// Soporte de Speech Recognition
 const SpeechRecognition =
   typeof window !== 'undefined'
     ? window.SpeechRecognition || window.webkitSpeechRecognition
@@ -32,11 +31,12 @@ export const NotesScreen = () => {
 
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
-    const isRecordingRef = useRef(false);
+  const isRecordingRef = useRef(false);
+  const lastFinalRef = useRef('');
   const [supported] = useState(() => !!SpeechRecognition);
 
   // Cleanup al desmontar
-   useEffect(() => {
+  useEffect(() => {
     return () => {
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch (e) {}
@@ -46,61 +46,77 @@ export const NotesScreen = () => {
       isRecordingRef.current = false;
     };
   }, []);
-     const stopRecording = () => {
-    clearInterval(timerRef.current);
-    isRecordingRef.current = false;
-    setIsRecording(false);
 
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) {}
-      recognitionRef.current = null;
+  // ==========================================
+  // GRABACIÓN DE VOZ
+  // ==========================================
+  const startRecording = () => {
+    if (!supported) {
+      setErrorMsg('Tu navegador no soporta grabación por voz. Usá la opción "Escribir" 📝');
+      setShowManualInput(true);
+      return;
     }
 
-    try { audioService.playClick(); } catch (e) {}
-  };
     setErrorMsg('');
     setLiveTranscript('');
     setFinalTranscript('');
     setRecordingSeconds(0);
+    lastFinalRef.current = '';
 
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = 'es-AR';
-      recognition.continuous = true;
+      recognition.continuous = false;      // ✅ Más estable en móvil
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
-      // ✅ FIX 1: Reconstruir el texto desde event.results, sin acumular
       recognition.onresult = (event) => {
-        let final = '';
         let interim = '';
-        for (let i = 0; i < event.results.length; i++) {
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
-            final += result[0].transcript + ' ';
+            const text = result[0].transcript.trim();
+
+            // ✅ Ignorar si es el mismo texto que el anterior
+            if (text && text !== lastFinalRef.current) {
+              lastFinalRef.current = text;
+
+              setFinalTranscript((prev) => {
+                const clean = prev.trim();
+                // ✅ No duplicar si ya termina con ese texto
+                if (clean.endsWith(text)) return clean;
+                return clean ? clean + ' ' + text : text;
+              });
+            }
           } else {
             interim += result[0].transcript;
           }
         }
-        setFinalTranscript(final.trim());
+
         setLiveTranscript(interim);
       };
 
       recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
           setErrorMsg('Necesitamos permiso para usar el micrófono 🎤');
+          isRecordingRef.current = false;
+          setIsRecording(false);
         } else if (e.error === 'no-speech') {
           // silencio, no es error grave
         } else {
           setErrorMsg('Hubo un problema con la grabación');
         }
-        stopRecording();
       };
 
-      // ✅ FIX 2: Usar ref, no state, para no tener closure stale
       recognition.onend = () => {
         if (isRecordingRef.current) {
-          try { recognition.start(); } catch (e) {}
+          // ✅ Delay antes de reiniciar (evita duplicados del motor)
+          setTimeout(() => {
+            if (isRecordingRef.current && recognitionRef.current === recognition) {
+              try { recognition.start(); } catch (e) {}
+            }
+          }, 350);
         }
       };
 
@@ -123,15 +139,16 @@ export const NotesScreen = () => {
     clearInterval(timerRef.current);
     isRecordingRef.current = false;
     setIsRecording(false);
+    lastFinalRef.current = '';
 
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) {}
       try { recognitionRef.current.abort(); } catch (e) {}
       recognitionRef.current = null;
     }
 
     try { audioService.playClick(); } catch (e) {}
   };
+
   const cancelRecording = () => {
     stopRecording();
     setLiveTranscript('');
@@ -497,10 +514,8 @@ export const NotesScreen = () => {
                 </p>
               </div>
 
-              {/* Acciones */}
               <div className="flex items-center justify-between gap-1 mt-3 pt-2 border-t border-current/10 flex-wrap">
                 <div className="flex items-center gap-1">
-                  {/* Cambiar color */}
                   {COLOR_OPTIONS.map((color) => {
                     const isCurrent = note.color === color.id;
                     return (
