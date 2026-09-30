@@ -32,7 +32,10 @@ export const NotesScreen = () => {
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
   const isRecordingRef = useRef(false);
-  const lastFinalRef = useRef('');
+
+  // ✅ NUEVO: array de fragmentos únicos. Cada frase se guarda UNA sola vez.
+  const fragmentsRef = useRef([]);
+
   const [supported] = useState(() => !!SpeechRecognition);
 
   // Cleanup al desmontar
@@ -61,15 +64,17 @@ export const NotesScreen = () => {
     setLiveTranscript('');
     setFinalTranscript('');
     setRecordingSeconds(0);
-    lastFinalRef.current = '';
+    fragmentsRef.current = [];
 
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = 'es-AR';
-      recognition.continuous = false;      // ✅ Más estable en móvil
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
+      // ✅ FIX DEFINITIVO: guardar fragmentos únicos en un array.
+      // Si el motor reenvía el mismo texto, lo ignora.
       recognition.onresult = (event) => {
         let interim = '';
 
@@ -77,23 +82,15 @@ export const NotesScreen = () => {
           const result = event.results[i];
           if (result.isFinal) {
             const text = result[0].transcript.trim();
-
-            // ✅ Ignorar si es el mismo texto que el anterior
-            if (text && text !== lastFinalRef.current) {
-              lastFinalRef.current = text;
-
-              setFinalTranscript((prev) => {
-                const clean = prev.trim();
-                // ✅ No duplicar si ya termina con ese texto
-                if (clean.endsWith(text)) return clean;
-                return clean ? clean + ' ' + text : text;
-              });
+            if (text && !fragmentsRef.current.includes(text)) {
+              fragmentsRef.current.push(text);
             }
           } else {
             interim += result[0].transcript;
           }
         }
 
+        setFinalTranscript(fragmentsRef.current.join(' '));
         setLiveTranscript(interim);
       };
 
@@ -111,12 +108,7 @@ export const NotesScreen = () => {
 
       recognition.onend = () => {
         if (isRecordingRef.current) {
-          // ✅ Delay antes de reiniciar (evita duplicados del motor)
-          setTimeout(() => {
-            if (isRecordingRef.current && recognitionRef.current === recognition) {
-              try { recognition.start(); } catch (e) {}
-            }
-          }, 350);
+          try { recognition.start(); } catch (e) {}
         }
       };
 
@@ -139,7 +131,6 @@ export const NotesScreen = () => {
     clearInterval(timerRef.current);
     isRecordingRef.current = false;
     setIsRecording(false);
-    lastFinalRef.current = '';
 
     if (recognitionRef.current) {
       try { recognitionRef.current.abort(); } catch (e) {}
@@ -154,10 +145,11 @@ export const NotesScreen = () => {
     setLiveTranscript('');
     setFinalTranscript('');
     setRecordingSeconds(0);
+    fragmentsRef.current = [];
   };
 
   const saveRecording = () => {
-    const text = (finalTranscript + ' ' + liveTranscript).trim();
+    const text = (fragmentsRef.current.join(' ') + ' ' + liveTranscript).trim();
     if (!text) {
       setErrorMsg('No se escuchó nada. Probá de nuevo 🎤');
       return;
@@ -172,6 +164,7 @@ export const NotesScreen = () => {
     setLiveTranscript('');
     setFinalTranscript('');
     setRecordingSeconds(0);
+    fragmentsRef.current = [];
     setErrorMsg('');
   };
 
@@ -188,6 +181,14 @@ export const NotesScreen = () => {
     setManualText('');
     setShowManualInput(false);
     setSelectedColor('yellow');
+  };
+
+  // ✅ NUEVO: Botón para limpiar manualmente el texto si algo se duplicó
+  const handleClearTranscript = () => {
+    try { audioService.playClick(); } catch (e) {}
+    fragmentsRef.current = [];
+    setFinalTranscript('');
+    setLiveTranscript('');
   };
 
   const handleConvert = (noteId) => {
@@ -329,6 +330,17 @@ export const NotesScreen = () => {
                 )}
               </p>
             </div>
+
+            {/* Botón para limpiar transcripción */}
+            {(finalTranscript || liveTranscript) && (
+              <button
+                type="button"
+                onClick={handleClearTranscript}
+                className="mt-2 text-[11px] font-black uppercase tracking-wider text-[#ea580c] underline cursor-pointer"
+              >
+                🔄 Limpiar texto
+              </button>
+            )}
 
             {/* Botones de acción mientras graba */}
             <div className="flex items-center gap-2 mt-4 w-full">
