@@ -17,6 +17,13 @@ export const SparkyCompanion = () => {
     activeWeekId,
     activeDay,
     isTipCompleted,
+    isDisplayCompleted,
+    isReviewing,
+    canGoPrev,
+    canGoNext,
+    goToPrevTip,
+    goToNextTip,
+    goToToday,
     completeTipChallenge
   } = useSparkyTips();
 
@@ -41,7 +48,7 @@ export const SparkyCompanion = () => {
     : [];
   const introCount = introMessages.length;
 
-  // Resetear índice cuando cambia el día
+  // Resetear índice cuando cambia el día que se ve
   useEffect(() => {
     setIntroIndex(0);
   }, [activeWeekId, activeDay]);
@@ -107,8 +114,6 @@ export const SparkyCompanion = () => {
     }
   };
 
-  // Botón "Otro consejo": si hay varios mensajes en el día, alterna.
-  // Si hay solo uno, va a modo normal (comportamiento anterior).
   const handleOtroConsejo = () => {
     try { audioService.playClick(); } catch (e) {}
 
@@ -143,7 +148,7 @@ export const SparkyCompanion = () => {
   };
 
   const handleCompleteTip = () => {
-    if (isTipCompleted) return;
+    if (isTipCompleted || isReviewing) return;
     try { audioService.playSuccess(); } catch (e) {}
     completeTipChallenge();
     setJustCompleted(true);
@@ -163,6 +168,78 @@ export const SparkyCompanion = () => {
   const hasSheet = !isCustomTip && currentWeekGuide?.sheetImage;
   const tipReward = currentDailyTip?.reward || 15;
 
+  // ==================== NAVEGACIÓN ====================
+  const renderNavigation = () => {
+    return (
+      <div className="w-full flex items-center justify-between gap-2 mb-1">
+        <button
+          type="button"
+          onClick={goToPrevTip}
+          disabled={!canGoPrev}
+          className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-[11px] font-black cursor-pointer active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{
+            background: '#ffffff',
+            color: '#475569',
+            border: '1.5px solid #cbd5e1',
+            boxShadow: '0 2px 0 0 #e2e8f0'
+          }}
+          title="Ver tip anterior"
+        >
+          <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+          <span>Anterior</span>
+        </button>
+
+        {/* Chip central: Hoy o Repasando */}
+        {isReviewing ? (
+          <button
+            type="button"
+            onClick={goToToday}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[11px] font-black cursor-pointer active:scale-95 transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              color: '#78350f',
+              border: '1.5px solid #fbbf24',
+              boxShadow: '0 2px 0 0 #f59e0b'
+            }}
+            title="Volver al tip de hoy"
+          >
+            <span>📖</span>
+            <span>Repasando · Volver a hoy</span>
+          </button>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[11px] font-black"
+            style={{
+              background: '#dcfce7',
+              color: '#065f46',
+              border: '1.5px solid #86efac'
+            }}
+          >
+            <span>📍</span>
+            <span>Hoy</span>
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={goToNextTip}
+          disabled={!canGoNext}
+          className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-[11px] font-black cursor-pointer active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{
+            background: '#ffffff',
+            color: '#475569',
+            border: '1.5px solid #cbd5e1',
+            boxShadow: '0 2px 0 0 #e2e8f0'
+          }}
+          title="Ver siguiente tip"
+        >
+          <span>Siguiente</span>
+          <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+        </button>
+      </div>
+    );
+  };
+
   // ==================== VISTAS ====================
 
   const renderSparkyIntroBubble = () => {
@@ -175,6 +252,16 @@ export const SparkyCompanion = () => {
           <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
             🧠 Sparky te cuenta
           </span>
+          {isReviewing && (
+            <span className="px-1.5 py-0.5 rounded-full bg-[#fef3c7] text-[#78350f] border border-[#fbbf24] font-label-sm text-[10px] font-black">
+              📖 Repaso
+            </span>
+          )}
+          {isReviewing && isDisplayCompleted && (
+            <span className="px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#065f46] border border-[#86efac] font-label-sm text-[10px] font-black">
+              ✓ Completado
+            </span>
+          )}
         </div>
         <p
           key={introIndex}
@@ -214,6 +301,16 @@ export const SparkyCompanion = () => {
         {isCustomTip && (
           <span className="px-1.5 py-0.5 rounded-full bg-[#ede9fe] text-[#6d28d9] border border-[#c4b5fd] font-label-sm text-[10px] font-black">
             👨‍👩‍👧 De casa
+          </span>
+        )}
+        {isReviewing && (
+          <span className="px-1.5 py-0.5 rounded-full bg-[#fef3c7] text-[#78350f] border border-[#fbbf24] font-label-sm text-[10px] font-black">
+            📖 Repaso
+          </span>
+        )}
+        {isReviewing && isDisplayCompleted && (
+          <span className="px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#065f46] border border-[#86efac] font-label-sm text-[10px] font-black">
+            ✓ Completado
           </span>
         )}
       </div>
@@ -280,6 +377,7 @@ export const SparkyCompanion = () => {
   const renderButtons = () => {
     if (justCompleted) return null;
     if (isInteractiveMode) return null;
+    if (isReviewing) return null; // 🆕 En modo repaso no hay botones de acción
 
     if (mode === 'normal') {
       return (
@@ -352,8 +450,22 @@ export const SparkyCompanion = () => {
 
   return (
     <>
-      <div className="w-full p-5 rounded-2xl bg-gradient-to-b from-[#fff7ed] to-[#ffedd5] border-2 border-[#fed7aa] flex flex-col gap-4 shadow-[0_4px_0_0_#fed7aa,0_10px_20px_rgba(255,107,0,0.08)] relative overflow-visible">
+      {/* 🆕 Barra de navegación arriba de la tarjeta */}
+      {renderNavigation()}
 
+      <div
+        className="w-full p-5 rounded-2xl flex flex-col gap-4 relative overflow-visible transition-all"
+        style={{
+          background: isReviewing
+            ? 'linear-gradient(to bottom, #fefce8 0%, #fef3c7 100%)'
+            : 'linear-gradient(to bottom, #fff7ed 0%, #ffedd5 100%)',
+          border: isReviewing ? '2px solid #fbbf24' : '2px solid #fed7aa',
+          boxShadow: isReviewing
+            ? '0 4px 0 0 #fbbf24, 0 10px 20px rgba(251, 191, 36, 0.15)'
+            : '0 4px 0 0 #fed7aa, 0 10px 20px rgba(255, 107, 0, 0.08)',
+          opacity: isReviewing ? 0.95 : 1
+        }}
+      >
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div
@@ -393,23 +505,25 @@ export const SparkyCompanion = () => {
               <span>¡Guau!</span>
             </button>
 
-            {mode === 'tip' ? (
-              <button
-                type="button"
-                onClick={handleOtroConsejo}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-              >
-                🐾 Otro consejo
-              </button>
-            ) : (
-              !isTipCompleted && (
+            {!isReviewing && (
+              mode === 'tip' ? (
                 <button
                   type="button"
-                  onClick={handleSwitchToTip}
+                  onClick={handleOtroConsejo}
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
                 >
-                  📚 Ver tip del día
+                  🐾 Otro consejo
                 </button>
+              ) : (
+                !isTipCompleted && (
+                  <button
+                    type="button"
+                    onClick={handleSwitchToTip}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border border-[#fed7aa] text-[#ea580c] font-label-sm text-[10px] font-black shadow-[0_1px_0_0_#fed7aa] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    📚 Ver tip del día
+                  </button>
+                )
               )
             )}
           </div>
@@ -435,7 +549,7 @@ export const SparkyCompanion = () => {
           </div>
         </div>
 
-        {!isInteractiveMode && (
+        {!isInteractiveMode && !isReviewing && (
           <div className="flex items-center justify-center gap-2 w-full flex-wrap">
             {renderButtons()}
           </div>
@@ -446,7 +560,7 @@ export const SparkyCompanion = () => {
         <div className="w-full mt-3">
           <InteractiveTip
             data={interactiveTip}
-            isCompleted={isTipCompleted}
+            isCompleted={isReviewing ? isDisplayCompleted : isTipCompleted}
             onComplete={handleCompleteTip}
             hasSheet={hasSheet}
             onOpenSheet={openSheet}
