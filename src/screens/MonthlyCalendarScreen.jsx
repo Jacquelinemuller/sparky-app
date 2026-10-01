@@ -56,7 +56,10 @@ export const MonthlyCalendarScreen = () => {
     deleteCustomEvent,
     setActiveTab,
     setActiveScreen,
-    activeTab
+    activeTab,
+    alarms,
+    addAlarm,
+    removeAlarmByEvent
   } = useApp();
 
   const today = new Date();
@@ -213,15 +216,36 @@ export const MonthlyCalendarScreen = () => {
   };
 
   const handleSaveEvent = (data) => {
+    const eventId = editingEvent ? editingEvent.id : 'evt_' + Date.now();
+
+    // Guardar el evento
     if (editingEvent) {
       updateCustomEvent(editingEvent.id, data);
     } else {
-      addCustomEvent(data);
+      addCustomEvent({ ...data, id: eventId });
+    }
+
+    // Gestionar la alarma
+    // 1) Sacar cualquier alarma previa del evento
+    removeAlarmByEvent(eventId);
+
+    // 2) Si el usuario activó alarma, crear la nueva
+    if (data.hasAlarm && data.alarmData) {
+      addAlarm({
+        eventId,
+        dateKey: data.alarmData.dateKey,
+        time: data.alarmData.time,
+        leadMinutes: data.alarmData.leadMinutes,
+        sound: data.alarmData.sound,
+        label: data.alarmData.label
+      });
     }
   };
 
   const handleConfirmDelete = () => {
     if (confirmDeleteEvent) {
+      // Borrar también su alarma si la tenía
+      removeAlarmByEvent(confirmDeleteEvent);
       deleteCustomEvent(confirmDeleteEvent);
       setConfirmDeleteEvent(null);
     }

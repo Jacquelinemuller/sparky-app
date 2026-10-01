@@ -5,16 +5,15 @@ export const BottomNav = () => {
   const { activeTab, setActiveTab, setActiveScreen } = useApp();
 
   const navItems = [
-    { id: 'today',      label: 'Inicio',   icon: 'home',           fill: true  },
-    { id: 'missions',   label: 'Misiones', icon: 'task_alt',       fill: false },
-    { id: 'schedule',   label: 'Agenda',   icon: 'calendar_month', fill: false },
-    { id: 'checklists', label: 'Check',    icon: 'checklist',      fill: false, isScreen: true },
-    { id: 'rewards',    label: 'Premios',  icon: 'trophy',         fill: false },
+    { id: 'today',    label: 'Inicio',   icon: 'home',           fill: true,  isScreen: false },
+    { id: 'missions', label: 'Misiones', icon: 'task_alt',       fill: false, isScreen: false },
+    { id: 'schedule', label: 'Agenda',   icon: 'calendar_month', fill: false, isScreen: false },
+    { id: 'apoyos',   label: 'Kit',      icon: 'auto_awesome',   fill: true,  isScreen: true  },
+    { id: 'rewards',  label: 'Premios',  icon: 'trophy',         fill: false, isScreen: false },
   ];
 
   const handleNavClick = (item) => {
     if (item.isScreen) {
-      // Es una pantalla independiente (con su propio header), no un tab
       setActiveScreen(item.id);
       return;
     }

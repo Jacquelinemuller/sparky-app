@@ -16,6 +16,9 @@ import { MonthlyCalendarScreen } from './screens/MonthlyCalendarScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { TipsScreen } from './screens/TipsScreen';
 import { ChecklistsScreen } from './screens/ChecklistsScreen';
+import { ApoyosScreen } from './screens/ApoyosScreen';
+import { AlarmsScreen } from './screens/AlarmsScreen';
+import { CalmaScreen } from './screens/CalmaScreen';
 import { AlarmManager } from './components/AlarmManager';
 
 const BACKGROUNDS = {
@@ -29,7 +32,6 @@ export function AppContent() {
   const { activeTab, activeScreen, setActiveScreen, celebration, closeCelebration } = useApp();
   const [parentsUnlocked, setParentsUnlocked] = useState(false);
 
-  // Re-bloquear Padres al salir de esa pantalla
   useEffect(() => {
     if (activeScreen !== 'parents' && parentsUnlocked) {
       setParentsUnlocked(false);
@@ -43,6 +45,9 @@ export function AppContent() {
   if (activeScreen === 'profile') return <ProfileScreen />;
   if (activeScreen === 'tips') return <TipsScreen />;
   if (activeScreen === 'checklists') return <ChecklistsScreen />;
+  if (activeScreen === 'apoyos') return <ApoyosScreen />;
+  if (activeScreen === 'alarms') return <AlarmsScreen />;
+  if (activeScreen === 'calma') return <CalmaScreen />;
 
   if (activeScreen === 'parents') {
     if (!parentsUnlocked) {
@@ -93,7 +98,6 @@ export function AppContent() {
       </main>
       <BottomNav />
 
-      {/* 🆕 Gestor global de alarmas */}
       <AlarmManager />
 
       <MiniToast

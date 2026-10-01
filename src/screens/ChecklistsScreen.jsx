@@ -23,9 +23,8 @@ console.log('🔍 addChecklist:', typeof useApp().addChecklist);
 
   const goBack = () => {
     try { audioService.playClick(); } catch (e) {}
-    setActiveScreen('none');
+    setActiveScreen('apoyos');
   };
-
   const toggleExpand = (id) => {
     try { audioService.playPop(); } catch (e) {}
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));

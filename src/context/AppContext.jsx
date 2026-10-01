@@ -642,6 +642,14 @@ export const AppProvider = ({ children }) => {
       )
     }));
   }, [recordActivity]);
+    const removeAlarmByEvent = useCallback((eventId) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      alarms: (prev.alarms || []).filter((a) => a.eventId !== eventId)
+    }));
+  }, [recordActivity]);
+
 
   const addChecklist = useCallback((data) => {
     recordActivity();
@@ -978,6 +986,7 @@ export const AppProvider = ({ children }) => {
     removeAlarm,
     markAlarmTriggered,
     removeAlarmByBlock,
+        removeAlarmByEvent,
         startChallenge,
         acceptChallenge,
         setChallengeCheckIn,
