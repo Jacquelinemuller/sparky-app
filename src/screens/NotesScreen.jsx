@@ -11,6 +11,7 @@ const COLOR_OPTIONS = [
 
 const COLOR_MAP = Object.fromEntries(COLOR_OPTIONS.map((c) => [c.id, c]));
 
+// Soporte de Speech Recognition
 const SpeechRecognition =
   typeof window !== 'undefined'
     ? window.SpeechRecognition || window.webkitSpeechRecognition
@@ -20,7 +21,8 @@ export const NotesScreen = () => {
   const { notes, addNote, updateNote, deleteNote, convertNoteToTask, setActiveTab } = useApp();
 
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedText, setRecordedText] = useState(''); // Texto final, se llena al terminar
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [finalTranscript, setFinalTranscript] = useState('');
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [selectedColor, setSelectedColor] = useState('yellow');
   const [errorMsg, setErrorMsg] = useState('');
@@ -30,21 +32,15 @@ export const NotesScreen = () => {
 
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
-  const isRecordingRef = useRef(false);
-
-  // ✅ Acumulador invisible: Set de fragmentos únicos
-  const fragmentsRef = useRef(new Set());
-
   const [supported] = useState(() => !!SpeechRecognition);
 
+  // Cleanup al desmontar
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch (e) {}
-        recognitionRef.current = null;
+        try { recognitionRef.current.stop(); } catch (e) {}
       }
       clearInterval(timerRef.current);
-      isRecordingRef.current = false;
     };
   }, []);
 
@@ -56,9 +52,9 @@ export const NotesScreen = () => {
     }
 
     setErrorMsg('');
-    setRecordedText('');
+    setLiveTranscript('');
+    setFinalTranscript('');
     setRecordingSeconds(0);
-    fragmentsRef.current = new Set();
 
     try {
       const recognition = new SpeechRecognition();
@@ -67,39 +63,42 @@ export const NotesScreen = () => {
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
-      // ✅ Solo tomamos el ÚLTIMO resultado final. No acumulamos visualmente.
+      let finalText = '';
+
       recognition.onresult = (event) => {
-        // Solo el último resultado (event.results.length - 1)
-        const last = event.results[event.results.length - 1];
-        if (last && last.isFinal) {
-          const text = last[0].transcript.trim();
-          if (text) {
-            fragmentsRef.current.add(text);
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalText += result[0].transcript + ' ';
+            setFinalTranscript(finalText.trim());
+          } else {
+            interim += result[0].transcript;
           }
         }
+        setLiveTranscript(interim);
       };
 
       recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
           setErrorMsg('Necesitamos permiso para usar el micrófono 🎤');
-          isRecordingRef.current = false;
-          setIsRecording(false);
         } else if (e.error === 'no-speech') {
-          // silencio
-        } else if (e.error === 'aborted') {
-          // abortado
+          // silencio, no es error grave
         } else {
-          // ignorar otros errores silenciosamente
+          setErrorMsg('Hubo un problema con la grabación');
         }
+        stopRecording();
       };
 
       recognition.onend = () => {
-        // Sin restart automático
+        if (isRecording) {
+          // Si se detuvo inesperadamente, intentar mantener vivo si seguimos grabando
+          try { recognition.start(); } catch (e) {}
+        }
       };
 
       recognition.start();
       recognitionRef.current = recognition;
-      isRecordingRef.current = true;
       setIsRecording(true);
 
       timerRef.current = setInterval(() => {
@@ -114,37 +113,25 @@ export const NotesScreen = () => {
 
   const stopRecording = () => {
     clearInterval(timerRef.current);
-    isRecordingRef.current = false;
     setIsRecording(false);
 
     if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) {}
+      try { recognitionRef.current.stop(); } catch (e) {}
       recognitionRef.current = null;
     }
-
-    // ✅ Acá recién construimos el texto final
-    const finalText = Array.from(fragmentsRef.current).join(' ').trim();
-    setRecordedText(finalText);
 
     try { audioService.playClick(); } catch (e) {}
   };
 
   const cancelRecording = () => {
-    clearInterval(timerRef.current);
-    isRecordingRef.current = false;
-    setIsRecording(false);
-    setRecordedText('');
+    stopRecording();
+    setLiveTranscript('');
+    setFinalTranscript('');
     setRecordingSeconds(0);
-    fragmentsRef.current = new Set();
-
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) {}
-      recognitionRef.current = null;
-    }
   };
 
   const saveRecording = () => {
-    const text = recordedText.trim();
+    const text = (finalTranscript + ' ' + liveTranscript).trim();
     if (!text) {
       setErrorMsg('No se escuchó nada. Probá de nuevo 🎤');
       return;
@@ -156,9 +143,9 @@ export const NotesScreen = () => {
       isVoice: true
     });
 
-    setRecordedText('');
+    setLiveTranscript('');
+    setFinalTranscript('');
     setRecordingSeconds(0);
-    fragmentsRef.current = new Set();
     setErrorMsg('');
   };
 
@@ -194,6 +181,8 @@ export const NotesScreen = () => {
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto select-none pb-8 px-2 pt-4">
+
+      {/* Header */}
       <div className="w-full flex items-center justify-between mb-4">
         <div className="flex flex-col">
           <h1 className="font-headline-lg font-black text-on-surface leading-tight">
@@ -205,9 +194,9 @@ export const NotesScreen = () => {
         </div>
       </div>
 
+      {/* Card de grabación de voz */}
       <div className="w-full bg-white rounded-3xl p-5 shadow-[0_5px_0_0_#fed7aa] border-2 border-[#fed7aa] mb-4">
-        {/* ESTADO 1: Reposo */}
-        {!isRecording && !recordedText && (
+        {!isRecording && !finalTranscript && !liveTranscript && (
           <>
             <div className="flex flex-col items-center">
               <button
@@ -237,6 +226,7 @@ export const NotesScreen = () => {
               </div>
             )}
 
+            {/* Selector de color */}
             <div className="w-full mt-4 pt-3 border-t border-[#fed7aa]/50">
               <p className="font-label-sm text-[11px] font-black text-on-surface-variant uppercase tracking-wider mb-2 text-center">
                 Color de la nota
@@ -272,6 +262,7 @@ export const NotesScreen = () => {
               </div>
             </div>
 
+            {/* Alternativa: escribir manualmente */}
             <button
               type="button"
               onClick={() => setShowManualInput(true)}
@@ -283,7 +274,7 @@ export const NotesScreen = () => {
           </>
         )}
 
-        {/* ESTADO 2: Grabando (sin mostrar transcripción) */}
+        {/* Grabando */}
         {isRecording && (
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -302,33 +293,18 @@ export const NotesScreen = () => {
               Estoy escuchando... 🎧
             </p>
 
-            <div className="w-full mt-4 p-4 rounded-2xl bg-[#fff7ed] border border-dashed border-[#ff6b00] flex items-center justify-center gap-1.5">
-              <span
-                className="w-2 h-6 rounded-full bg-[#ff6b00]"
-                style={{ animation: 'soundWave 0.9s ease-in-out infinite' }}
-              />
-              <span
-                className="w-2 h-8 rounded-full bg-[#ff6b00]"
-                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.15s' }}
-              />
-              <span
-                className="w-2 h-4 rounded-full bg-[#ff6b00]"
-                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.3s' }}
-              />
-              <span
-                className="w-2 h-7 rounded-full bg-[#ff6b00]"
-                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.45s' }}
-              />
-              <span
-                className="w-2 h-5 rounded-full bg-[#ff6b00]"
-                style={{ animation: 'soundWave 0.9s ease-in-out infinite 0.6s' }}
-              />
+            {/* Transcripción en vivo */}
+            <div className="w-full mt-4 p-3 rounded-2xl bg-[#fff7ed] border border-dashed border-[#ff6b00] min-h-[60px] max-h-[140px] overflow-y-auto">
+              <p className="font-body-sm text-body-sm text-on-surface leading-snug">
+                {finalTranscript}{' '}
+                <span className="text-on-surface-variant italic">{liveTranscript}</span>
+                {!finalTranscript && !liveTranscript && (
+                  <span className="text-on-surface-variant/50 italic">Tu voz aparecerá aquí...</span>
+                )}
+              </p>
             </div>
 
-            <p className="font-label-sm text-[11px] text-on-surface-variant text-center mt-2">
-              Hablá tranquilo. Al terminar vas a ver lo que dijiste.
-            </p>
-
+            {/* Botones de acción mientras graba */}
             <div className="flex items-center gap-2 mt-4 w-full">
               <button
                 type="button"
@@ -349,8 +325,8 @@ export const NotesScreen = () => {
           </div>
         )}
 
-        {/* ESTADO 3: Terminó, se muestra el texto */}
-        {!isRecording && recordedText && (
+        {/* Terminó de grabar, listo para guardar */}
+        {!isRecording && (finalTranscript || liveTranscript) && (
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-[#10b981] text-[22px]">check_circle</span>
@@ -361,10 +337,11 @@ export const NotesScreen = () => {
 
             <div className="w-full p-3 rounded-2xl bg-[#fff7ed] border border-[#fed7aa] mb-3">
               <p className="font-body-md text-body-md text-on-surface font-semibold leading-snug">
-                {recordedText}
+                {(finalTranscript + ' ' + liveTranscript).trim()}
               </p>
             </div>
 
+            {/* Selector de color rápido */}
             <div className="flex items-center justify-center gap-2.5 mb-3">
               {COLOR_OPTIONS.map((c) => {
                 const isSelected = selectedColor === c.id;
@@ -511,8 +488,10 @@ export const NotesScreen = () => {
                 </p>
               </div>
 
+              {/* Acciones */}
               <div className="flex items-center justify-between gap-1 mt-3 pt-2 border-t border-current/10 flex-wrap">
                 <div className="flex items-center gap-1">
+                  {/* Cambiar color */}
                   {COLOR_OPTIONS.map((color) => {
                     const isCurrent = note.color === color.id;
                     return (
@@ -555,13 +534,6 @@ export const NotesScreen = () => {
           );
         })}
       </div>
-
-      <style>{`
-        @keyframes soundWave {
-          0%, 100% { transform: scaleY(0.5); }
-          50% { transform: scaleY(1.2); }
-        }
-      `}</style>
     </div>
   );
 };

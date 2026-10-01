@@ -59,11 +59,11 @@ export default function PinModal({ isOpen, onClose, onSuccess }) {
       setError('Ingresá los 4 dígitos');
       return;
     }
-    if (verifyParentPin(pin)) {
+      if (verifyParentPin(pin)) {
       try { audioService.playSuccess(); } catch (e) {}
       onSuccess();
-      onClose();
-    } else {
+      // ✅ NO llamamos a onClose(). Dejamos que activeScreen siga en 'parents'.
+    } else  {
       try { audioService.playReminderNudge(); } catch (e) {}
       setError('PIN incorrecto');
       setPin('');
@@ -87,10 +87,11 @@ export default function PinModal({ isOpen, onClose, onSuccess }) {
       setConfirmPin('');
       return;
     }
-    try { audioService.playSuccess(); } catch (e) {}
+      try { audioService.playSuccess(); } catch (e) {}
     setParentPin(newPin);
     onSuccess();
-    onClose();
+    // ✅ NO llamamos a onClose(). Ya estamos dentro de 'parents'.
+  
   };
 
   const currentPin = mode === 'enter' ? pin : newPin;
