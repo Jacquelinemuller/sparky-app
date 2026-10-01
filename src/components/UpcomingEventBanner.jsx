@@ -12,7 +12,6 @@ const CATEGORY_CONFIG = {
 
 const DAY_NAMES_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-// Paleta verde suave
 const GREEN = {
   primary: '#65a30d',
   dark: '#3f6212',
@@ -20,7 +19,7 @@ const GREEN = {
   medium: '#4d7c0f',
   light: '#ecfccb',
   lighter: '#f7fee7',
-  soft: '#fafff0',        // NUEVO: más suave aún
+  soft: '#fafff0',
   border: '#bef264',
   borderSoft: '#d9f99d'
 };
@@ -94,14 +93,23 @@ export default function UpcomingEventBanner() {
     setActiveScreen('monthly');
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleOpen();
+    }
+  };
+
   const shortDate = isToday
     ? 'HOY'
     : `${DAY_NAMES_SHORT[next._date.getDay()]} ${next._date.getDate()}`;
 
   return (
-    <button
-      type="button"
+    <div
       onClick={handleOpen}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
       className={`w-full px-3 py-2.5 rounded-2xl flex items-center gap-3 text-left transition-all cursor-pointer active:scale-[0.98] relative ${
         isToday ? 'animate-[pulseSoft_2s_ease-in-out_infinite]' : ''
       }`}
@@ -185,6 +193,6 @@ export default function UpcomingEventBanner() {
           50% { transform: scale(1.01); }
         }
       `}</style>
-    </button>
+    </div>
   );
 }
