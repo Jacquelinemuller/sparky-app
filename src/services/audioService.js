@@ -167,6 +167,176 @@ class AudioService {
     });
   }
 
+  // ============================================
+  // TONOS DE ALARMA (5 estilos)
+  // ============================================
+
+  // 🎵 Campanita — default, suave
+  playAlarm_campanita() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const chords = [587.33, 739.99, 880.0, 1174.66];
+    chords.forEach((freq) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 1.2);
+    });
+  }
+
+  // ☎️ Llamada — beep-beep-beep repetido
+  playAlarm_llamada() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    // 3 beeps por ciclo, 2 ciclos
+    for (let ciclo = 0; ciclo < 2; ciclo++) {
+      for (let i = 0; i < 3; i++) {
+        const startTime = now + ciclo * 1.2 + i * 0.2;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, startTime);
+
+        gain.gain.setValueAtTime(0.4, startTime);
+        gain.gain.setValueAtTime(0.4, startTime + 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.15);
+      }
+    }
+  }
+
+  // 🐶 Ladrido — bark + tono ascendente
+  playAlarm_ladrido() {
+    if (!this.enabled) return;
+
+    // Reproducir el bark
+    try { this.playBark(); } catch (e) {}
+
+    // Y agregar un tono ascendente encima
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime + 0.3;
+    const notes = [392, 523.25, 659.25];
+
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const startTime = now + idx * 0.12;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.3);
+    });
+  }
+
+  // 🚨 Urgente — despertador fuerte, repetitivo
+  playAlarm_urgente() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    // 4 pulsos fuertes
+    for (let i = 0; i < 4; i++) {
+      const startTime = now + i * 0.25;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1046.5, startTime);
+
+      gain.gain.setValueAtTime(0.35, startTime);
+      gain.gain.setValueAtTime(0.35, startTime + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.2);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.2);
+    }
+  }
+
+  // 🎶 Melodía — 4 notas ascendentes amables
+  playAlarm_melodia() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const notes = [587.33, 739.99, 880.0, 1174.66];
+
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const startTime = now + idx * 0.18;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.35, startTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.6);
+    });
+  }
+
+  // 🎯 Dispatcher — toca el sonido según el tipo
+  playAlarm(type = 'campanita') {
+    switch (type) {
+      case 'llamada':
+        return this.playAlarm_llamada();
+      case 'ladrido':
+        return this.playAlarm_ladrido();
+      case 'urgente':
+        return this.playAlarm_urgente();
+      case 'melodia':
+        return this.playAlarm_melodia();
+      case 'campanita':
+      default:
+        return this.playAlarm_campanita();
+    }
+  }
+
   // 🆕 Tono puro a una frecuencia dada (para Simon Dice y otros juegos)
   playTone(freq = 440, duration = 0.35) {
     if (!this.enabled) return;
@@ -191,7 +361,6 @@ class AudioService {
     osc.stop(now + duration);
   }
 
-  // 🆕 Sonido de error (barrido descendente)
   playError() {
     if (!this.enabled) return;
     this.init();

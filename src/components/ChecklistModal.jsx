@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { audioService } from '../services/audioService';
+import VoiceInput from './VoiceInput';
 
 const EMOJI_OPTIONS = [
   '🚿', '🎒', '🦷', '🍳', '🛏️', '📚', '🧦', '🎨', '🏃', '🧘',
@@ -147,26 +148,15 @@ export const ChecklistModal = ({ isOpen, onClose, onSave, editingList }) => {
               >
                 Nombre de la rutina
               </span>
-              <input
-                type="text"
+              <VoiceInput
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={setTitle}
                 placeholder="Ej: Bañarse"
                 maxLength={40}
-                className="w-full p-3 rounded-2xl text-[15px] font-bold focus:outline-none"
-                style={{
-                  background: '#faf5ff',
-                  border: '2px solid #ddd6fe',
-                  color: '#0f172a'
-                }}
-                onFocus={(e) => {
-                  e.target.style.border = '2px solid #8b5cf6';
-                  e.target.style.background = '#ffffff';
-                }}
-                onBlur={(e) => {
-                  e.target.style.border = '2px solid #ddd6fe';
-                  e.target.style.background = '#faf5ff';
-                }}
+                color="#8b5cf6"
+                bg="#faf5ff"
+                borderColor="#ddd6fe"
+                style={{ fontSize: '15px' }}
               />
             </div>
           </div>
@@ -250,27 +240,27 @@ export const ChecklistModal = ({ isOpen, onClose, onSave, editingList }) => {
 
                       {isEditing ? (
                         <>
-                          <input
-                            type="text"
-                            value={editingStepText}
-                            onChange={(e) => setEditingStepText(e.target.value)}
-                            autoFocus
-                            maxLength={60}
-                            className="flex-1 p-1.5 rounded-lg text-[13px] focus:outline-none"
-                            style={{
-                              background: '#ffffff',
-                              border: '1.5px solid #8b5cf6',
-                              color: '#0f172a'
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEditStep();
-                              if (e.key === 'Escape') handleCancelEditStep();
-                            }}
-                          />
+                          <div className="flex-1 min-w-0">
+                            <VoiceInput
+                              value={editingStepText}
+                              onChange={setEditingStepText}
+                              placeholder="Editar paso..."
+                              maxLength={60}
+                              color="#8b5cf6"
+                              bg="#ffffff"
+                              borderColor="#8b5cf6"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEditStep();
+                                if (e.key === 'Escape') handleCancelEditStep();
+                              }}
+                              style={{ fontSize: '13px', padding: '6px 10px' }}
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={handleSaveEditStep}
-                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95"
+                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95 flex-shrink-0"
                             style={{ background: '#10b981' }}
                           >
                             <span className="material-symbols-outlined text-white text-[16px]">check</span>
@@ -278,7 +268,7 @@ export const ChecklistModal = ({ isOpen, onClose, onSave, editingList }) => {
                           <button
                             type="button"
                             onClick={handleCancelEditStep}
-                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95"
+                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95 flex-shrink-0"
                             style={{ background: '#f1f5f9' }}
                           >
                             <span className="material-symbols-outlined text-[#64748b] text-[16px]">close</span>
@@ -295,7 +285,7 @@ export const ChecklistModal = ({ isOpen, onClose, onSave, editingList }) => {
                           <button
                             type="button"
                             onClick={() => handleStartEditStep(step)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95"
+                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95 flex-shrink-0"
                             style={{ background: '#f5f3ff' }}
                           >
                             <span className="material-symbols-outlined text-[#8b5cf6] text-[16px]">edit</span>
@@ -303,7 +293,7 @@ export const ChecklistModal = ({ isOpen, onClose, onSave, editingList }) => {
                           <button
                             type="button"
                             onClick={() => handleRemoveStep(step.id)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95"
+                            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer active:scale-95 flex-shrink-0"
                             style={{ background: '#fef2f2' }}
                           >
                             <span className="material-symbols-outlined text-red-500 text-[16px]">delete</span>
@@ -318,30 +308,30 @@ export const ChecklistModal = ({ isOpen, onClose, onSave, editingList }) => {
 
             {/* Agregar paso */}
             <div className="flex items-center gap-2 mt-1">
-              <input
-                type="text"
-                value={newStepText}
-                onChange={(e) => setNewStepText(e.target.value)}
-                placeholder="Escribí un paso..."
-                maxLength={60}
-                className="flex-1 p-2.5 rounded-xl text-[13px] focus:outline-none"
-                style={{
-                  background: '#faf5ff',
-                  border: '2px dashed #c4b5fd',
-                  color: '#0f172a'
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddStep();
-                }}
-              />
+              <div className="flex-1 min-w-0">
+                <VoiceInput
+                  value={newStepText}
+                  onChange={setNewStepText}
+                  placeholder="Escribí o dictá un paso..."
+                  maxLength={60}
+                  color="#8b5cf6"
+                  bg="#faf5ff"
+                  borderColor="#c4b5fd"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddStep();
+                  }}
+                  style={{ fontSize: '13px', borderStyle: 'dashed' }}
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleAddStep}
                 disabled={!newStepText.trim()}
-                className="w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-40 transition-all"
+                className="w-12 rounded-2xl flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-40 transition-all flex-shrink-0"
                 style={{
                   background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
-                  boxShadow: '0 2px 0 0 #5b21b6'
+                  boxShadow: '0 2px 0 0 #5b21b6',
+                  minHeight: '46px'
                 }}
               >
                 <span className="material-symbols-outlined text-white text-[20px]">add</span>

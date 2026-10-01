@@ -206,6 +206,7 @@ const DEFAULT_STATE = {
   customTips: [],
   quizAnswers: {},
   checklists: [],
+  alarms: [],
   activeChallenges: [],
   unlockedSounds: ['rain'],
   unlockedGames: [],

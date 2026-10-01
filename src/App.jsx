@@ -16,6 +16,7 @@ import { MonthlyCalendarScreen } from './screens/MonthlyCalendarScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { TipsScreen } from './screens/TipsScreen';
 import { ChecklistsScreen } from './screens/ChecklistsScreen';
+import { AlarmManager } from './components/AlarmManager';
 
 const BACKGROUNDS = {
   today: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)',
@@ -91,6 +92,9 @@ export function AppContent() {
         {activeTab === 'missions' && <MissionsScreen />}
       </main>
       <BottomNav />
+
+      {/* 🆕 Gestor global de alarmas */}
+      <AlarmManager />
 
       <MiniToast
         celebration={isMiniCelebration ? celebration : null}

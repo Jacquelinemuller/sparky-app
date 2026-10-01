@@ -596,6 +596,53 @@ export const AppProvider = ({ children }) => {
     // ==========================================
   // CHECKLISTS (rutinas paso a paso)
   // ==========================================
+    // ==========================================
+  // ALARMAS
+  // ==========================================
+  const addAlarm = useCallback((alarmData) => {
+    recordActivity();
+    try { audioService.playPop(); } catch (e) {}
+    const newAlarm = {
+      id: 'al_' + Date.now(),
+      ...alarmData,
+      enabled: true,
+      triggered: false
+    };
+    setState((prev) => ({
+      ...prev,
+      alarms: [...(prev.alarms || []), newAlarm]
+    }));
+    return newAlarm;
+  }, [recordActivity]);
+
+  const removeAlarm = useCallback((alarmId) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      alarms: (prev.alarms || []).filter((a) => a.id !== alarmId)
+    }));
+  }, [recordActivity]);
+
+  const markAlarmTriggered = useCallback((alarmId) => {
+    setState((prev) => ({
+      ...prev,
+      alarms: (prev.alarms || []).map((a) =>
+        a.id === alarmId ? { ...a, triggered: true } : a
+      )
+    }));
+  }, []);
+
+  const removeAlarmByBlock = useCallback((blockId, dateKey) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      alarms: (prev.alarms || []).filter(
+        (a) => !(a.blockId === blockId && a.dateKey === dateKey)
+      )
+    }));
+  }, [recordActivity]);
+
   const addChecklist = useCallback((data) => {
     recordActivity();
     try { audioService.playPop(); } catch (e) {}
@@ -926,6 +973,11 @@ export const AppProvider = ({ children }) => {
     deleteChecklist,
     toggleChecklistStep,
     resetChecklist,
+        alarms: state.alarms || [],
+    addAlarm,
+    removeAlarm,
+    markAlarmTriggered,
+    removeAlarmByBlock,
         startChallenge,
         acceptChallenge,
         setChallengeCheckIn,

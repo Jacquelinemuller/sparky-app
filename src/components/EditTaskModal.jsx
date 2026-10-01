@@ -4,6 +4,7 @@ import Button3D from './common/Button3D';
 import { getXpFromDifficulty, suggestDifficultyFromTime } from '../services/storageService';
 import { compressImage, getBase64SizeKb } from '../utils/imageUtils';
 import { audioService } from '../services/audioService';
+import VoiceInput from './VoiceInput';
 
 const CATEGORY_CONFIG = {
   school:  { label: 'Cole',    color: '#ff6b00', icon: '📚' },
@@ -43,16 +44,27 @@ export default function EditTaskModal({ isOpen, onClose, task, onSave }) {
 
   const fileInputRef = useRef(null);
 
- useEffect(() => {
-  if (isOpen && task) {
-    // ... el resto de los sets
-    // scroll al inicio del modal
-    setTimeout(() => {
-      const form = document.querySelector('form');
-      if (form) form.scrollTop = 0;
-    }, 50);
-  }
-}, [isOpen, task]);
+  useEffect(() => {
+    if (isOpen && task) {
+      setTitle(task.title || '');
+      setTimeMinutes(task.timeMinutes || 15);
+      setDifficulty(task.difficulty || 'media');
+      setCategory(task.category || 'general');
+      setPriority(task.priority || 'yellow');
+      setMicroSteps(task.microSteps || []);
+      setPhoto(task.photo || null);
+      setNewStep('');
+      setDifficultyEdited(true);
+      setPhotoError('');
+
+      // scroll al inicio del modal
+      setTimeout(() => {
+        const form = document.querySelector('form');
+        if (form) form.scrollTop = 0;
+      }, 50);
+    }
+  }, [isOpen, task]);
+
   useEffect(() => {
     if (!difficultyEdited) {
       setDifficulty(suggestDifficultyFromTime(timeMinutes));
@@ -160,7 +172,6 @@ export default function EditTaskModal({ isOpen, onClose, task, onSave }) {
             Sacale una foto al pizarrón, cuaderno o consigna. Así no tenés que escribir.
           </p>
 
-          {/* Input file oculto */}
           <input
             ref={fileInputRef}
             type="file"
@@ -230,19 +241,23 @@ export default function EditTaskModal({ isOpen, onClose, task, onSave }) {
           )}
         </div>
 
-        {/* Título */}
+        {/* Título con mic */}
         <div>
           <label className="text-xs font-bold text-on-surface-variant">
             Título de la misión
           </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={80}
-            required
-            className="w-full mt-1.5 p-3 rounded-xl border-2 border-[#fed7aa] bg-white text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b00]"
-          />
+          <div className="mt-1.5">
+            <VoiceInput
+              value={title}
+              onChange={setTitle}
+              placeholder="Ej: Hacer problema 3 de mates"
+              maxLength={80}
+              color="#ff6b00"
+              bg="#ffffff"
+              borderColor="#fed7aa"
+              style={{ fontSize: '14px' }}
+            />
+          </div>
         </div>
 
         {/* Tiempo */}
@@ -366,21 +381,26 @@ export default function EditTaskModal({ isOpen, onClose, task, onSave }) {
           )}
 
           {microSteps.length < MAX_MICROSTEPS && (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newStep}
-                onChange={(e) => setNewStep(e.target.value)}
-                onKeyDown={handleStepKeyDown}
-                placeholder="Ej: Leer el enunciado"
-                maxLength={60}
-                className="flex-1 p-2.5 rounded-xl border-2 border-[#fed7aa] bg-white text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b00]"
-              />
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <VoiceInput
+                  value={newStep}
+                  onChange={setNewStep}
+                  onKeyDown={handleStepKeyDown}
+                  placeholder="Ej: Leer el enunciado"
+                  maxLength={60}
+                  color="#ff6b00"
+                  bg="#ffffff"
+                  borderColor="#fed7aa"
+                  style={{ fontSize: '14px' }}
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleAddStep}
                 disabled={!newStep.trim()}
-                className="w-10 h-10 rounded-xl bg-[#ff6b00] text-white flex items-center justify-center shadow-[0_3px_0_0_#c2410c] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-12 rounded-2xl bg-[#ff6b00] text-white flex items-center justify-center shadow-[0_3px_0_0_#c2410c] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                style={{ minHeight: '46px' }}
               >
                 <span className="material-symbols-outlined text-[20px]">add</span>
               </button>

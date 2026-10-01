@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button3D from '../common/Button3D';
+import VoiceInput from '../VoiceInput';
+import TimeRangeInput from '../TimeRangeInput';
 
 const DAYS = [
   { id: 'monday', label: 'Lun', fullLabel: 'Lunes' },
@@ -24,7 +26,6 @@ export default function WeeklyTemplateModal({
   const [editingIndex, setEditingIndex] = useState(null);
   const [draftBlocks, setDraftBlocks] = useState([]);
 
-  // Cargar los bloques del día seleccionado en el draft
   useEffect(() => {
     if (isOpen) {
       setDraftBlocks(JSON.parse(JSON.stringify(weeklyTemplate[selectedDay] || [])));
@@ -42,7 +43,7 @@ export default function WeeklyTemplateModal({
     const newBlock = {
       id: 'blk_' + Date.now(),
       title: 'Nuevo bloque',
-      time: '00:00 - 00:00',
+      time: '08:00 - 09:00',
       icon: 'schedule',
       type: 'fixed'
     };
@@ -74,10 +75,8 @@ export default function WeeklyTemplateModal({
   };
 
   const handleSaveDay = () => {
-    // Sincronizar los cambios del día actual
     const original = weeklyTemplate[selectedDay] || [];
 
-    // 1. Actualizar bloques existentes
     draftBlocks.forEach((block) => {
       const wasOriginal = original.find((b) => b.id === block.id);
       if (wasOriginal) {
@@ -87,7 +86,6 @@ export default function WeeklyTemplateModal({
       }
     });
 
-    // 2. Eliminar los que ya no están
     original.forEach((origBlock) => {
       const stillExists = draftBlocks.find((b) => b.id === origBlock.id);
       if (!stillExists) {
@@ -95,12 +93,10 @@ export default function WeeklyTemplateModal({
       }
     });
 
-    // Feedback al usuario
     setEditingIndex(null);
   };
 
   const handleClose = () => {
-    // Guardar el día actual antes de cerrar
     handleSaveDay();
     onClose();
   };
@@ -116,7 +112,7 @@ export default function WeeklyTemplateModal({
               key={day.id}
               type="button"
               onClick={() => {
-                handleSaveDay(); // guardar el día anterior
+                handleSaveDay();
                 setSelectedDay(day.id);
               }}
               className={`flex-1 py-2 px-1 rounded-xl font-headline text-xs font-black transition-all cursor-pointer ${
@@ -140,7 +136,7 @@ export default function WeeklyTemplateModal({
           </span>
         </div>
 
-        {/* Lista de bloques del día */}
+        {/* Lista de bloques */}
         <div className="flex flex-col gap-2.5 max-h-[50vh] overflow-y-auto pr-1">
           {draftBlocks.map((block, index) => {
             const isEditing = editingIndex === index;
@@ -216,36 +212,37 @@ export default function WeeklyTemplateModal({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2.5">
-                    <input
-                      type="text"
+                    {/* Título con mic */}
+                    <VoiceInput
                       value={block.title}
-                      onChange={(e) => handleBlockChange(index, 'title', e.target.value)}
+                      onChange={(v) => handleBlockChange(index, 'title', v)}
                       placeholder="Título del bloque"
                       maxLength={40}
-                      className="w-full p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                      color="#65a30d"
+                      bg="#ffffff"
+                      borderColor="#d9f99d"
+                      style={{ fontSize: '14px', padding: '10px 12px' }}
                     />
 
-                    <div className="flex gap-2">
+                    {/* Hora con dropdowns */}
+                    <TimeRangeInput
+                      value={block.time}
+                      onChange={(v) => handleBlockChange(index, 'time', v)}
+                    />
+
+                    {/* Duración (solo slot libre) */}
+                    {block.type === 'free_slot' && (
                       <input
                         type="text"
-                        value={block.time}
-                        onChange={(e) => handleBlockChange(index, 'time', e.target.value)}
-                        placeholder="08:00 - 12:00"
-                        maxLength={20}
-                        className="flex-1 p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                        value={block.duration || ''}
+                        onChange={(e) => handleBlockChange(index, 'duration', e.target.value)}
+                        placeholder="Duración (ej: 1h 15m)"
+                        maxLength={10}
+                        className="w-full p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
-                      {block.type === 'free_slot' && (
-                        <input
-                          type="text"
-                          value={block.duration || ''}
-                          onChange={(e) => handleBlockChange(index, 'duration', e.target.value)}
-                          placeholder="1h 15m"
-                          maxLength={10}
-                          className="w-24 p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
-                        />
-                      )}
-                    </div>
+                    )}
 
+                    {/* Tipo */}
                     <div>
                       <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">
                         Tipo
@@ -276,14 +273,20 @@ export default function WeeklyTemplateModal({
                       </div>
                     </div>
 
-                    <input
-                      type="text"
-                      value={block.icon || ''}
-                      onChange={(e) => handleBlockChange(index, 'icon', e.target.value)}
-                      placeholder="Ícono (ej: school, sports_soccer)"
-                      maxLength={20}
-                      className="w-full p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
-                    />
+                    {/* Íconos (reemplaza el input de texto que había antes) */}
+                    <div>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">
+                        Ícono
+                      </label>
+                      <input
+                        type="text"
+                        value={block.icon || ''}
+                        onChange={(e) => handleBlockChange(index, 'icon', e.target.value)}
+                        placeholder="Ícono (ej: school, sports_soccer)"
+                        maxLength={20}
+                        className="w-full mt-1 p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                      />
+                    </div>
 
                     <button
                       type="button"
@@ -309,7 +312,6 @@ export default function WeeklyTemplateModal({
         </div>
       </div>
 
-      {/* Botones finales */}
       <div className="flex justify-end gap-2 mt-4 pt-3 border-t-2 border-[#d9f99d]/50">
         <Button3D variant="outline" onClick={handleClose}>
           Cerrar

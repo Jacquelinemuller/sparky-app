@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button3D from '../common/Button3D';
+import VoiceInput from '../VoiceInput';
+import TimeRangeInput from '../TimeRangeInput';
 
 const ICON_OPTIONS = [
   'schedule', 'school', 'restaurant', 'sports_soccer', 'shower',
@@ -15,7 +17,6 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
 
   useEffect(() => {
     if (isOpen) {
-      // Copia profunda para no mutar los originales
       setEditableBlocks(JSON.parse(JSON.stringify(blocks || [])));
       setEditingIndex(null);
     }
@@ -36,7 +37,7 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
     const newBlock = {
       id: 'blk_' + Date.now(),
       title: 'Nuevo bloque',
-      time: '00:00 - 00:00',
+      time: '08:00 - 09:00',
       icon: 'schedule',
       type: 'fixed'
     };
@@ -82,7 +83,6 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
               }`}
             >
               {!isEditing ? (
-                // Vista compacta
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="material-symbols-outlined text-[#65a30d] text-[22px]">
@@ -144,38 +144,38 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
                   </div>
                 </div>
               ) : (
-                // Vista edición
                 <div className="flex flex-col gap-2.5">
-                  <input
-                    type="text"
+                  {/* Título con mic */}
+                  <VoiceInput
                     value={block.title}
-                    onChange={(e) => handleBlockChange(index, 'title', e.target.value)}
+                    onChange={(v) => handleBlockChange(index, 'title', v)}
                     placeholder="Título del bloque"
                     maxLength={40}
-                    className="w-full p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                    color="#65a30d"
+                    bg="#ffffff"
+                    borderColor="#d9f99d"
+                    style={{ fontSize: '14px', padding: '10px 12px' }}
                   />
 
-                  <div className="flex gap-2">
+                  {/* Hora con dropdowns */}
+                  <TimeRangeInput
+                    value={block.time}
+                    onChange={(v) => handleBlockChange(index, 'time', v)}
+                  />
+
+                  {/* Duración (solo si slot libre) */}
+                  {block.type === 'free_slot' && (
                     <input
                       type="text"
-                      value={block.time}
-                      onChange={(e) => handleBlockChange(index, 'time', e.target.value)}
-                      placeholder="08:00 - 12:00"
-                      maxLength={20}
-                      className="flex-1 p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                      value={block.duration || ''}
+                      onChange={(e) => handleBlockChange(index, 'duration', e.target.value)}
+                      placeholder="Duración (ej: 1h 15m)"
+                      maxLength={10}
+                      className="w-full p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                     />
-                    {block.type === 'free_slot' && (
-                      <input
-                        type="text"
-                        value={block.duration || ''}
-                        onChange={(e) => handleBlockChange(index, 'duration', e.target.value)}
-                        placeholder="1h 15m"
-                        maxLength={10}
-                        className="w-24 p-2.5 rounded-xl border-2 border-[#d9f99d] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
-                      />
-                    )}
-                  </div>
+                  )}
 
+                  {/* Íconos */}
                   <div>
                     <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">
                       Ícono
@@ -198,6 +198,7 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
                     </div>
                   </div>
 
+                  {/* Tipo */}
                   <div>
                     <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">
                       Tipo
@@ -241,7 +242,6 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
           );
         })}
 
-        {/* Botón agregar */}
         <button
           type="button"
           onClick={handleAddBlock}
@@ -252,7 +252,6 @@ export default function EditDayModal({ isOpen, onClose, dayId, dayLabel, blocks,
         </button>
       </div>
 
-      {/* Botones de acción */}
       <div className="flex justify-end gap-2 mt-4 pt-3 border-t-2 border-[#d9f99d]/50">
         <Button3D variant="outline" onClick={onClose}>
           Cancelar
