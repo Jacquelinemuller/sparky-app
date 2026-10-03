@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
 import BarcaExercise from '../components/calma/BarcaExercise';
@@ -10,14 +10,16 @@ const TECHNIQUES = [
     emoji: '🚣',
     label: 'La barca',
     description: 'Una barca de papel navega en tu panza',
-    active: true
+    active: true,
+    sound: '/sounds/barco.mp3'
   },
   {
     id: 'arbol',
     emoji: '🌳',
     label: 'El árbol',
     description: 'Creces como un árbol con cada respiración',
-    active: true
+    active: true,
+    sound: '/sounds/arbol.mp3'
   },
   {
     id: 'buho',
@@ -35,9 +37,41 @@ const TECHNIQUES = [
   }
 ];
 
+const AMBIENT_VOLUME = 0.35;
+const SOUND_PREF_KEY = 'sparky_calma_sound';
+
 export const CalmaScreen = () => {
   const { setActiveScreen } = useApp();
   const [activeExercise, setActiveExercise] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem(SOUND_PREF_KEY);
+    return saved === null ? true : saved === 'true';
+  });
+
+  // Guardar preferencia
+  useEffect(() => {
+    localStorage.setItem(SOUND_PREF_KEY, String(soundEnabled));
+  }, [soundEnabled]);
+
+  // Arrancar / parar sonido según el ejercicio activo
+  useEffect(() => {
+    if (!soundEnabled) {
+      audioService.stopAmbientFile();
+      return;
+    }
+
+    if (activeExercise === 'barca') {
+      audioService.playAmbientFile('/sounds/barco.mp3', AMBIENT_VOLUME);
+    } else if (activeExercise === 'arbol') {
+      audioService.playAmbientFile('/sounds/arbol.mp3', AMBIENT_VOLUME);
+    } else {
+      audioService.stopAmbientFile();
+    }
+
+    return () => {
+      audioService.stopAmbientFile();
+    };
+  }, [activeExercise, soundEnabled]);
 
   const goBack = () => {
     try { audioService.playClick(); } catch (e) {}
@@ -53,14 +87,31 @@ export const CalmaScreen = () => {
     setActiveExercise(tech.id);
   };
 
+  const toggleSound = () => {
+    try { audioService.playClick(); } catch (e) {}
+    setSoundEnabled((v) => !v);
+  };
+
+  // ---------- Ejercicios activos ----------
   if (activeExercise === 'barca') {
-    return <BarcaExercise onExit={() => setActiveExercise(null)} />;
+    return (
+      <>
+        <SoundToggleButton enabled={soundEnabled} onToggle={toggleSound} />
+        <BarcaExercise onExit={() => setActiveExercise(null)} />
+      </>
+    );
   }
 
   if (activeExercise === 'arbol') {
-    return <ArbolExercise onExit={() => setActiveExercise(null)} />;
+    return (
+      <>
+        <SoundToggleButton enabled={soundEnabled} onToggle={toggleSound} />
+        <ArbolExercise onExit={() => setActiveExercise(null)} />
+      </>
+    );
   }
 
+  // ---------- Pantalla de lista ----------
   return (
     <div
       className="min-h-screen flex flex-col antialiased"
@@ -79,7 +130,7 @@ export const CalmaScreen = () => {
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full font-label-md text-label-md font-bold active:scale-95 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full font-bold active:scale-95 transition-all cursor-pointer"
             style={{
               background: 'rgba(255, 255, 255, 0.9)',
               border: '1px solid rgba(168, 230, 207, 0.6)',
@@ -90,20 +141,39 @@ export const CalmaScreen = () => {
             <span>Volver</span>
           </button>
 
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-            style={{
-              background: 'rgba(212, 244, 231, 0.6)',
-              border: '1px solid rgba(168, 230, 207, 0.6)'
-            }}
-          >
-            <span className="text-lg">🧘</span>
-            <span
-              className="font-label-sm text-label-sm font-black uppercase tracking-wider"
-              style={{ color: '#065f46' }}
+          <div className="flex items-center gap-2">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{
+                background: 'rgba(212, 244, 231, 0.6)',
+                border: '1px solid rgba(168, 230, 207, 0.6)'
+              }}
             >
-              Calma
-            </span>
+              <span className="text-lg">🧘</span>
+              <span
+                className="font-black uppercase tracking-wider"
+                style={{ color: '#065f46', fontSize: '11px' }}
+              >
+                Calma
+              </span>
+            </div>
+
+            {/* 🔊 Toggle de sonido */}
+            <button
+              type="button"
+              onClick={toggleSound}
+              className="w-11 h-11 flex items-center justify-center rounded-full active:scale-95 transition-all cursor-pointer"
+              style={{
+                background: soundEnabled ? '#d4f4e7' : '#ffffff',
+                border: '1px solid rgba(168, 230, 207, 0.6)',
+                color: '#065f46'
+              }}
+              title={soundEnabled ? 'Silenciar sonidos' : 'Activar sonidos'}
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {soundEnabled ? 'volume_up' : 'volume_off'}
+              </span>
+            </button>
           </div>
         </div>
       </header>
@@ -112,14 +182,14 @@ export const CalmaScreen = () => {
 
         <div className="w-full mb-5 text-center">
           <h1
-            className="font-headline-lg-mobile font-black leading-tight"
-            style={{ color: '#064e3b' }}
+            className="font-black leading-tight"
+            style={{ color: '#064e3b', fontSize: '22px' }}
           >
             Vamos a respirar 🌿
           </h1>
           <p
-            className="font-body-sm mt-1"
-            style={{ color: '#4b7a68' }}
+            className="mt-1"
+            style={{ color: '#4b7a68', fontSize: '13px' }}
           >
             Elegí una técnica. No hay prisa.
           </p>
@@ -207,7 +277,6 @@ export const CalmaScreen = () => {
           }}
         >
           <p
-            className="font-body-sm"
             style={{ color: '#4b7a68', fontSize: '12px' }}
           >
             🌱 Respirar no es una tarea. Es un regalo para tu cuerpo.
@@ -218,3 +287,33 @@ export const CalmaScreen = () => {
     </div>
   );
 };
+
+// 🔊 Botón flotante de mute que aparece DURANTE un ejercicio
+function SoundToggleButton({ enabled, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="fixed active:scale-95 transition-all cursor-pointer z-[100]"
+      style={{
+        top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+        right: '16px',
+        width: '44px',
+        height: '44px',
+        borderRadius: '999px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: enabled ? 'rgba(212, 244, 231, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        border: '1.5px solid rgba(168, 230, 207, 0.8)',
+        color: '#065f46',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+      }}
+      title={enabled ? 'Silenciar sonidos' : 'Activar sonidos'}
+    >
+      <span className="material-symbols-outlined text-[22px]">
+        {enabled ? 'volume_up' : 'volume_off'}
+      </span>
+    </button>
+  );
+}

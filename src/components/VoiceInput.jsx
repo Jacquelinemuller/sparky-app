@@ -8,19 +8,13 @@ const SpeechRecognition =
 
 /**
  * Input con botón de micrófono para dictado por voz.
+ * Soporta múltiples líneas (auto-resize).
  *
- * Props:
- * - value, onChange: como cualquier input
- * - placeholder, maxLength
- * - color: color principal (default '#8b5cf6')
- * - bg: color de fondo del input (default '#faf5ff')
- * - borderColor: color del borde en reposo (default '#ddd6fe')
- * - textColor: color del texto (default '#0f172a')
- * - className: clases adicionales para el input
- * - style: estilos adicionales para el input
- * - inputRef: ref opcional para el input
- * - onKeyDown: handler opcional
- * - autoFocus: boolean
+ * Props nuevas:
+ * - micIconSrc: ruta de la imagen para el micrófono (ej: '/mic.png')
+ *               Si se pasa, se usa esa imagen en vez del ícono.
+ * - micIconSize: tamaño de la imagen en px (default 36)
+ * - micOffsetY: desplazamiento vertical del botón (ej: '-12px')
  */
 export default function VoiceInput({
   value = '',
@@ -36,7 +30,11 @@ export default function VoiceInput({
   inputRef: externalRef,
   onKeyDown,
   autoFocus = false,
-  disabled = false
+  disabled = false,
+  rows = 1,
+  micIconSrc = null,
+  micIconSize = 36,
+  micOffsetY = '0px'
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [interim, setInterim] = useState('');
@@ -49,7 +47,18 @@ export default function VoiceInput({
 
   const ref = externalRef || internalRef;
 
-  // Cleanup
+  const autoResize = (el) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+
+  useEffect(() => {
+    if (ref?.current) {
+      autoResize(ref.current);
+    }
+  }, [value, ref]);
+
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -149,60 +158,118 @@ export default function VoiceInput({
     ? `${value} ${interim}`.trim()
     : value;
 
+  const handleChange = (e) => {
+    if (!isRecording && onChange) onChange(e.target.value);
+    autoResize(e.target);
+  };
+
+  // ¿Usar imagen personalizada?
+  const useCustomIcon = Boolean(micIconSrc);
+
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-stretch gap-2 w-full">
-        <input
+        <textarea
           ref={ref}
-          type="text"
           value={displayValue}
-          onChange={(e) => {
-            if (!isRecording && onChange) onChange(e.target.value);
-          }}
+          onChange={handleChange}
           placeholder={isRecording ? 'Escuchando...' : placeholder}
           maxLength={maxLength}
           onKeyDown={onKeyDown}
           autoFocus={autoFocus}
           disabled={disabled}
+          rows={rows}
           className={`flex-1 min-w-0 p-3 rounded-2xl text-[15px] font-bold focus:outline-none ${className}`}
           style={{
             background: isRecording ? '#ffffff' : bg,
             border: isRecording ? `2px solid ${color}` : `2px solid ${borderColor}`,
             color: textColor,
+            resize: 'none',
+            overflow: 'hidden',
+            lineHeight: '1.4',
+            minHeight: '1.4em',
             ...style
           }}
         />
 
-        <button
-          type="button"
-          onClick={handleMicClick}
-          disabled={disabled}
-          className="flex-shrink-0 w-12 rounded-2xl flex items-center justify-center cursor-pointer active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            background: isRecording
-              ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-              : '#ffffff',
-            border: isRecording ? 'none' : `2px solid ${borderColor}`,
-            boxShadow: isRecording
-              ? '0 2px 0 0 #991b1b'
-              : `0 2px 0 0 ${borderColor}`,
-            animation: isRecording ? 'micPulse 1s ease-in-out infinite' : 'none'
-          }}
-          title={isRecording ? 'Parar dictado' : 'Dictar por voz'}
-        >
-          <span
-            className="material-symbols-outlined text-[22px]"
+        {/* 🎤 Botón de micrófono */}
+        {useCustomIcon ? (
+          /* ---- MODO IMAGEN (solo diario) ---- */
+          <button
+            type="button"
+            onClick={handleMicClick}
+            disabled={disabled}
+            className="flex-shrink-0 flex items-center justify-center cursor-pointer active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed self-start"
             style={{
-              color: isRecording ? '#ffffff' : color,
-              fontVariationSettings: '"FILL" 1'
+              background: 'transparent',
+              border: 'none',
+              boxShadow: 'none',
+              padding: 0,
+              width: '48px',
+              height: '48px',
+              marginTop: micOffsetY,
+              animation: isRecording ? 'micPulse 1s ease-in-out infinite' : 'none'
             }}
+            title={isRecording ? 'Parar dictado' : 'Dictar por voz'}
           >
-            {isRecording ? 'stop_circle' : 'mic'}
-          </span>
-        </button>
+            {isRecording ? (
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  color: '#dc2626',
+                  fontSize: '40px',
+                  fontVariationSettings: '"FILL" 1'
+                }}
+              >
+                stop_circle
+              </span>
+            ) : (
+              <img
+                src={micIconSrc}
+                alt="Micrófono"
+                draggable={false}
+                style={{
+                  width: `${micIconSize}px`,
+                  height: `${micIconSize}px`,
+                  objectFit: 'contain',
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+          </button>
+        ) : (
+          /* ---- MODO ÍCONO MATERIAL (todo el resto de la app) ---- */
+          <button
+            type="button"
+            onClick={handleMicClick}
+            disabled={disabled}
+            className="flex-shrink-0 w-12 rounded-2xl flex items-center justify-center cursor-pointer active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed self-start"
+            style={{
+              background: isRecording
+                ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                : '#ffffff',
+              border: isRecording ? 'none' : `2px solid ${borderColor}`,
+              boxShadow: isRecording
+                ? '0 2px 0 0 #991b1b'
+                : `0 2px 0 0 ${borderColor}`,
+              animation: isRecording ? 'micPulse 1s ease-in-out infinite' : 'none',
+              minHeight: '48px'
+            }}
+            title={isRecording ? 'Parar dictado' : 'Dictar por voz'}
+          >
+            <span
+              className="material-symbols-outlined text-[22px]"
+              style={{
+                color: isRecording ? '#ffffff' : color,
+                fontVariationSettings: '"FILL" 1'
+              }}
+            >
+              {isRecording ? 'stop_circle' : 'mic'}
+            </span>
+          </button>
+        )}
       </div>
 
-      {/* Feedback de estado */}
       {isRecording && !interim && (
         <span className="text-[10px] font-black uppercase tracking-wider animate-pulse" style={{ color }}>
           🎤 Escuchando...

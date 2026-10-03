@@ -356,6 +356,101 @@ class AudioService {
     osc.start(now);
     osc.stop(now + duration);
   }
+  // ============================================
+  // 🌊 SONIDOS AMBIENTALES POR ARCHIVO (loop)
+  // ============================================
+
+  // Reproduce un archivo de audio en loop, con fade-in suave
+  playAmbientFile(src, volume = 0.35, fadeMs = 1500) {
+    if (!this.enabled) return;
+
+    // Si ya está sonando el mismo, no reiniciar
+    if (this.ambientAudio && this.ambientAudioSrc === src) {
+      return;
+    }
+
+    this.stopAmbientFile();
+
+    try {
+      const audio = new Audio(src);
+      audio.loop = true;
+      audio.volume = 0;
+      audio.preload = 'auto';
+      this.ambientAudio = audio;
+      this.ambientAudioSrc = src;
+      this.ambientTargetVolume = volume;
+
+      audio.play().then(() => {
+        // Fade-in: subir volumen gradualmente
+        const steps = 20;
+        const stepTime = fadeMs / steps;
+        let i = 0;
+        this.ambientFadeInterval = setInterval(() => {
+          i++;
+          if (!this.ambientAudio) {
+            clearInterval(this.ambientFadeInterval);
+            return;
+          }
+          this.ambientAudio.volume = Math.min(
+            (volume * i) / steps,
+            volume
+          );
+          if (i >= steps) {
+            clearInterval(this.ambientFadeInterval);
+          }
+        }, stepTime);
+      }).catch(() => {
+        // Si el navegador bloquea el audio, no hacemos nada
+      });
+    } catch (e) {}
+  }
+
+  // Detiene el sonido ambiental con fade-out
+  stopAmbientFile(fadeMs = 800) {
+    if (this.ambientFadeInterval) {
+      clearInterval(this.ambientFadeInterval);
+      this.ambientFadeInterval = null;
+    }
+
+    if (!this.ambientAudio) {
+      this.ambientAudioSrc = null;
+      return;
+    }
+
+    const audio = this.ambientAudio;
+    const startVolume = audio.volume;
+    const steps = 10;
+    const stepTime = fadeMs / steps;
+    let i = 0;
+
+    const fadeOut = setInterval(() => {
+      i++;
+      const newVolume = Math.max(startVolume * (1 - i / steps), 0);
+      try { audio.volume = newVolume; } catch (e) {}
+      if (i >= steps) {
+        clearInterval(fadeOut);
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch (e) {}
+      }
+    }, stepTime);
+
+    this.ambientAudio = null;
+    this.ambientAudioSrc = null;
+  }
+
+  // Cambia el volumen en vivo (para el botón de mute)
+  setAmbientVolume(volume) {
+    this.ambientTargetVolume = volume;
+    if (this.ambientFadeInterval) {
+      clearInterval(this.ambientFadeInterval);
+      this.ambientFadeInterval = null;
+    }
+    if (this.ambientAudio) {
+      try { this.ambientAudio.volume = volume; } catch (e) {}
+    }
+  }
 
     // 🆕 Tick de teclado realista — ruido blanco filtrado (estilo tecla mecánica)
   playTypeTick() {

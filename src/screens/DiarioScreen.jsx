@@ -23,13 +23,8 @@ const PADDING_RIGHT = 30;
 const PADDING_TOP = 46;
 const PADDING_BOTTOM = 30;
 
-// ✍️ Fuente legible para el cuerpo del diario
 const HAND_FONT = '"Patrick Hand", cursive';
-
-// 🎀 Fuente para el nombre en la TAPA
 const SCRIPT_FONT = '"WimpyKid", "Segoe Script", cursive';
-
-// 🖋️ Fuente manuscrita para la FECHA (solamente)
 const TITLE_FONT = '"WimpyKid", "Patrick Hand", cursive';
 
 const SOUND_KEY = 'sparky_diary_sound';
@@ -58,6 +53,21 @@ export const DiarioScreen = () => {
   useEffect(() => {
     localStorage.setItem(SOUND_KEY, String(soundEnabled));
   }, [soundEnabled]);
+
+  // 🔊 Despertar el AudioContext con la primera interacción
+  useEffect(() => {
+    const wakeUp = () => {
+      try { audioService.init(); } catch (e) {}
+      window.removeEventListener('click', wakeUp);
+      window.removeEventListener('touchstart', wakeUp);
+    };
+    window.addEventListener('click', wakeUp);
+    window.addEventListener('touchstart', wakeUp);
+    return () => {
+      window.removeEventListener('click', wakeUp);
+      window.removeEventListener('touchstart', wakeUp);
+    };
+  }, []);
 
   const goBack = () => {
     try { audioService.playClick(); } catch (e) {}
@@ -338,7 +348,6 @@ export const DiarioScreen = () => {
 
         <main className="flex-1 flex flex-col relative w-full pt-20 pb-12 px-4 max-w-md mx-auto">
           {weeks.length === 0 ? (
-            /* Sin páginas todavía: mostramos la hoja vacía */
             <div className="w-full relative">
               <img
                 src="/diario/hoja.png"
@@ -415,7 +424,6 @@ export const DiarioScreen = () => {
               </div>
             </div>
           ) : (
-            /* Con páginas: mostramos la hoja con el índice */
             <div className="w-full relative">
               <img
                 src="/diario/hoja.png"
@@ -450,7 +458,6 @@ export const DiarioScreen = () => {
                     fontWeight: 400
                   }}
                 >
-                  {/* Título "Índice" subrayado */}
                   <div
                     style={{
                       fontFamily: TITLE_FONT,
@@ -469,10 +476,8 @@ export const DiarioScreen = () => {
                     </span>
                   </div>
 
-                  {/* Renglón vacío */}
                   <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
 
-                  {/* Subtítulo */}
                   <div
                     style={{
                       fontSize: '14px',
@@ -484,10 +489,8 @@ export const DiarioScreen = () => {
                     Mis misiones secretas ✨
                   </div>
 
-                  {/* Renglón vacío */}
                   <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
 
-                  {/* Lista de semanas — cada una en 1 renglón, tappable */}
                   {weeks.map((wk) => {
                     const entries = entriesByWeek[wk];
                     const title = getWeekTitle(wk);
@@ -745,13 +748,12 @@ export const DiarioScreen = () => {
                     <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
                   )}
 
-                  {/* "MI TIP:" + input en el MISMO renglón */}
+                  {/* "MI TIP:" + input (SIN altura fija, crece con el texto) */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '6px',
-                      height: `${LINE_HEIGHT}px`,
                       lineHeight: `${LINE_HEIGHT}px`,
                       margin: 0,
                       padding: 0
@@ -779,7 +781,6 @@ export const DiarioScreen = () => {
                       style={{
                         flex: 1,
                         minWidth: 0,
-                        height: `${LINE_HEIGHT}px`,
                         lineHeight: `${LINE_HEIGHT}px`
                       }}
                     >
@@ -791,18 +792,21 @@ export const DiarioScreen = () => {
                         color="#b45309"
                         bg="transparent"
                         borderColor="transparent"
+                        micIconSrc="/mic.png"          // 🆕 activa el ícono personalizado
+                        micIconSize={56}                // 🆕 tamaño (en px)
+                        micOffsetY="-12px"              // 🆕 subir medio renglón
                         style={{
                           fontSize: '16px',
                           fontFamily: HAND_FONT,
-                          padding: 0,
+                          padding: '0 0 0 2px',
                           margin: 0,
                           lineHeight: `${LINE_HEIGHT}px`,
                           background: 'transparent',
                           border: 'none',
                           minHeight: `${LINE_HEIGHT}px`,
-                          height: `${LINE_HEIGHT}px`,
                           display: 'block',
-                          fontStyle: 'normal'
+                          fontStyle: 'normal',
+                          resize: 'none'
                         }}
                       />
                     </div>
@@ -855,4 +859,4 @@ export const DiarioScreen = () => {
       </main>
     </div>
   );
-};
+}
