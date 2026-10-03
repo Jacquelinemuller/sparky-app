@@ -13,7 +13,21 @@ const DEFAULT_TABS = [
   { id: 'noche',   label: 'Noche',  emoji: '🌙', color: '#818cf8', bg: '#e0e7ff' },
 ];
 
+// 🎨 Paleta de colores de cuaderno
+const NOTEBOOK_COLORS = [
+  { id: 'yellow', label: 'Amarillo', bg1: '#fffef7', bg2: '#fef9e7', line: 'rgba(196, 181, 253, 0.28)', swatch: '#fef9e7' },
+  { id: 'blue',   label: 'Celeste',  bg1: '#f5faff', bg2: '#dbeafe', line: 'rgba(147, 197, 253, 0.35)', swatch: '#dbeafe' },
+  { id: 'mint',   label: 'Menta',    bg1: '#f5fdfa', bg2: '#d1fae5', line: 'rgba(110, 231, 183, 0.35)', swatch: '#d1fae5' },
+  { id: 'pink',   label: 'Rosa',     bg1: '#fff7fa', bg2: '#fce7f3', line: 'rgba(249, 168, 212, 0.35)', swatch: '#fce7f3' },
+  { id: 'purple', label: 'Lila',     bg1: '#faf7ff', bg2: '#ede9fe', line: 'rgba(196, 181, 253, 0.35)', swatch: '#ede9fe' },
+  { id: 'peach',  label: 'Durazno',  bg1: '#fffaf5', bg2: '#fed7aa', line: 'rgba(251, 146, 60, 0.28)',  swatch: '#fed7aa' },
+];
+
 const uid = () => 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+function getColorDef(colorId) {
+  return NOTEBOOK_COLORS.find((c) => c.id === colorId) || NOTEBOOK_COLORS[0];
+}
 
 function mergeTabsWithDefaults(saved) {
   if (!Array.isArray(saved)) return DEFAULT_TABS;
@@ -38,7 +52,6 @@ export const ChecklistsScreen = () => {
     setActiveScreen
   } = useApp();
 
-  // ---------- Tabs ----------
   const [tabs, setTabs] = useState(() => {
     try {
       const saved = localStorage.getItem(TABS_KEY);
@@ -63,7 +76,6 @@ export const ChecklistsScreen = () => {
     try { localStorage.setItem(TABS_KEY, JSON.stringify(tabs)); } catch (e) {}
   }, [tabs]);
 
-  // ---------- UI state ----------
   const [expanded, setExpanded] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [editingList, setEditingList] = useState(null);
@@ -71,18 +83,18 @@ export const ChecklistsScreen = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tabsEditorOpen, setTabsEditorOpen] = useState(false);
 
-  // 🆕 Estados del picker de categoría (movidos al tope)
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [movingList, setMovingList] = useState(null);
   const [pendingCategory, setPendingCategory] = useState(null);
 
-  // ---------- Inline step editing ----------
+  // 🆕 Picker de color
+  const [colorPickerList, setColorPickerList] = useState(null);
+
   const [editingStep, setEditingStep] = useState(null);
   const [addingStepToList, setAddingStepToList] = useState(null);
   const [newStepText, setNewStepText] = useState('');
   const [newStepTime, setNewStepTime] = useState('');
 
-  // ---------- Handlers ----------
   const goBack = () => {
     try { audioService.playClick(); } catch (e) {}
     setActiveScreen('apoyos');
@@ -91,8 +103,6 @@ export const ChecklistsScreen = () => {
     try { audioService.playPop(); } catch (e) {}
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-
-  // FAB Nueva: si estamos en una solapa específica, crea directo. Si es "Todas", pregunta.
   const handleNew = () => {
     try { audioService.playClick(); } catch (e) {}
     if (activeTab === 'todas') {
@@ -100,29 +110,24 @@ export const ChecklistsScreen = () => {
       setPendingCategory(null);
       setCategoryPickerOpen(true);
     } else {
-      // En una solapa específica: la categoría se asigna al guardar
       setPendingCategory(activeTab);
       setEditingList(null);
       setModalOpen(true);
     }
   };
-
   const handleEdit = (list) => {
     try { audioService.playClick(); } catch (e) {}
     setEditingList(list);
     setModalOpen(true);
   };
 
-  // 🔧 FIX: forzar siempre la categoría correcta
   const handleSave = (data) => {
     const payload = { ...data };
 
     if (editingList) {
-      // Editando: mantener categoría original
       const originalCat = editingList.category || 'manana';
       payload.category = originalCat;
     } else {
-      // Creando: prioridad pendingCategory > activeTab > 'manana'
       let cat;
       if (pendingCategory) {
         cat = pendingCategory;
@@ -214,7 +219,6 @@ export const ChecklistsScreen = () => {
     setMenuOpen(false);
   };
 
-  // ---------- Tabs editor ----------
   const openTabsEditor = () => {
     setMenuOpen(false);
     setTabsEditorOpen(true);
@@ -253,7 +257,7 @@ export const ChecklistsScreen = () => {
         background: 'linear-gradient(180deg, #fef6ff 0%, #f0f7ff 50%, #f0fff4 100%)'
       }}
     >
-      {/* ============ HEADER ============ */}
+      {/* HEADER */}
       <header
         className="fixed top-0 w-full z-50 pt-safe backdrop-blur-xl"
         style={{
@@ -300,7 +304,7 @@ export const ChecklistsScreen = () => {
 
       <main className="flex-1 flex flex-col relative w-full pt-24 pb-32 px-4 max-w-md mx-auto">
 
-        {/* ============ TABS ============ */}
+        {/* TABS */}
         <div
           className="flex items-end gap-1 mb-0 overflow-x-auto relative z-10"
           style={{ scrollbarWidth: 'none', paddingBottom: 0 }}
@@ -390,7 +394,7 @@ export const ChecklistsScreen = () => {
           })}
         </div>
 
-        {/* ============ CUADERNOS ============ */}
+        {/* CUADERNOS */}
         {filteredChecklists.length === 0 ? (
           <div
             className="w-full p-8 rounded-3xl text-center"
@@ -418,21 +422,33 @@ export const ChecklistsScreen = () => {
               const isOpen = expanded[list.id] === true;
               const catData = tabs.find((t) => t.id === (list.category || 'manana')) || tabs[1];
 
+              // 🎨 Color del cuaderno
+              const colorDef = getColorDef(list.color);
+
+              const notebookLines = `repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 27px,
+                ${colorDef.line} 27px,
+                ${colorDef.line} 28px
+              )`;
+
               return (
                 <div
                   key={list.id}
                   className="w-full rounded-3xl overflow-hidden"
                   style={{
-                    background: 'linear-gradient(180deg, #fffef7 0%, #fef9e7 100%)',
+                    background: `${notebookLines}, linear-gradient(180deg, ${colorDef.bg1} 0%, ${colorDef.bg2} 100%)`,
                     border: `2px solid ${activeTabData.color || '#a78bfa'}`,
                     boxShadow: `0 6px 0 0 ${activeTabData.color || '#a78bfa'}, 0 10px 20px rgba(0, 0, 0, 0.06)`
                   }}
                 >
-                  {/* ---------- CABECERA ---------- */}
+                  {/* CABECERA */}
                   <button
                     type="button"
                     onClick={() => toggleExpand(list.id)}
                     className="w-full p-4 flex items-center gap-3 cursor-pointer text-left"
+                    style={{ background: 'transparent' }}
                   >
                     <div
                       className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-2xl"
@@ -464,7 +480,10 @@ export const ChecklistsScreen = () => {
                             color: '#8a7a5c',
                             fontSize: '11px',
                             fontFamily: FONT,
-                            fontWeight: 600
+                            fontWeight: 600,
+                            background: 'rgba(255, 254, 247, 0.75)',
+                            padding: '0 4px',
+                            borderRadius: '4px'
                           }}
                         >
                           {total === 0
@@ -502,10 +521,10 @@ export const ChecklistsScreen = () => {
                     </span>
                   </button>
 
-                  {/* ---------- CONTENIDO DESPLEGADO ---------- */}
+                  {/* CONTENIDO DESPLEGADO */}
                   {isOpen && (
                     <>
-                      <div className="px-4 pb-3">
+                      <div className="px-4 pb-3" style={{ background: 'transparent' }}>
                         <div className="flex items-center gap-3 mb-2">
                           <img
                             src="/rutina/icono-checklist.png"
@@ -538,7 +557,7 @@ export const ChecklistsScreen = () => {
                         <div
                           className="p-3 rounded-2xl flex items-center gap-3"
                           style={{
-                            background: 'rgba(255, 255, 255, 0.8)',
+                            background: 'rgba(255, 255, 255, 0.92)',
                             border: '1.5px solid rgba(196, 181, 253, 0.5)',
                             boxShadow: '0 2px 0 0 rgba(196, 181, 253, 0.2)'
                           }}
@@ -610,19 +629,8 @@ export const ChecklistsScreen = () => {
                         </div>
                       </div>
 
-                      {/* ---------- PASOS ---------- */}
-                      <div
-                        className="px-4 pb-2"
-                        style={{
-                          background: `repeating-linear-gradient(
-                            to bottom,
-                            transparent 0px,
-                            transparent 51px,
-                            rgba(196, 181, 253, 0.18) 51px,
-                            rgba(196, 181, 253, 0.18) 52px
-                          )`
-                        }}
-                      >
+                      {/* PASOS */}
+                      <div className="px-4 pb-2" style={{ background: 'transparent' }}>
                         {(list.steps || []).map((step) => {
                           const isEditingText = editingStep?.listId === list.id && editingStep?.stepId === step.id && editingStep?.field === 'text';
                           const isEditingTime = editingStep?.listId === list.id && editingStep?.stepId === step.id && editingStep?.field === 'time';
@@ -692,7 +700,10 @@ export const ChecklistsScreen = () => {
                                       fontFamily: FONT,
                                       fontWeight: step.done ? 500 : 600,
                                       textDecoration: step.done ? 'line-through' : 'none',
-                                      opacity: step.done ? 0.65 : 1
+                                      opacity: step.done ? 0.65 : 1,
+                                      background: 'rgba(255, 254, 247, 0.65)',
+                                      padding: '0 4px',
+                                      borderRadius: '4px'
                                     }}
                                   >
                                     {step.text}
@@ -731,10 +742,10 @@ export const ChecklistsScreen = () => {
                                   className="flex-shrink-0 px-2.5 py-1 rounded-full active:scale-95 transition-all cursor-pointer"
                                   style={{
                                     background: step.time
-                                      ? 'rgba(237, 233, 254, 0.9)'
+                                      ? 'rgba(237, 233, 254, 0.95)'
                                       : step.done
-                                      ? 'rgba(209, 250, 229, 0.9)'
-                                      : 'rgba(254, 243, 199, 0.9)',
+                                      ? 'rgba(209, 250, 229, 0.95)'
+                                      : 'rgba(254, 243, 199, 0.95)',
                                     color: step.time
                                       ? '#6d28d9'
                                       : step.done
@@ -764,7 +775,7 @@ export const ChecklistsScreen = () => {
                         })}
                       </div>
 
-                      {/* Input para agregar paso */}
+                      {/* Input agregar paso */}
                       {addingStepToList === list.id && (
                         <div className="px-4 py-2 flex flex-col gap-2">
                           <input
@@ -835,14 +846,14 @@ export const ChecklistsScreen = () => {
                         </div>
                       )}
 
-                      {/* ---------- ACCIONES ---------- */}
+                      {/* ACCIONES */}
                       <div className="px-4 pb-3 pt-2 flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
                           onClick={() => startAddStep(list.id)}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full active:scale-95 transition-all cursor-pointer"
                           style={{
-                            background: 'rgba(209, 250, 229, 0.9)',
+                            background: 'rgba(209, 250, 229, 0.95)',
                             color: '#065f46',
                             border: '1.5px solid rgba(110, 231, 183, 0.8)',
                             fontSize: '11px',
@@ -859,7 +870,7 @@ export const ChecklistsScreen = () => {
                           onClick={() => handleEdit(list)}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full active:scale-95 transition-all cursor-pointer"
                           style={{
-                            background: 'rgba(255, 255, 255, 0.9)',
+                            background: 'rgba(255, 255, 255, 0.95)',
                             color: '#7c3aed',
                             border: '1.5px solid rgba(196, 181, 253, 0.6)',
                             fontSize: '11px',
@@ -871,6 +882,32 @@ export const ChecklistsScreen = () => {
                           Editar
                         </button>
 
+                        {/* 🆕 BOTÓN COLOR */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try { audioService.playClick(); } catch (e) {}
+                            setColorPickerList(list);
+                          }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full active:scale-95 transition-all cursor-pointer"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            color: '#7c3aed',
+                            border: '1.5px solid rgba(196, 181, 253, 0.6)',
+                            fontSize: '11px',
+                            fontFamily: FONT,
+                            fontWeight: 600
+                          }}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[14px]"
+                            style={{ color: colorDef.swatch }}
+                          >
+                            palette
+                          </span>
+                          Color
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -880,7 +917,7 @@ export const ChecklistsScreen = () => {
                           }}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full active:scale-95 transition-all cursor-pointer"
                           style={{
-                            background: 'rgba(219, 234, 254, 0.9)',
+                            background: 'rgba(219, 234, 254, 0.95)',
                             color: '#1e40af',
                             border: '1.5px solid rgba(147, 197, 253, 0.8)',
                             fontSize: '11px',
@@ -898,7 +935,7 @@ export const ChecklistsScreen = () => {
                             onClick={() => handleReset(list.id)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full active:scale-95 transition-all cursor-pointer"
                             style={{
-                              background: 'rgba(255, 237, 213, 0.9)',
+                              background: 'rgba(255, 237, 213, 0.95)',
                               color: '#c2410c',
                               border: '1.5px solid rgba(253, 186, 116, 0.8)',
                               fontSize: '11px',
@@ -916,7 +953,7 @@ export const ChecklistsScreen = () => {
                           onClick={() => setConfirmDelete(list.id)}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full active:scale-95 transition-all cursor-pointer ml-auto"
                           style={{
-                            background: 'rgba(254, 226, 226, 0.9)',
+                            background: 'rgba(254, 226, 226, 0.95)',
                             color: '#dc2626',
                             border: '1.5px solid rgba(252, 165, 165, 0.8)',
                             fontSize: '11px',
@@ -938,7 +975,7 @@ export const ChecklistsScreen = () => {
 
       </main>
 
-      {/* ============ FAB NUEVA RUTINA ============ */}
+      {/* FAB NUEVA RUTINA */}
       <button
         type="button"
         onClick={handleNew}
@@ -961,7 +998,7 @@ export const ChecklistsScreen = () => {
         <span>Nueva</span>
       </button>
 
-      {/* ============ MODAL CREAR/EDITAR ============ */}
+      {/* MODAL CREAR/EDITAR */}
       <ChecklistModal
         isOpen={modalOpen}
         onClose={() => {
@@ -973,7 +1010,7 @@ export const ChecklistsScreen = () => {
         editingList={editingList}
       />
 
-      {/* ============ PICKER DE CATEGORÍA ============ */}
+      {/* PICKER DE CATEGORÍA */}
       {categoryPickerOpen && (
         <div
           className="fixed inset-0 z-[170] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -1034,7 +1071,6 @@ export const ChecklistsScreen = () => {
                         setMovingList(null);
                         setCategoryPickerOpen(false);
                       } else {
-                        // 🔑 Guardar la categoría y abrir el modal
                         setPendingCategory(tab.id);
                         setCategoryPickerOpen(false);
                         setEditingList(null);
@@ -1104,7 +1140,138 @@ export const ChecklistsScreen = () => {
         </div>
       )}
 
-      {/* ============ MENÚ ⋯ ============ */}
+      {/* 🆕 PICKER DE COLOR */}
+      {colorPickerList && (
+        <div
+          className="fixed inset-0 z-[170] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setColorPickerList(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-3xl p-5"
+            style={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #faf8ff 100%)',
+              border: '2px solid #c4b5fd',
+              boxShadow: '0 6px 0 0 #c4b5fd, 0 10px 20px rgba(0, 0, 0, 0.15)'
+            }}
+          >
+            <h3
+              style={{
+                color: '#1e1b4b',
+                fontSize: '18px',
+                fontFamily: FONT,
+                fontWeight: 700,
+                marginBottom: '4px',
+                textAlign: 'center'
+              }}
+            >
+              Elegí el color del cuaderno
+            </h3>
+            <p
+              style={{
+                color: '#7c6f9e',
+                fontSize: '12px',
+                fontFamily: FONT,
+                fontWeight: 500,
+                marginBottom: '16px',
+                textAlign: 'center'
+              }}
+            >
+              "{colorPickerList.title}"
+            </p>
+
+            <div className="grid grid-cols-3 gap-3">
+              {NOTEBOOK_COLORS.map((colorDef) => {
+                const isCurrent = (colorPickerList.color || 'yellow') === colorDef.id;
+                return (
+                  <button
+                    key={colorDef.id}
+                    type="button"
+                    onClick={() => {
+                      try { audioService.playSuccess(); } catch (e) {}
+                      updateChecklist(colorPickerList.id, { color: colorDef.id });
+                      setColorPickerList(null);
+                    }}
+                    className="aspect-square rounded-2xl flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer relative overflow-hidden"
+                    style={{
+                      background: `linear-gradient(180deg, ${colorDef.bg1} 0%, ${colorDef.bg2} 100%)`,
+                      border: `2px solid ${isCurrent ? '#7c3aed' : 'rgba(196, 181, 253, 0.5)'}`,
+                      boxShadow: isCurrent ? '0 0 0 3px rgba(167, 139, 250, 0.4)' : 'none'
+                    }}
+                  >
+                    {/* Mini rayas del cuaderno */}
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: `repeating-linear-gradient(
+                          to bottom,
+                          transparent 0px,
+                          transparent 8px,
+                          ${colorDef.line} 8px,
+                          ${colorDef.line} 9px
+                        )`,
+                        opacity: 0.6,
+                        pointerEvents: 'none'
+                      }}
+                    />
+                    {isCurrent && (
+                      <span
+                        className="material-symbols-outlined"
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          color: '#7c3aed',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          zIndex: 2
+                        }}
+                      >
+                        check_circle
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        position: 'relative',
+                        zIndex: 1,
+                        color: '#1e1b4b',
+                        fontSize: '10px',
+                        fontFamily: FONT,
+                        fontWeight: 700,
+                        background: 'rgba(255, 255, 255, 0.8)',
+                        padding: '1px 6px',
+                        borderRadius: '999px'
+                      }}
+                    >
+                      {colorDef.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setColorPickerList(null)}
+              className="w-full mt-4 h-11 rounded-2xl active:scale-95 transition-all cursor-pointer"
+              style={{
+                background: 'rgba(255,255,255,0.9)',
+                color: '#7c3aed',
+                border: '2px solid rgba(196, 181, 253, 0.5)',
+                fontSize: '13px',
+                fontFamily: FONT,
+                fontWeight: 700
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MENÚ ⋯ */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-[140] flex items-start justify-end p-4"
@@ -1126,7 +1293,7 @@ export const ChecklistsScreen = () => {
         </div>
       )}
 
-      {/* ============ EDITOR DE SOLAPAS ============ */}
+      {/* EDITOR DE SOLAPAS */}
       {tabsEditorOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div
@@ -1281,7 +1448,7 @@ export const ChecklistsScreen = () => {
         </div>
       )}
 
-      {/* ============ CONFIRMAR BORRADO ============ */}
+      {/* CONFIRMAR BORRADO */}
       {confirmDelete && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div
@@ -1352,7 +1519,6 @@ export const ChecklistsScreen = () => {
   );
 };
 
-// ----- Sub-componente del menú ⋯ -----
 const MenuItem = ({ icon, label, onClick }) => (
   <button
     type="button"

@@ -56,9 +56,9 @@ export const AlarmsScreen = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const goBack = () => {
-    try { audioService.playClick(); } catch (e) {}
-    setActiveScreen('none');
-  };
+  try { audioService.playClick(); } catch (e) {}
+  setActiveScreen('apoyos');  // ✅ va a Mi Kit
+};
 
   // ✅ SOLO alarmas independientes (sin blockId ni eventId)
   const independentAlarms = useMemo(() => {
