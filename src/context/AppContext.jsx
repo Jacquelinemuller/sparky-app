@@ -598,7 +598,43 @@ export const AppProvider = ({ children }) => {
   // ==========================================
     // ==========================================
   // ALARMAS
-  // ==========================================
+    const addDiaryEntry = useCallback((entry) => {
+    recordActivity();
+    setState((prev) => {
+      const exists = (prev.diaryEntries || []).some(
+        (e) => e.dateKey === entry.dateKey
+      );
+
+      if (exists) return prev;
+
+      const newEntry = {
+        id: 'dy_' + Date.now(),
+        dateKey: entry.dateKey,
+        weekId: entry.weekId,
+        day: entry.day,
+        tipTitle: entry.tipTitle || '',
+        tipExplanation: entry.tipExplanation || '',
+        userNote: '',
+        createdAt: Date.now()
+      };
+
+      return {
+        ...prev,
+        diaryEntries: [...(prev.diaryEntries || []), newEntry]
+      };
+    });
+  }, [recordActivity]);
+  
+  const updateDiaryNote = useCallback((entryId, userNote) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      diaryEntries: (prev.diaryEntries || []).map((e) =>
+        e.id === entryId ? { ...e, userNote } : e
+      )
+    }));
+  }, [recordActivity]);
+
   const addAlarm = useCallback((alarmData) => {
     recordActivity();
     try { audioService.playPop(); } catch (e) {}
@@ -652,20 +688,21 @@ export const AppProvider = ({ children }) => {
 
 
   const addChecklist = useCallback((data) => {
-    recordActivity();
-    try { audioService.playPop(); } catch (e) {}
-    const newList = {
-      id: 'cl_' + Date.now(),
-      title: data.title || 'Nueva rutina',
-      emoji: data.emoji || '📋',
-      steps: data.steps || []
-    };
-    setState((prev) => ({
-      ...prev,
-      checklists: [...(prev.checklists || []), newList]
-    }));
-    return newList;
-  }, [recordActivity]);
+  recordActivity();
+  try { audioService.playPop(); } catch (e) {}
+  const newList = {
+    id: 'cl_' + Date.now(),
+    title: data.title || 'Nueva rutina',
+    emoji: data.emoji || '📋',
+    category: data.category || 'manana',  // ✅ FIX: guardar categoría
+    steps: data.steps || []
+  };
+  setState((prev) => ({
+    ...prev,
+    checklists: [...(prev.checklists || []), newList]
+  }));
+  return newList;
+}, [recordActivity]);
 
   const updateChecklist = useCallback((listId, updates) => {
     recordActivity();
@@ -982,6 +1019,9 @@ export const AppProvider = ({ children }) => {
     toggleChecklistStep,
     resetChecklist,
         alarms: state.alarms || [],
+            diaryEntries: state.diaryEntries || [],
+    addDiaryEntry,
+    updateDiaryNote,
     addAlarm,
     removeAlarm,
     markAlarmTriggered,

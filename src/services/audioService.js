@@ -205,7 +205,6 @@ class AudioService {
 
     const now = this.ctx.currentTime;
 
-    // 3 beeps por ciclo, 2 ciclos
     for (let ciclo = 0; ciclo < 2; ciclo++) {
       for (let i = 0; i < 3; i++) {
         const startTime = now + ciclo * 1.2 + i * 0.2;
@@ -232,10 +231,8 @@ class AudioService {
   playAlarm_ladrido() {
     if (!this.enabled) return;
 
-    // Reproducir el bark
     try { this.playBark(); } catch (e) {}
 
-    // Y agregar un tono ascendente encima
     this.init();
     if (!this.ctx) return;
 
@@ -270,7 +267,6 @@ class AudioService {
 
     const now = this.ctx.currentTime;
 
-    // 4 pulsos fuertes
     for (let i = 0; i < 4; i++) {
       const startTime = now + i * 0.25;
       const osc = this.ctx.createOscillator();
@@ -361,6 +357,47 @@ class AudioService {
     osc.stop(now + duration);
   }
 
+    // 🆕 Tick de teclado realista — ruido blanco filtrado (estilo tecla mecánica)
+  playTypeTick() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    // 1) Generar un buffer corto de ruido blanco (30ms)
+    const duration = 0.03;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    // 2) Fuente con el ruido
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    // 3) Filtro paso-banda → le da el "cuerpo" de tecla
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2200 + Math.random() * 600, now); // pequeño random para que no sea monótono
+    filter.Q.setValueAtTime(1.5, now);
+
+    // 4) Envolvente muy rápida (ataque 1ms, decae en 25ms)
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.001);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+    // 5) Conectar y disparar
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    noise.start(now);
+    noise.stop(now + duration);
+  }
   playError() {
     if (!this.enabled) return;
     this.init();

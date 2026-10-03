@@ -142,7 +142,8 @@ const DEFAULT_STATE = {
     soundEnabled: true,
     reminderNudgeEnabled: true,
     reminderIntervalMinutes: 4,
-    customPomodoroMinutes: 25
+    customPomodoroMinutes: 25,
+    defaultAlarmSound: 'campanita'
   },
   weeklyTemplate: JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE)),
   dayOverrides: {},
@@ -206,6 +207,7 @@ const DEFAULT_STATE = {
   customTips: [],
   quizAnswers: {},
   checklists: [],
+    diaryEntries: [],
   alarms: [],
   activeChallenges: [],
   unlockedSounds: ['rain'],

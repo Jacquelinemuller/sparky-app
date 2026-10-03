@@ -19,6 +19,7 @@ import { ChecklistsScreen } from './screens/ChecklistsScreen';
 import { ApoyosScreen } from './screens/ApoyosScreen';
 import { AlarmsScreen } from './screens/AlarmsScreen';
 import { CalmaScreen } from './screens/CalmaScreen';
+import { DiarioScreen } from './screens/DiarioScreen';
 import { AlarmManager } from './components/AlarmManager';
 
 const BACKGROUNDS = {
@@ -48,6 +49,8 @@ export function AppContent() {
   if (activeScreen === 'apoyos') return <ApoyosScreen />;
   if (activeScreen === 'alarms') return <AlarmsScreen />;
   if (activeScreen === 'calma') return <CalmaScreen />;
+    if (activeScreen === 'diario') return <DiarioScreen />;
+  
 
   if (activeScreen === 'parents') {
     if (!parentsUnlocked) {

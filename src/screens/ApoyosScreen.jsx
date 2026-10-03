@@ -8,6 +8,7 @@ const BUTTONS = [
     label: 'Alarmas',
     icon: 'notifications_active',
     emoji: '🔔',
+    image: '/kit/alarmas.png',
     gradient: 'linear-gradient(135deg, #ffd6db 0%, #ffb3ba 100%)',
     border: '#ff9aa2',
     text: '#7f1d1d',
@@ -18,6 +19,7 @@ const BUTTONS = [
     label: 'Calma',
     icon: 'self_improvement',
     emoji: '🧘',
+    image: '/kit/calma.png',
     gradient: 'linear-gradient(135deg, #d4f4e7 0%, #a8e6cf 100%)',
     border: '#7dd3c0',
     text: '#064e3b',
@@ -25,23 +27,25 @@ const BUTTONS = [
   },
   {
     id: 'checklists',
-    label: 'Checklists',
-    icon: 'task_alt',
+    label: 'Rutina',
+    icon: 'checklist',
     emoji: '✅',
+    image: '/kit/rutina.png',
     gradient: 'linear-gradient(135deg, #e0d5f5 0%, #c7b8ea 100%)',
     border: '#a78bfa',
     text: '#3b0764',
     screen: 'checklists'
   },
   {
-    id: 'consejos',
+    id: 'diario',
     label: 'Diario de tips',
-    icon: 'lightbulb',
-    emoji: '💡',
+    icon: 'menu_book',
+    emoji: '📖',
+    image: '/kit/diario.png',
     gradient: 'linear-gradient(135deg, #fff0c9 0%, #ffe0a3 100%)',
     border: '#fbbf24',
     text: '#78350f',
-    screen: 'tips'
+    screen: 'diario'
   }
 ];
 
@@ -108,15 +112,10 @@ export const ApoyosScreen = () => {
 
       <main className="flex-1 flex flex-col relative w-full pt-20 pb-12 px-4 max-w-md mx-auto">
 
+        {/* Subtítulo (sin el H1 redundante) */}
         <div className="w-full mb-5 text-center">
-          <h1
-            className="font-headline-lg-mobile font-black leading-tight"
-            style={{ color: '#3b0764' }}
-          >
-            Mi kit ✨
-          </h1>
           <p
-            className="font-body-sm mt-1"
+            className="font-body-sm"
             style={{ color: '#7c6f9e' }}
           >
             Tus herramientas, todas juntas 🌱
@@ -124,53 +123,87 @@ export const ApoyosScreen = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-4 w-full">
-          {BUTTONS.map((btn) => (
-            <button
-              key={btn.id}
-              type="button"
-              onClick={() => handleOpen(btn.screen)}
-              className="aspect-square rounded-3xl flex flex-col items-center justify-center gap-2 active:scale-[0.96] transition-all cursor-pointer relative overflow-hidden px-2"
-              style={{
-                background: btn.gradient,
-                border: `2px solid ${btn.border}`,
-                boxShadow: `0 6px 0 0 ${btn.border}, 0 10px 20px rgba(0, 0, 0, 0.05)`
-              }}
-            >
-              <span
-                className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-40 pointer-events-none"
-                style={{
-                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, transparent 70%)'
-                }}
-              />
+          {BUTTONS.map((btn) => {
+            const hasImage = Boolean(btn.image);
 
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  fontSize: '52px',
-                  color: btn.text,
-                  fontVariationSettings: '"FILL" 1',
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
-                  position: 'relative',
-                  zIndex: 1
-                }}
+            return (
+              <button
+                key={btn.id}
+                type="button"
+                onClick={() => handleOpen(btn.screen)}
+                className="aspect-square flex flex-col items-center justify-center gap-2 active:scale-[0.96] transition-all cursor-pointer relative"
+                style={
+                  hasImage
+                    ? {
+                        background: 'transparent',
+                        border: 'none',
+                        boxShadow: 'none',
+                        padding: 0,
+                        borderRadius: 0,
+                        overflow: 'visible'
+                      }
+                    : {
+                        background: btn.gradient,
+                        border: `2px solid ${btn.border}`,
+                        boxShadow: `0 6px 0 0 ${btn.border}, 0 10px 20px rgba(0, 0, 0, 0.05)`,
+                        borderRadius: '1.5rem',
+                        overflow: 'hidden'
+                      }
+                }
               >
-                {btn.icon}
-              </span>
+                {hasImage ? (
+                  <img
+                    src={btn.image}
+                    alt={btn.label}
+                    draggable={false}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      display: 'block',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span
+                      className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-40 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, transparent 70%)'
+                      }}
+                    />
 
-              <span
-                className="font-black uppercase tracking-wider text-center leading-tight"
-                style={{
-                  color: btn.text,
-                  fontSize: '12px',
-                  position: 'relative',
-                  zIndex: 1,
-                  textShadow: '0 1px 0 rgba(255,255,255,0.5)'
-                }}
-              >
-                {btn.label}
-              </span>
-            </button>
-          ))}
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontSize: '52px',
+                        color: btn.text,
+                        fontVariationSettings: '"FILL" 1',
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
+                        position: 'relative',
+                        zIndex: 1
+                      }}
+                    >
+                      {btn.icon}
+                    </span>
+
+                    <span
+                      className="font-black uppercase tracking-wider"
+                      style={{
+                        color: btn.text,
+                        fontSize: '13px',
+                        position: 'relative',
+                        zIndex: 1,
+                        textShadow: '0 1px 0 rgba(255,255,255,0.5)'
+                      }}
+                    >
+                      {btn.label}
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div
