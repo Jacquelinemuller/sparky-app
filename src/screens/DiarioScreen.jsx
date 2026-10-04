@@ -14,7 +14,6 @@ const DAY_NAMES = [
   'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'
 ];
 
-// 📐 Ajustes de renglones — calibrados para hoja.png 519×718
 const LINE_HEIGHT = 24;
 const NUM_LINES = 16;
 const LINE_COLOR = 'rgba(120, 90, 50, 0.55)';
@@ -41,20 +40,21 @@ function formatFriendlyDate(dateKey) {
 }
 
 export const DiarioScreen = () => {
-  const { diaryEntries, updateDiaryNote, setActiveScreen, userName, addDiaryEntry } = useApp();
+  const { diaryEntries, updateDiaryNote, setActiveScreen, userName } = useApp();
   const [view, setView] = useState('tapa');
   const [pageIndex, setPageIndex] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(() => {
     const saved = localStorage.getItem(SOUND_KEY);
     return saved === null ? true : saved === 'true';
   });
-  const [titleDone, setTitleDone] = useState(false);
+
+  // 🆕 Cuántos mensajes ya se completaron en la página actual
+  const [revealedCount, setRevealedCount] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(SOUND_KEY, String(soundEnabled));
   }, [soundEnabled]);
 
-  // 🔊 Despertar el AudioContext con la primera interacción
   useEffect(() => {
     const wakeUp = () => {
       try { audioService.init(); } catch (e) {}
@@ -101,25 +101,30 @@ export const DiarioScreen = () => {
   const canPrev = pageIndex > 0;
   const canNext = pageIndex < totalPages - 1;
 
+  // 🆕 Resetear el contador cuando cambia la página
+  useEffect(() => {
+    setRevealedCount(0);
+  }, [currentEntry?.id]);
+
   const goPrev = () => {
     if (!canPrev) return;
     try { audioService.playClick(); } catch (e) {}
     setPageIndex((i) => i - 1);
-    setTitleDone(false);
+    setRevealedCount(0);
   };
 
   const goNext = () => {
     if (!canNext) return;
     try { audioService.playClick(); } catch (e) {}
     setPageIndex((i) => i + 1);
-    setTitleDone(false);
+    setRevealedCount(0);
   };
 
   const openLastEntry = () => {
     if (totalPages === 0) return;
     try { audioService.playSuccess(); } catch (e) {}
     setPageIndex(totalPages - 1);
-    setTitleDone(false);
+    setRevealedCount(0);
     setView('lectura');
   };
 
@@ -130,7 +135,7 @@ export const DiarioScreen = () => {
     if (globalIndex === -1) return;
     try { audioService.playPop(); } catch (e) {}
     setPageIndex(globalIndex);
-    setTitleDone(false);
+    setRevealedCount(0);
     setView('lectura');
   };
 
@@ -142,23 +147,6 @@ export const DiarioScreen = () => {
   const toggleSound = () => {
     try { audioService.playClick(); } catch (e) {}
     setSoundEnabled((v) => !v);
-  };
-
-  // 🧪 TEMPORAL: crear entrada de prueba
-  const createTestEntry = () => {
-    try {
-      addDiaryEntry({
-        dateKey: '2026-10-02',
-        weekId: 1,
-        day: 2,
-        tipTitle: 'Tu agenda visual o app amiga',
-        tipExplanation: 'La memoria de trabajo en el TDAH se satura rápido. Anotar las fechas apenas las dicen libera espacio en tu cabeza.'
-      });
-      try { audioService.playSuccess(); } catch (e) {}
-      alert('✅ Entrada de prueba creada. Ahora tocá "Leer" o "Índice".');
-    } catch (e) {
-      alert('Error: ' + e.message);
-    }
   };
 
   // ============ TAPA ============
@@ -278,26 +266,12 @@ export const DiarioScreen = () => {
         </div>
 
         {totalPages === 0 && (
-          <>
-            <p
-              className="text-center mt-4"
-              style={{ color: '#8b6f47', fontSize: '11px', fontWeight: 700 }}
-            >
-              Todavía está en blanco. Completá tu primer tip del día ✨
-            </p>
-            <button
-              type="button"
-              onClick={createTestEntry}
-              className="mt-3 px-4 py-2 rounded-full text-xs font-black active:scale-95 transition-all cursor-pointer"
-              style={{
-                background: '#fef3c7',
-                border: '1.5px dashed #b45309',
-                color: '#78350f'
-              }}
-            >
-              🧪 Crear entrada de prueba
-            </button>
-          </>
+          <p
+            className="text-center mt-4"
+            style={{ color: '#8b6f47', fontSize: '11px', fontWeight: 700 }}
+          >
+            Todavía está en blanco. Completá tu primer tip del día ✨
+          </p>
         )}
       </div>
     );
@@ -402,22 +376,10 @@ export const DiarioScreen = () => {
 
                   <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
 
-                  <div
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      opacity: 0.75
-                    }}
-                  >
+                  <div style={{ fontSize: '16px', lineHeight: `${LINE_HEIGHT}px`, opacity: 0.75 }}>
                     Todavía no hay páginas. 📖
                   </div>
-                  <div
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      opacity: 0.75
-                    }}
-                  >
+                  <div style={{ fontSize: '16px', lineHeight: `${LINE_HEIGHT}px`, opacity: 0.75 }}>
                     Completá un tip del día y Sparky escribe la primera.
                   </div>
                 </div>
@@ -568,6 +530,13 @@ export const DiarioScreen = () => {
   // ============ LECTURA ============
   const friendly = currentEntry ? formatFriendlyDate(currentEntry.dateKey) : null;
 
+  // 🆕 Obtener los mensajes de Sparky
+  const tipMessages = currentEntry?.tipMessages && currentEntry.tipMessages.length > 0
+    ? currentEntry.tipMessages
+    : currentEntry?.tipExplanation
+    ? [currentEntry.tipExplanation]
+    : [];
+
   return (
     <div
       className="min-h-screen flex flex-col antialiased"
@@ -711,44 +680,69 @@ export const DiarioScreen = () => {
                     </div>
                   )}
 
-                  {/* 1 renglón entre la fecha y el tip */}
-                  {friendly && currentEntry?.tipExplanation && (
+                  {/* 1 renglón entre fecha y primer mensaje */}
+                  {friendly && tipMessages.length > 0 && (
                     <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
                   )}
 
-                  {/* Explicación con viñeta */}
-                  {currentEntry?.tipExplanation && (
-                    <div
-                      style={{
-                        fontSize: '16px',
-                        lineHeight: `${LINE_HEIGHT}px`,
-                        opacity: 0.9,
-                        margin: 0,
-                        padding: 0,
-                        display: 'flex',
-                        gap: '6px',
-                        alignItems: 'flex-start'
-                      }}
-                    >
-                      <span style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}>•</span>
-                      <span style={{ flex: 1, lineHeight: `${LINE_HEIGHT}px` }}>
-                        <TypewriterText
-                          key={`exp-${currentEntry.id}`}
-                          text={currentEntry.tipExplanation}
-                          speed={22}
-                          soundEnabled={soundEnabled}
-                          onComplete={() => setTitleDone(true)}
-                        />
-                      </span>
-                    </div>
-                  )}
+                  {/* 🆕 MENSAJES DE SPARKY EN CADENA */}
+                  {tipMessages.map((msg, i) => {
+                    const isCompleted = i < revealedCount;       // ya se animó
+                    const isAnimating = i === revealedCount;      // se está animando ahora
+                    const isWaiting = i > revealedCount;          // todavía no arranca
 
-                  {/* 1 renglón entre el tip y "MI TIP:" */}
-                  {currentEntry?.tipExplanation && (
+                    // Los que están esperando no se muestran (o se muestran vacíos)
+                    if (isWaiting) return null;
+
+                    return (
+                      <React.Fragment key={i}>
+                        <div
+                          style={{
+                            fontSize: '16px',
+                            lineHeight: `${LINE_HEIGHT}px`,
+                            opacity: 0.9,
+                            margin: 0,
+                            padding: 0,
+                            display: 'flex',
+                            gap: '6px',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          <span style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}>•</span>
+                          <span style={{ flex: 1, lineHeight: `${LINE_HEIGHT}px` }}>
+                            {isCompleted ? (
+                              // Ya animado: mostrar texto plano (instantáneo)
+                              msg
+                            ) : (
+                              // Animando: usar TypewriterText
+                              <TypewriterText
+                                key={`msg-${currentEntry.id}-${i}`}
+                                text={msg}
+                                speed={22}
+                                soundEnabled={soundEnabled}
+                                onComplete={() => {
+                                  // Cuando termina este mensaje, pasar al siguiente
+                                  setRevealedCount((prev) => Math.max(prev, i + 1));
+                                }}
+                              />
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Renglón en blanco entre mensajes (no al final) */}
+                        {i < tipMessages.length - 1 && (
+                          <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+
+                  {/* 1 renglón entre el último mensaje y MI TIP */}
+                  {tipMessages.length > 0 && (
                     <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
                   )}
 
-                  {/* "MI TIP:" + input (SIN altura fija, crece con el texto) */}
+                  {/* "MI TIP:" + input */}
                   <div
                     style={{
                       display: 'flex',
@@ -759,12 +753,7 @@ export const DiarioScreen = () => {
                       padding: 0
                     }}
                   >
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        lineHeight: `${LINE_HEIGHT}px`
-                      }}
-                    >
+                    <span style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}>
                       •
                     </span>
                     <span
@@ -792,9 +781,9 @@ export const DiarioScreen = () => {
                         color="#b45309"
                         bg="transparent"
                         borderColor="transparent"
-                        micIconSrc="/mic.png"          // 🆕 activa el ícono personalizado
-                        micIconSize={56}                // 🆕 tamaño (en px)
-                        micOffsetY="-12px"              // 🆕 subir medio renglón
+                        micIconSrc="/mic.png"
+                        micIconSize={56}
+                        micOffsetY="-12px"
                         style={{
                           fontSize: '16px',
                           fontFamily: HAND_FONT,
@@ -859,4 +848,4 @@ export const DiarioScreen = () => {
       </main>
     </div>
   );
-}
+};

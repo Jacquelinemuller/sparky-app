@@ -509,7 +509,8 @@ export const AppProvider = ({ children }) => {
       return { ...prev, completedTips: [...prev.completedTips, tipKey] };
     });
   }, [recordActivity]);
-    const acceptChallenge = useCallback((challengeId) => {
+
+  const acceptChallenge = useCallback((challengeId) => {
     recordActivity();
     setState((prev) => ({
       ...prev,
@@ -517,9 +518,9 @@ export const AppProvider = ({ children }) => {
         c.id === challengeId ? { ...c, status: 'accepted' } : c
       )
     }));
-    
   }, [recordActivity]);
-    const completeChallenge = useCallback((challengeId) => {
+
+  const completeChallenge = useCallback((challengeId) => {
     recordActivity();
     setState((prev) => ({
       ...prev,
@@ -549,7 +550,7 @@ export const AppProvider = ({ children }) => {
     }));
   }, [recordActivity]);
 
-    const startChallenge = useCallback((challengeData) => {
+  const startChallenge = useCallback((challengeData) => {
     recordActivity();
     setState((prev) => {
       const existing = (prev.activeChallenges || []).find(
@@ -573,14 +574,14 @@ export const AppProvider = ({ children }) => {
             ...challengeData,
             startDate: todayKey,
             checkIns: {},
-              status: 'pending'
+            status: 'pending'
           }
         ]
       };
     });
   }, [recordActivity]);
 
-    const saveQuizAnswers = useCallback((key, payload) => {
+  const saveQuizAnswers = useCallback((key, payload) => {
     recordActivity();
     setState((prev) => ({
       ...prev,
@@ -593,12 +594,11 @@ export const AppProvider = ({ children }) => {
       }
     }));
   }, [recordActivity]);
-    // ==========================================
-  // CHECKLISTS (rutinas paso a paso)
+
   // ==========================================
-    // ==========================================
-  // ALARMAS
-    const addDiaryEntry = useCallback((entry) => {
+  // DIARIO
+  // ==========================================
+  const addDiaryEntry = useCallback((entry) => {
     recordActivity();
     setState((prev) => {
       const exists = (prev.diaryEntries || []).some(
@@ -607,13 +607,20 @@ export const AppProvider = ({ children }) => {
 
       if (exists) return prev;
 
+      const tipMessages = Array.isArray(entry.tipMessages)
+        ? entry.tipMessages
+        : entry.tipExplanation
+        ? [entry.tipExplanation]
+        : [];
+
       const newEntry = {
         id: 'dy_' + Date.now(),
         dateKey: entry.dateKey,
         weekId: entry.weekId,
         day: entry.day,
         tipTitle: entry.tipTitle || '',
-        tipExplanation: entry.tipExplanation || '',
+        tipMessages,
+        tipExplanation: tipMessages.join('\n\n'),
         userNote: '',
         createdAt: Date.now()
       };
@@ -624,7 +631,7 @@ export const AppProvider = ({ children }) => {
       };
     });
   }, [recordActivity]);
-  
+
   const updateDiaryNote = useCallback((entryId, userNote) => {
     recordActivity();
     setState((prev) => ({
@@ -635,6 +642,9 @@ export const AppProvider = ({ children }) => {
     }));
   }, [recordActivity]);
 
+  // ==========================================
+  // ALARMAS
+  // ==========================================
   const addAlarm = useCallback((alarmData) => {
     recordActivity();
     try { audioService.playPop(); } catch (e) {}
@@ -678,7 +688,8 @@ export const AppProvider = ({ children }) => {
       )
     }));
   }, [recordActivity]);
-    const removeAlarmByEvent = useCallback((eventId) => {
+
+  const removeAlarmByEvent = useCallback((eventId) => {
     recordActivity();
     setState((prev) => ({
       ...prev,
@@ -686,23 +697,26 @@ export const AppProvider = ({ children }) => {
     }));
   }, [recordActivity]);
 
-
+  // ==========================================
+  // CHECKLISTS
+  // ==========================================
   const addChecklist = useCallback((data) => {
-  recordActivity();
-  try { audioService.playPop(); } catch (e) {}
-  const newList = {
-    id: 'cl_' + Date.now(),
-    title: data.title || 'Nueva rutina',
-    emoji: data.emoji || '📋',
-    category: data.category || 'manana',  // ✅ FIX: guardar categoría
-    steps: data.steps || []
-  };
-  setState((prev) => ({
-    ...prev,
-    checklists: [...(prev.checklists || []), newList]
-  }));
-  return newList;
-}, [recordActivity]);
+    recordActivity();
+    try { audioService.playPop(); } catch (e) {}
+    const newList = {
+      id: 'cl_' + Date.now(),
+      title: data.title || 'Nueva rutina',
+      emoji: data.emoji || '📋',
+      category: data.category || 'manana',
+      color: data.color || 'yellow',
+      steps: data.steps || []
+    };
+    setState((prev) => ({
+      ...prev,
+      checklists: [...(prev.checklists || []), newList]
+    }));
+    return newList;
+  }, [recordActivity]);
 
   const updateChecklist = useCallback((listId, updates) => {
     recordActivity();
@@ -753,7 +767,9 @@ export const AppProvider = ({ children }) => {
     }));
   }, [recordActivity]);
 
-
+  // ==========================================
+  // TIPS PERSONALIZADOS
+  // ==========================================
   const addCustomTip = useCallback((tip) => {
     recordActivity();
     const newTip = {
@@ -787,6 +803,9 @@ export const AppProvider = ({ children }) => {
     }));
   }, [recordActivity]);
 
+  // ==========================================
+  // PADRES
+  // ==========================================
   const setParentPin = useCallback((newPin) => {
     setState((prev) => ({ ...prev, parentPin: newPin }));
   }, []);
@@ -795,6 +814,9 @@ export const AppProvider = ({ children }) => {
     return pin === state.parentPin;
   }, [state.parentPin]);
 
+  // ==========================================
+  // NOTAS
+  // ==========================================
   const addNote = useCallback((note) => {
     recordActivity();
     try { audioService.playPop(); } catch (e) {}
@@ -870,6 +892,9 @@ export const AppProvider = ({ children }) => {
     try { audioService.playSuccess(); } catch (e) {}
   }, [recordActivity]);
 
+  // ==========================================
+  // EVENTOS
+  // ==========================================
   const addCustomEvent = useCallback((event) => {
     recordActivity();
     try { audioService.playPop(); } catch (e) {}
@@ -908,6 +933,9 @@ export const AppProvider = ({ children }) => {
     }));
   }, [recordActivity]);
 
+  // ==========================================
+  // TIENDA
+  // ==========================================
   const unlockSound = useCallback((soundId, cost = 0) => {
     recordActivity();
     setState((prev) => {
@@ -1012,20 +1040,20 @@ export const AppProvider = ({ children }) => {
         quizAnswers: state.quizAnswers || {},
         saveQuizAnswers,
         activeChallenges: state.activeChallenges || [],
-            checklists: state.checklists || [],
-    addChecklist,
-    updateChecklist,
-    deleteChecklist,
-    toggleChecklistStep,
-    resetChecklist,
+        checklists: state.checklists || [],
+        addChecklist,
+        updateChecklist,
+        deleteChecklist,
+        toggleChecklistStep,
+        resetChecklist,
         alarms: state.alarms || [],
-            diaryEntries: state.diaryEntries || [],
-    addDiaryEntry,
-    updateDiaryNote,
-    addAlarm,
-    removeAlarm,
-    markAlarmTriggered,
-    removeAlarmByBlock,
+        diaryEntries: state.diaryEntries || [],
+        addDiaryEntry,
+        updateDiaryNote,
+        addAlarm,
+        removeAlarm,
+        markAlarmTriggered,
+        removeAlarmByBlock,
         removeAlarmByEvent,
         startChallenge,
         acceptChallenge,

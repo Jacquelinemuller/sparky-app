@@ -9,7 +9,9 @@ export default function InteractiveTip({
   isCompleted,
   onComplete,
   hasSheet,
-  onOpenSheet
+  onOpenSheet,
+  activeWeekId = 1,   // 🆕
+  activeDay = 1       // 🆕
 }) {
   const { activeChallenges } = useApp();
   const [revealed, setRevealed] = useState({});
@@ -108,8 +110,9 @@ export default function InteractiveTip({
       </div>
     );
   };
+
   // ============================================
-  // TARJETA "PLAN DE ACCIÓN" (para solutionType: 'card')
+  // TARJETA "PLAN DE ACCIÓN"
   // ============================================
   const renderPlanCard = () => {
     const steps = data.planSteps || [];
@@ -177,9 +180,12 @@ export default function InteractiveTip({
   };
 
   // ============================================
-  // BANNER DEL RETO (arriba del contenido, si aplica)
+  // BANNER DEL RETO
   // ============================================
   const renderChallengeBanner = () => {
+    // 🔧 FIX: Los retos son de la Semana 2 en adelante
+    if (activeWeekId < 2) return null;
+
     if (isChallenge || isChallengeClose) return null;
     if (!activeChallenges || activeChallenges.length === 0) return null;
 
@@ -201,8 +207,9 @@ export default function InteractiveTip({
       </div>
     );
   };
-    // ============================================
-  // MODO CHALLENGE CLOSE (cierre + nuevo reto)
+
+  // ============================================
+  // MODO CHALLENGE CLOSE
   // ============================================
   if (isChallengeClose) {
     return (
@@ -218,9 +225,8 @@ export default function InteractiveTip({
     );
   }
 
-
   // ============================================
-  // MODO CHALLENGE (reto semanal)
+  // MODO CHALLENGE
   // ============================================
   if (isChallenge) {
     return (
@@ -253,7 +259,8 @@ export default function InteractiveTip({
           onComplete={onComplete}
         />
 
-        {isCompleted && hasSheet && (
+        {/* 🔧 FIX: Ver lámina solo desde Día 4 */}
+        {isCompleted && hasSheet && activeDay >= 4 && (
           <button
             type="button"
             onClick={onOpenSheet}
@@ -280,13 +287,10 @@ export default function InteractiveTip({
   return (
     <div className="flex flex-col gap-4 w-full">
 
-      {/* BANNER DEL RETO (arriba del título) */}
       {renderChallengeBanner()}
 
-      {/* TÍTULO */}
       {renderTitle()}
 
-      {/* CONTENIDO */}
       {isSingle ? (
         <div className="w-full flex flex-col items-center gap-3">
           {pairs.map((pair) => {
@@ -324,7 +328,7 @@ export default function InteractiveTip({
                       </span>
                     </div>
                   </button>
-                                ) : data.solutionType === 'card' ? (
+                ) : data.solutionType === 'card' ? (
                   renderPlanCard()
                 ) : (
                   <img
@@ -333,14 +337,12 @@ export default function InteractiveTip({
                     className="w-full h-auto block rounded-2xl animate-[fadeIn_0.4s_ease-out]"
                     draggable={false}
                   />
-                
                 )}
               </div>
             );
           })}
         </div>
       ) : (
-        // ============ 2 COLUMNAS ============
         <div className="w-full flex" style={{ gap: '6px' }}>
           <div className="flex flex-col" style={{ width: '50%' }}>
             {pairs.map((pair) => (
@@ -399,7 +401,6 @@ export default function InteractiveTip({
         </div>
       )}
 
-      {/* PROGRESO + BOTÓN CUMPLIR */}
       <div className="flex items-center justify-between gap-2 mt-1">
         <span
           className="text-[11px] font-black"
@@ -434,8 +435,8 @@ export default function InteractiveTip({
         )}
       </div>
 
-      {/* BOTÓN VER LÁMINA COMPLETA */}
-      {isCompleted && hasSheet && (
+      {/* 🔧 FIX: Ver lámina solo desde Día 4 */}
+      {isCompleted && hasSheet && activeDay >= 4 && (
         <button
           type="button"
           onClick={onOpenSheet}

@@ -10,8 +10,10 @@
 
 const DIA_1 = {
   layout: 'twoColumns',
-  sparkyIntro:
+  sparkyIntro: [
     'El TDAH puede dificultar la organización porque cuesta planificar, recordar, ordenar y mantener el enfoque en lo importante. ¡Con las herramientas adecuadas, sí es posible!',
+    'No es que no quieras. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
+  ],
   titleAccent: 'y organización escolar',
   subtitle: 'Cómo manejar tareas, materiales, fechas y responsabilidades.',
   disclaimer: 'No es flojera ni desinterés: es un cerebro que necesita estrategias diferentes.',
@@ -27,8 +29,10 @@ const DIA_1 = {
 
 const DIA_2 = {
   layout: 'twoColumns',
-  sparkyIntro:
+  sparkyIntro: [
     'Una mochila ordenada es una cabeza ordenada. Cuando tenés carpetas o separadores por materia, tu cerebro deja de gastar energía buscando cosas y la usa para lo que realmente importa.',
+    'No es que no quieras. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
+  ],
   titleAccent: 'y organización escolar',
   subtitle: 'Cómo manejar tareas, materiales, fechas y responsabilidades.',
   disclaimer: 'No es flojera ni desinterés: es un cerebro que necesita estrategias diferentes.',
@@ -129,9 +133,7 @@ const DIA_6 = {
   },
   reward: 15
 };
-// ============================================
-// DÍA 7 SEMANA 1: El reto de la semana
-// ============================================
+
 const DIA_7 = {
   layout: 'challenge',
   sparkyIntro: [
@@ -159,8 +161,10 @@ const DIA_7 = {
 const W2_DIA_1 = {
   layout: 'twoColumns',
   titleImage: '/tips/w2/titulosem2.png',
-  sparkyIntro:
+  sparkyIntro: [
     'El TDAH puede hacer que iniciar tareas sea difícil porque el cerebro busca estimulación inmediata. Entenderlo es el primer paso, actuar es el cambio.',
+    'No es que no quieras. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
+  ],
   titleAccent: 'y procrastinación',
   subtitle: 'Por qué postergo y cómo empezar.',
   disclaimer: 'No es flojera: es dificultad para iniciar. Con estrategias, sí se puede.',
@@ -213,6 +217,7 @@ const W2_DIA_3 = {
   ],
   reward: 15
 };
+
 const W2_DIA_4 = {
   layout: 'single',
   titleImage: '/tips/w2/titulosem2.png',
@@ -232,6 +237,7 @@ const W2_DIA_4 = {
   ],
   reward: 15
 };
+
 const W2_DIA_5 = {
   layout: 'single',
   solutionType: 'card',
@@ -258,6 +264,7 @@ const W2_DIA_5 = {
   ],
   reward: 15
 };
+
 const W2_DIA_6 = {
   layout: 'quiz',
   titleImage: '/tips/w2/titulosem2.png',
@@ -286,6 +293,7 @@ const W2_DIA_6 = {
   },
   reward: 15
 };
+
 const W2_DIA_7 = {
   layout: 'challengeClose',
   titleImage: '/tips/w2/titulosem2.png',
@@ -322,9 +330,9 @@ export const INTERACTIVE_TIPS = {
   'w2-d1': W2_DIA_1,
   'w2-d2': W2_DIA_2,
   'w2-d3': W2_DIA_3,
-    'w2-d4': W2_DIA_4,
-    'w2-d5': W2_DIA_5,
-    'w2-d6': W2_DIA_6,
+  'w2-d4': W2_DIA_4,
+  'w2-d5': W2_DIA_5,
+  'w2-d6': W2_DIA_6,
   'w2-d7': W2_DIA_7
 };
 

@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; 
 import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
-import { useSparkyTips } from '../hooks/useSparkyTips';
+import { useSparkyTips, getTodayDateKey } from '../hooks/useSparkyTips';
 import SheetViewerModal from './tips/SheetViewerModal';
 import InteractiveTip from './tips/InteractiveTip';
 import { getInteractiveTip } from '../data/interactiveTips';
@@ -9,7 +9,7 @@ import { audioService } from '../services/audioService';
 import sparkyVideo from '../assets/sparky.mp4';
 
 export const SparkyCompanion = () => {
-  const { sparkyMessage, setSparkyMessage, userName } = useApp();
+  const { sparkyMessage, setSparkyMessage, userName, addDiaryEntry } = useApp();
   const {
     currentWeekGuide,
     currentDailyTip,
@@ -48,7 +48,6 @@ export const SparkyCompanion = () => {
     : [];
   const introCount = introMessages.length;
 
-  // Resetear índice cuando cambia el día que se ve
   useEffect(() => {
     setIntroIndex(0);
   }, [activeWeekId, activeDay]);
@@ -117,8 +116,13 @@ export const SparkyCompanion = () => {
   const handleOtroConsejo = () => {
     try { audioService.playClick(); } catch (e) {}
 
-    if (isInteractiveMode && introCount > 1) {
-      setIntroIndex((prev) => (prev + 1) % introCount);
+    if (isInteractiveMode) {
+      if (introCount > 1) {
+        setIntroIndex((prev) => (prev + 1) % introCount);
+      } else {
+        setSpeechPopState(false);
+        setTimeout(() => setSpeechPopState(true), 10);
+      }
       return;
     }
 
@@ -147,9 +151,54 @@ export const SparkyCompanion = () => {
     setTimeout(() => setSpeechPopState(true), 10);
   };
 
-  const handleCompleteTip = () => {
-    if (isTipCompleted || isReviewing) return;
+    const handleCompleteTip = () => {
+    console.log('🎯 handleCompleteTip llamado');
+    console.log('  isTipCompleted:', isTipCompleted);
+    console.log('  isReviewing:', isReviewing);
+    console.log('  activeWeekId:', activeWeekId);
+    console.log('  activeDay:', activeDay);
+    console.log('  addDiaryEntry existe?:', typeof addDiaryEntry);
+    console.log('  introMessages:', introMessages);
+    console.log('  currentDailyTip:', currentDailyTip);
+    console.log('  interactiveTip:', interactiveTip);
+
+    if (isTipCompleted || isReviewing) {
+      console.log('❌ BLOQUEADO: isTipCompleted o isReviewing');
+      return;
+    }
     try { audioService.playSuccess(); } catch (e) {}
+
+    try {
+      const dateKey = getTodayDateKey();
+      console.log('  📅 dateKey calculado:', dateKey);
+
+      const tipTitle = currentDailyTip?.title || interactiveTip?.titleAccent || '';
+      console.log('  📝 tipTitle:', tipTitle);
+
+      const tipMessages = introMessages.length > 0
+        ? introMessages
+        : currentDailyTip?.explanation
+        ? [currentDailyTip.explanation]
+        : [];
+      console.log('  💬 tipMessages:', tipMessages);
+
+      if (addDiaryEntry && tipTitle) {
+        console.log('  ✅ Guardando entrada en el diario...');
+        addDiaryEntry({
+          dateKey,
+          weekId: activeWeekId,
+          day: activeDay,
+          tipTitle,
+          tipMessages
+        });
+        console.log('  ✅ addDiaryEntry ejecutado');
+      } else {
+        console.log('  ❌ NO se guarda: addDiaryEntry o tipTitle faltan');
+      }
+    } catch (e) {
+      console.log('  ❌ Error:', e);
+    }
+
     completeTipChallenge();
     setJustCompleted(true);
     setTimeout(() => {
@@ -168,7 +217,6 @@ export const SparkyCompanion = () => {
   const hasSheet = !isCustomTip && currentWeekGuide?.sheetImage;
   const tipReward = currentDailyTip?.reward || 15;
 
-  // ==================== NAVEGACIÓN ====================
   const renderNavigation = () => {
     return (
       <div className="w-full flex items-center justify-between gap-2 mb-1">
@@ -189,7 +237,6 @@ export const SparkyCompanion = () => {
           <span>Anterior</span>
         </button>
 
-        {/* Chip central: Hoy o Repasando */}
         {isReviewing ? (
           <button
             type="button"
@@ -239,8 +286,6 @@ export const SparkyCompanion = () => {
       </div>
     );
   };
-
-  // ==================== VISTAS ====================
 
   const renderSparkyIntroBubble = () => {
     const currentMessage = introMessages[introIndex] || '';
@@ -377,7 +422,7 @@ export const SparkyCompanion = () => {
   const renderButtons = () => {
     if (justCompleted) return null;
     if (isInteractiveMode) return null;
-    if (isReviewing) return null; // 🆕 En modo repaso no hay botones de acción
+    if (isReviewing) return null;
 
     if (mode === 'normal') {
       return (
@@ -450,7 +495,6 @@ export const SparkyCompanion = () => {
 
   return (
     <>
-      {/* 🆕 Barra de navegación arriba de la tarjeta */}
       {renderNavigation()}
 
       <div
@@ -564,6 +608,8 @@ export const SparkyCompanion = () => {
             onComplete={handleCompleteTip}
             hasSheet={hasSheet}
             onOpenSheet={openSheet}
+            activeWeekId={activeWeekId}
+            activeDay={activeDay}
           />
         </div>
       )}

@@ -245,32 +245,58 @@ export const TodayScreen = () => {
           BLOQUE 1: Sparky animado + burbuja alternante
           ============================================ */}
       <section className="w-full flex items-start gap-3 mb-4">
-        {/* Sparky animado (video) — tocar alterna el diálogo */}
-        <button
-          type="button"
-          onClick={handleSparkyTap}
-          className="relative flex-shrink-0 cursor-pointer group"
-          title="¡Tócame para cambiar el mensaje!"
-        >
-        <div
-  className={`w-[70px] h-[70px] rounded-full ring-3 ring-[#ff6b00] shadow-[0_4px_12px_rgba(255,107,0,0.3)] overflow-hidden bg-white transition-transform duration-300 group-active:scale-90 ${
-    isSparkyBouncing ? 'sparky-tap-bounce' : ''
-  }`}
->
-            <video
-              className="w-full h-full object-cover bg-amber-50"
-              autoPlay
-              loop
-              muted
-              playsInline
-              src={sparkyVideo}
-            />
-          </div>
-          <span className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 rounded-full text-[11px] p-0.5 shadow-md font-black border-2 border-white">
-            ⚡
-          </span>
-        </button>
+        {/* Columna izquierda: Sparky + botones verticales */}
+        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+          {/* Sparky animado (video) — tocar alterna el diálogo */}
+          <button
+            type="button"
+            onClick={handleSparkyTap}
+            className="relative cursor-pointer group"
+            title="¡Tócame para cambiar el mensaje!"
+          >
+            <div
+              className={`w-[70px] h-[70px] rounded-full ring-3 ring-[#ff6b00] shadow-[0_4px_12px_rgba(255,107,0,0.3)] overflow-hidden bg-white transition-transform duration-300 group-active:scale-90 ${
+                isSparkyBouncing ? 'sparky-tap-bounce' : ''
+              }`}
+            >
+              <video
+                className="w-full h-full object-cover bg-amber-50"
+                autoPlay
+                loop
+                muted
+                playsInline
+                src={sparkyVideo}
+              />
+            </div>
+            <span className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 rounded-full text-[11px] p-0.5 shadow-md font-black border-2 border-white">
+              ⚡
+            </span>
+          </button>
 
+          {/* 🆕 Botón Tips — debajo de Sparky, con foco negro */}
+          <button
+            type="button"
+            onClick={() => {
+              try { audioService.playPop(); } catch (e) {}
+              setActiveScreen('tips');
+            }}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border-2 border-[#fed7aa] text-[#ea580c] font-black text-[11px] shadow-[0_2px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer whitespace-nowrap"
+            title="Ver los tips de Sparky"
+          >
+            <span
+              className="material-symbols-outlined text-[16px]"
+              style={{
+                color: '#1a1a1a',
+                fontVariationSettings: '"FILL" 1'
+              }}
+            >
+              lightbulb
+            </span>
+            <span>Tip</span>
+          </button>
+        </div>
+
+        {/* Columna derecha: burbuja + puntitos */}
         <div className="relative flex-1 min-w-0">
           <button
             type="button"
@@ -314,16 +340,24 @@ export const TodayScreen = () => {
           BLOQUE 2: 🎤 + Círculo con timer + 🍅
           ============================================ */}
       <section className="w-full flex items-start justify-center my-3">
-        <button
-          type="button"
-          onClick={goToNotes}
-          className="relative z-20 flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-[#1a1a1a] shadow-[0_3px_0_0_#000000] flex items-center justify-center active:translate-y-0.5 active:shadow-none transition-all cursor-pointer -mr-3"
-          title="Mis notas de voz"
-        >
-          <span className="material-symbols-outlined text-[#1a1a1a] text-[22px]" style={{ fontVariationSettings: '"FILL" 1' }}>
-            mic
-          </span>
-        </button>
+       <button
+  type="button"
+  onClick={goToNotes}
+  className="relative z-20 flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-[#1a1a1a] shadow-[0_3px_0_0_#000000] flex items-center justify-center active:translate-y-0.5 active:shadow-none transition-all cursor-pointer -mr-3"
+  title="Mis notas de voz"
+>
+  <img
+    src="/micprincipal.png"
+    alt="Mis notas de voz"
+    draggable={false}
+    style={{
+      width: '30px',
+      height: '30px',
+      objectFit: 'contain',
+      pointerEvents: 'none'
+    }}
+  />
+</button>
 
         <div className="relative flex-shrink-0">
           <div className="absolute w-72 h-72 rounded-full bg-[#ff6b00]/15 blur-2xl -z-10 pointer-events-none"></div>
