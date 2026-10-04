@@ -106,6 +106,7 @@ export const ScheduleScreen = () => {
   const handleSaveDay = (newBlocks) => {
     setDayOverride(dateKey, newBlocks);
   };
+
   const handleSaveBlock = (updatedBlock) => {
     // Reemplaza el bloque en la lista y guarda como override del día
     const newBlocks = blocks.map((b) =>
@@ -113,8 +114,8 @@ export const ScheduleScreen = () => {
     );
     setDayOverride(dateKey, newBlocks);
   };
-  const isToday = getDateKey(new Date()) === dateKey;
 
+  const isToday = getDateKey(new Date()) === dateKey;
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto items-center select-none pb-8 px-2">
@@ -217,10 +218,11 @@ export const ScheduleScreen = () => {
                 />
               );
             }
-                        return (
+            return (
               <TimelineBlock
                 key={block.id}
                 block={block}
+                onSave={handleSaveBlock}
                 onEdit={handleEditBlock}
                 dateKey={dateKey}
                 isToday={isToday}

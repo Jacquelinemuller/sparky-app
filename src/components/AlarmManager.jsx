@@ -19,51 +19,58 @@ function getTodayKey() {
   return `${y}-${m}-${day}`;
 }
 
-// Configuración de repetición
-const REPEAT_INTERVAL_MS = 15000;  // cada 15 segundos
-const MAX_DURATION_MS = 60000;      // por 1 minuto total
+const REPEAT_INTERVAL_MS = 15000;
+const MAX_DURATION_MS = 60000;
+const CHECK_INTERVAL_MS = 10000;   // 🔑 antes 30000 → ahora 10s
 
 export const AlarmManager = () => {
   const { alarms, markAlarmTriggered, settings } = useApp();
   const [activeAlarm, setActiveAlarm] = useState(null);
-  const checkIntervalRef = useRef(null);
+
   const repeatIntervalRef = useRef(null);
   const stopTimeoutRef = useRef(null);
 
-  // Chequeo cada 30 segundos (búsqueda de alarma que deba sonar)
+  // 🆕 Refs para que el intervalo lea SIEMPRE datos frescos
+  const alarmsRef = useRef(alarms);
+  const markTriggeredRef = useRef(markAlarmTriggered);
+
+  useEffect(() => { alarmsRef.current = alarms; }, [alarms]);
+  useEffect(() => { markTriggeredRef.current = markAlarmTriggered; }, [markAlarmTriggered]);
+
+  // 🆕 Chequeo ÚNICO (no depende de alarms), corre cada 10 segundos
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
       const todayKey = getTodayKey();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentAlarms = alarmsRef.current || [];
 
-      const dueAlarm = (alarms || []).find((alarm) => {
-        if (!alarm.enabled) return false;
+      const dueAlarm = currentAlarms.find((alarm) => {
         if (alarm.triggered) return false;
+        if (alarm.enabled === false) return false;
         if (alarm.dateKey && alarm.dateKey !== todayKey) return false;
 
         const targetMinutes = timeToMinutes(alarm.time);
-        if (targetMinutes === null) return null;
+        if (targetMinutes === null) return false;
 
         // Ventana de 3 minutos después de la hora objetivo
         return nowMinutes >= targetMinutes && nowMinutes <= targetMinutes + 3;
       });
 
       if (dueAlarm) {
+        console.log('🔔 ALARMA DISPARADA:', dueAlarm.label, 'a las', dueAlarm.time);
         setActiveAlarm(dueAlarm);
-        markAlarmTriggered(dueAlarm.id);
+        markTriggeredRef.current(dueAlarm.id);
       }
     };
 
     checkAlarms();
-    checkIntervalRef.current = setInterval(checkAlarms, 30000);
+    const intervalId = setInterval(checkAlarms, CHECK_INTERVAL_MS);
 
-    return () => {
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-    };
-  }, [alarms, markAlarmTriggered]);
+    return () => clearInterval(intervalId);
+  }, []);   // 🔑 SIN dependencias → el intervalo NUNCA se resetea
 
-  // Reproducir el sonido + repetir + detener a los 60s
+  // Reproducir sonido + repetir + detener a los 60s
   useEffect(() => {
     if (!activeAlarm) {
       if (repeatIntervalRef.current) {
@@ -79,6 +86,8 @@ export const AlarmManager = () => {
 
     const soundId = activeAlarm.sound || settings?.defaultAlarmSound || 'campanita';
 
+    console.log('🔊 Reproduciendo sonido:', soundId);
+
     // 1) Primer sonido inmediato
     try { audioService.playAlarm(soundId); } catch (e) {}
 
@@ -87,7 +96,7 @@ export const AlarmManager = () => {
       try { audioService.playAlarm(soundId); } catch (e) {}
     }, REPEAT_INTERVAL_MS);
 
-    // 3) Detener a los 60 segundos (el modal sigue visible)
+    // 3) Detener a los 60 segundos
     stopTimeoutRef.current = setTimeout(() => {
       if (repeatIntervalRef.current) {
         clearInterval(repeatIntervalRef.current);
@@ -171,10 +180,7 @@ export const AlarmManager = () => {
           <span>¡Enterado!</span>
         </button>
 
-        <p
-          className="text-center"
-          style={{ color: '#94a3b8', fontSize: '10px' }}
-        >
+        <p className="text-center" style={{ color: '#94a3b8', fontSize: '10px' }}>
           Suena cada 15 segundos durante 1 minuto
         </p>
       </div>

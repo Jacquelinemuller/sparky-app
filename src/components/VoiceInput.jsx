@@ -1,21 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { audioService } from '../services/audioService';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition as NativeSpeech } from '@capacitor-community/speech-recognition';
 
-const SpeechRecognition =
+// Detección de entorno
+const IS_NATIVE = Capacitor.isNativePlatform();
+const WebSpeechRecognition =
   typeof window !== 'undefined'
     ? window.SpeechRecognition || window.webkitSpeechRecognition
     : null;
 
-/**
- * Input con botón de micrófono para dictado por voz.
- * Soporta múltiples líneas (auto-resize).
- *
- * Props nuevas:
- * - micIconSrc: ruta de la imagen para el micrófono (ej: '/mic.png')
- *               Si se pasa, se usa esa imagen en vez del ícono.
- * - micIconSize: tamaño de la imagen en px (default 36)
- * - micOffsetY: desplazamiento vertical del botón (ej: '-12px')
- */
 export default function VoiceInput({
   value = '',
   onChange,
@@ -44,6 +38,7 @@ export default function VoiceInput({
   const isRecordingRef = useRef(false);
   const fragmentsRef = useRef(new Set());
   const internalRef = useRef(null);
+  const nativeListenerRef = useRef(null);
 
   const ref = externalRef || internalRef;
 
@@ -54,23 +49,118 @@ export default function VoiceInput({
   };
 
   useEffect(() => {
-    if (ref?.current) {
-      autoResize(ref.current);
-    }
+    if (ref?.current) autoResize(ref.current);
   }, [value, ref]);
 
+  // Cleanup
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch (e) {}
         recognitionRef.current = null;
       }
+      if (nativeListenerRef.current) {
+        try { nativeListenerRef.current.remove(); } catch (e) {}
+        nativeListenerRef.current = null;
+      }
       isRecordingRef.current = false;
     };
   }, []);
 
-  const startRecording = () => {
-    if (!SpeechRecognition) {
+  // ============================================
+  // 📱 MODO NATIVO (APK Android)
+  // ============================================
+  const startNativeRecording = async () => {
+    try {
+      // 1. Pedir permisos
+      const perm = await NativeSpeech.requestPermissions();
+      if (perm.speechRecognition !== 'granted') {
+        setErrorMsg('Necesitamos permiso para el micrófono 🎤');
+        setTimeout(() => setErrorMsg(''), 2500);
+        return;
+      }
+
+      // 2. Verificar disponibilidad
+      const available = await NativeSpeech.available();
+      if (!available.available) {
+        setErrorMsg('Tu dispositivo no soporta dictado');
+        setTimeout(() => setErrorMsg(''), 2500);
+        return;
+      }
+
+      // 3. Configurar listener de resultados PARCIALES (para mostrar en vivo)
+      nativeListenerRef.current = await NativeSpeech.addListener(
+        'partialResults',
+        (data) => {
+          if (data.matches && data.matches.length > 0) {
+            setInterim(data.matches[0]);
+          }
+        }
+      );
+
+      // 4. Arrancar reconocimiento
+      // ⚠️ partialResults: false = SOLO resultado final, NO repite palabras
+      await NativeSpeech.start({
+        language: 'es-AR',
+        maxResults: 1,
+        partialResults: false,  // 🔑 CLAVE para no duplicar
+        popup: false
+      });
+
+      isRecordingRef.current = true;
+      setIsRecording(true);
+      try { audioService.playPop(); } catch (e) {}
+    } catch (err) {
+      console.error('Error speech nativo:', err);
+      setErrorMsg('No pudimos iniciar el dictado');
+      setTimeout(() => setErrorMsg(''), 2500);
+    }
+  };
+
+  const stopNativeRecording = async () => {
+    try {
+      await NativeSpeech.stop();
+
+      // Obtener el resultado final
+      const result = await NativeSpeech.getSupportedLanguages().catch(() => null);
+
+      // El resultado final viene del listener 'listeningState' o del callback
+      // ⚠️ La forma de obtener el último resultado depende de la versión
+      // del plugin. Podemos escuchar el evento 'listeningState' o usar
+      // removeAllListeners y esperar el final.
+
+      try {
+        const finalResults = await new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(null), 800);
+          const listener = NativeSpeech.addListener('listeningState', (state) => {
+            if (state.status === 'stopped') {
+              clearTimeout(timeout);
+              listener.then((l) => l.remove());
+              resolve(null);
+            }
+          });
+        });
+      } catch (e) {}
+    } catch (err) {
+      console.error('Error al parar:', err);
+    }
+
+    if (nativeListenerRef.current) {
+      try { nativeListenerRef.current.remove(); } catch (e) {}
+      nativeListenerRef.current = null;
+    }
+
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    setInterim('');
+    try { audioService.playClick(); } catch (e) {}
+  };
+
+  // ============================================
+  // 🌐 MODO WEB (navegador de escritorio)
+  // ============================================
+  const startWebRecording = () => {
+    if (!WebSpeechRecognition) {
       setErrorMsg('Tu navegador no soporta dictado por voz');
       setTimeout(() => setErrorMsg(''), 2500);
       return;
@@ -81,7 +171,7 @@ export default function VoiceInput({
     fragmentsRef.current = new Set();
 
     try {
-      const recognition = new SpeechRecognition();
+      const recognition = new WebSpeechRecognition();
       recognition.lang = 'es-AR';
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -120,22 +210,17 @@ export default function VoiceInput({
         }
       };
 
-      recognition.onend = () => {
-        // sin restart
-      };
-
       recognition.start();
       recognitionRef.current = recognition;
       isRecordingRef.current = true;
       setIsRecording(true);
-
       try { audioService.playPop(); } catch (e) {}
     } catch (err) {
       setErrorMsg('No pudimos iniciar el dictado');
     }
   };
 
-  const stopRecording = () => {
+  const stopWebRecording = () => {
     isRecordingRef.current = false;
     setIsRecording(false);
     setInterim('');
@@ -146,11 +231,22 @@ export default function VoiceInput({
     try { audioService.playClick(); } catch (e) {}
   };
 
+  // ============================================
+  // HANDLERS
+  // ============================================
   const handleMicClick = () => {
     if (isRecording) {
-      stopRecording();
+      if (IS_NATIVE) {
+        stopNativeRecording();
+      } else {
+        stopWebRecording();
+      }
     } else {
-      startRecording();
+      if (IS_NATIVE) {
+        startNativeRecording();
+      } else {
+        startWebRecording();
+      }
     }
   };
 
@@ -163,7 +259,6 @@ export default function VoiceInput({
     autoResize(e.target);
   };
 
-  // ¿Usar imagen personalizada?
   const useCustomIcon = Boolean(micIconSrc);
 
   return (
@@ -192,9 +287,7 @@ export default function VoiceInput({
           }}
         />
 
-        {/* 🎤 Botón de micrófono */}
         {useCustomIcon ? (
-          /* ---- MODO IMAGEN (solo diario) ---- */
           <button
             type="button"
             onClick={handleMicClick}
@@ -238,7 +331,6 @@ export default function VoiceInput({
             )}
           </button>
         ) : (
-          /* ---- MODO ÍCONO MATERIAL (todo el resto de la app) ---- */
           <button
             type="button"
             onClick={handleMicClick}

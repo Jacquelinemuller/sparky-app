@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">sparky</string>
+    <string name="title_activity_main">sparky</string>
+    <string name="package_name">com.jacquelinemuller.sparky</string>
+    <string name="custom_url_scheme">com.jacquelinemuller.sparky</string>
+</resources>
