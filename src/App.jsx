@@ -39,74 +39,76 @@ export function AppContent() {
     }
   }, [activeScreen, parentsUnlocked]);
 
-  // Pantallas internas
-  if (activeScreen === 'pomodoro') return <PomodoroScreen />;
-  if (activeScreen === 'stats') return <StatsScreen />;
-  if (activeScreen === 'monthly') return <MonthlyCalendarScreen />;
-  if (activeScreen === 'profile') return <ProfileScreen />;
-  if (activeScreen === 'tips') return <TipsScreen />;
-  if (activeScreen === 'checklists') return <ChecklistsScreen />;
-  if (activeScreen === 'apoyos') return <ApoyosScreen />;
-  if (activeScreen === 'alarms') return <AlarmsScreen />;
-  if (activeScreen === 'calma') return <CalmaScreen />;
-    if (activeScreen === 'diario') return <DiarioScreen />;
-  
+  const isMiniCelebration = celebration?.type === 'mini';
 
-  if (activeScreen === 'parents') {
-    if (!parentsUnlocked) {
+  // 🆕 Función que decide qué contenido mostrar (sin return temprano)
+  const renderScreen = () => {
+    // Pantallas internas
+    if (activeScreen === 'pomodoro') return <PomodoroScreen />;
+    if (activeScreen === 'stats') return <StatsScreen />;
+    if (activeScreen === 'monthly') return <MonthlyCalendarScreen />;
+    if (activeScreen === 'profile') return <ProfileScreen />;
+    if (activeScreen === 'tips') return <TipsScreen />;
+    if (activeScreen === 'checklists') return <ChecklistsScreen />;
+    if (activeScreen === 'apoyos') return <ApoyosScreen />;
+    if (activeScreen === 'alarms') return <AlarmsScreen />;
+    if (activeScreen === 'calma') return <CalmaScreen />;
+    if (activeScreen === 'diario') return <DiarioScreen />;
+
+    if (activeScreen === 'parents') {
+      if (!parentsUnlocked) {
+        return (
+          <PinModal
+            isOpen={true}
+            onClose={() => setActiveScreen('none')}
+            onSuccess={() => setParentsUnlocked(true)}
+          />
+        );
+      }
       return (
-        <PinModal
-          isOpen={true}
-          onClose={() => setActiveScreen('none')}
-          onSuccess={() => setParentsUnlocked(true)}
+        <ParentsScreen
+          onClose={() => {
+            setParentsUnlocked(false);
+            setActiveScreen('none');
+          }}
         />
       );
     }
-    return (
-      <ParentsScreen
-        onClose={() => {
-          setParentsUnlocked(false);
-          setActiveScreen('none');
-        }}
-      />
-    );
-  }
 
-  const isMiniCelebration = celebration?.type === 'mini';
+    // Premios tiene su propio layout full-screen
+    if (activeTab === 'rewards') {
+      return <RewardsScreen />;
+    }
 
-  // Premios tiene su propio layout full-screen (arcade oscuro)
-  if (activeTab === 'rewards') {
+    // Layout principal con Header + BottomNav
     return (
-      <>
-        <RewardsScreen />
-        <MiniToast
-          celebration={isMiniCelebration ? celebration : null}
-          onClose={closeCelebration}
-        />
-      </>
+      <div
+        className="min-h-screen bg-background font-body-md text-on-surface flex flex-col antialiased selection:bg-primary-fixed"
+        style={{ background: BACKGROUNDS[activeTab] || BACKGROUNDS.today }}
+      >
+        <Header />
+        <main className="flex-1 flex flex-col relative w-full pt-20 pb-24 px-gutter-mobile">
+          {activeTab === 'today' && <TodayScreen />}
+          {activeTab === 'schedule' && <ScheduleScreen />}
+          {activeTab === 'notes' && <NotesScreen />}
+          {activeTab === 'missions' && <MissionsScreen />}
+        </main>
+        <BottomNav />
+      </div>
     );
-  }
+  };
 
   return (
-    <div
-      className="min-h-screen bg-background font-body-md text-on-surface flex flex-col antialiased selection:bg-primary-fixed"
-      style={{ background: BACKGROUNDS[activeTab] || BACKGROUNDS.today }}
-    >
-      <Header />
-      <main className="flex-1 flex flex-col relative w-full pt-20 pb-24 px-gutter-mobile">
-        {activeTab === 'today' && <TodayScreen />}
-        {activeTab === 'schedule' && <ScheduleScreen />}
-        {activeTab === 'notes' && <NotesScreen />}
-        {activeTab === 'missions' && <MissionsScreen />}
-      </main>
-      <BottomNav />
+    <>
+      {renderScreen()}
 
+      {/* 🆕 SIEMPRE montado, en cualquier pantalla */}
       <AlarmManager />
 
       <MiniToast
         celebration={isMiniCelebration ? celebration : null}
         onClose={closeCelebration}
       />
-    </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import EditTaskModal from '../components/EditTaskModal';
 import PhotoViewerModal from '../components/PhotoViewerModal';
+import VoiceInput from '../components/VoiceInput';
 import { getXpFromDifficulty, suggestDifficultyFromTime } from '../services/storageService';
 import { compressImage, getBase64SizeKb } from '../utils/imageUtils';
 import { audioService } from '../services/audioService';
@@ -309,7 +310,7 @@ export const MissionsScreen = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full py-3 rounded-2xl bg-[#f5f3ff] border-2 border-dashed border-[#c4b5fd] text-[#8b5cf6] font-label-md text-label-md font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                className="w-full py-3 rounded-2xl bg-[#f5f3ff] border-2 border-dashed border-[#c4b5fd] text-[#8b5cf6] font-black text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[22px]">add_a_photo</span>
                 <span>Agregar foto</span>
@@ -321,7 +322,7 @@ export const MissionsScreen = () => {
                 <span className="material-symbols-outlined text-[#8b5cf6] text-[22px] animate-spin">
                   progress_activity
                 </span>
-                <span className="font-label-md text-label-md font-black text-[#8b5cf6]">
+                <span className="font-black text-sm text-[#8b5cf6]">
                   Procesando imagen...
                 </span>
               </div>
@@ -358,21 +359,29 @@ export const MissionsScreen = () => {
             {photoError && (
               <div className="w-full mt-2 p-2 rounded-xl bg-[#fee2e2] border border-[#fecaca] flex items-start gap-1.5">
                 <span className="text-sm">⚠️</span>
-                <p className="font-label-sm text-[11px] text-[#991b1b] font-bold leading-tight">
+                <p className="text-[11px] text-[#991b1b] font-bold leading-tight">
                   {photoError}
                 </p>
               </div>
             )}
           </div>
 
-          <input
-            type="text"
-            placeholder="¿Qué misión toca? (ej. Leer 10 min)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 rounded-xl border border-[#fed7aa] bg-white text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b00]"
-            required
-          />
+          {/* 🎤 TÍTULO con micrófono */}
+          <div>
+            <label className="text-xs font-bold text-on-surface-variant mb-1 block">
+              ✏️ ¿Qué misión toca?
+            </label>
+            <VoiceInput
+              value={title}
+              onChange={setTitle}
+              placeholder="Ej: Leer 10 min"
+              maxLength={80}
+              color="#ff6b00"
+              bg="#ffffff"
+              borderColor="#fed7aa"
+              style={{ fontSize: '14px', padding: '12px' }}
+            />
+          </div>
 
           {/* Tiempo */}
           <div>
@@ -440,7 +449,7 @@ export const MissionsScreen = () => {
 
           {/* Preview XP */}
           <div className="p-3 rounded-xl bg-white border-2 border-[#fed7aa] flex items-center justify-between">
-            <span className="font-label-sm text-label-sm font-bold text-on-surface-variant">
+            <span className="text-[11px] font-bold text-on-surface-variant">
               🎁 Recompensa
             </span>
             <span className="font-black text-[#ea580c] text-base">
@@ -451,7 +460,7 @@ export const MissionsScreen = () => {
           {showSuggestionNote && (
             <div className="p-2 rounded-xl bg-[#fef3c7] border border-[#fcd34d] flex items-start gap-2">
               <span className="text-base">💡</span>
-              <p className="font-label-sm text-label-sm text-[#92400e] font-bold leading-tight">
+              <p className="text-[11px] text-[#92400e] font-bold leading-tight">
                 Con {timeMinutes} min, la sugerencia era{' '}
                 <strong>{DIFFICULTY_CONFIG[suggestedDifficulty].label}</strong>.
               </p>
@@ -479,7 +488,7 @@ export const MissionsScreen = () => {
                     <span className="w-6 h-6 rounded-full bg-[#ffedd5] text-[#ea580c] flex items-center justify-center text-xs font-black flex-shrink-0">
                       {idx + 1}
                     </span>
-                    <span className="flex-1 font-body-sm text-body-sm text-on-surface break-words">
+                    <span className="flex-1 text-sm text-on-surface break-words">
                       {step}
                     </span>
                     <button
@@ -495,21 +504,26 @@ export const MissionsScreen = () => {
             )}
 
             {microSteps.length < MAX_MICROSTEPS && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newStep}
-                  onChange={(e) => setNewStep(e.target.value)}
-                  onKeyDown={handleStepKeyDown}
-                  placeholder="Ej: Leer el enunciado"
-                  maxLength={60}
-                  className="flex-1 p-2.5 rounded-xl border border-[#fed7aa] bg-white text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b00]"
-                />
+              <div className="flex items-start gap-2">
+                {/* 🎤 MICRO-PASO con micrófono */}
+                <div className="flex-1">
+                  <VoiceInput
+                    value={newStep}
+                    onChange={setNewStep}
+                    placeholder="Ej: Leer el enunciado"
+                    maxLength={60}
+                    color="#ff6b00"
+                    bg="#ffffff"
+                    borderColor="#fed7aa"
+                    style={{ fontSize: '14px', padding: '10px 12px' }}
+                    onKeyDown={handleStepKeyDown}
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handleAddStep}
                   disabled={!newStep.trim()}
-                  className="w-10 h-10 rounded-xl bg-[#ff6b00] text-white flex items-center justify-center shadow-[0_3px_0_0_#c2410c] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-12 h-12 rounded-xl bg-[#ff6b00] text-white flex items-center justify-center shadow-[0_3px_0_0_#c2410c] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <span className="material-symbols-outlined text-[20px]">add</span>
                 </button>
@@ -699,7 +713,7 @@ export const MissionsScreen = () => {
                         alt={`Recordatorio de ${task.title}`}
                         className="w-full max-h-32 object-contain"
                       />
-                      <div className="py-1.5 bg-[#f5f3ff] text-[#8b5cf6] font-label-sm text-[10px] font-black uppercase tracking-wider text-center">
+                      <div className="py-1.5 bg-[#f5f3ff] text-[#8b5cf6] text-[10px] font-black uppercase tracking-wider text-center">
                         📷 Tocar para ampliar
                       </div>
                     </button>
@@ -728,7 +742,6 @@ export const MissionsScreen = () => {
                       </div>
 
                       <div className="flex items-center gap-1">
-                        {/* Botón de foto rápida */}
                         <button
                           type="button"
                           onClick={() => handleQuickPhotoClick(task)}
@@ -836,7 +849,7 @@ export const MissionsScreen = () => {
                           {step.done ? '✓' : '•'}
                         </span>
                         <span
-                          className={`font-body-sm text-body-sm flex-1 break-words ${
+                          className={`text-sm flex-1 break-words ${
                             step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
                           }`}
                         >
@@ -855,7 +868,7 @@ export const MissionsScreen = () => {
       {/* Modal de edición */}
       <EditTaskModal
         isOpen={!!editingTask}
-                onClose={() => setEditingTask(null)}
+        onClose={() => setEditingTask(null)}
         task={editingTask}
         onSave={(taskId, updates) => editTask(taskId, updates)}
       />
