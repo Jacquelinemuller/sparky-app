@@ -9,12 +9,89 @@ const PRIORITY_ORDER = { red: 0, yellow: 1, green: 2 };
 
 const MICROSTEP_XP_BONUS = 2;
 
+const MAX_DAILY_PLAY_MINUTES = 30;
+
+// ============================================
+// MAPEO RETO → JUEGO
+// Cuando un reto se cumple al día 7, dispara el cofre con el juego mapeado.
+// Si no está en el mapa, no dispara cofre (fallback seguro).
+// ============================================
+const CHALLENGE_TO_GAME = {
+  'ch-organizacion-escolar': 'simon',
+  'ch-procrastinacion-5min': 'minesweeper',
+  // Agregar los retos 3-10 cuando los tengas:
+  // 'ch-...': 'maze',
+  // 'ch-...': 'stroop',
+  // 'ch-...': 'sequences',
+  // 'ch-...': 'sudoku4',
+  // 'ch-...': 'differences',
+  // 'ch-...': 'reaction',
+  // 'ch-...': 'chess',
+};
+
+// ============================================
+// REGLAS DEL COFRE
+// ============================================
+const CHEST_MIN_DAYS_FOR_FULL_REWARD = 3;
+const CHEST_MINUTES_FULL = 20;
+const CHEST_MINUTES_PARTIAL = 5;
+
 function getTodayKey() {
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+function getTodayKeyForPlay() {
+  return getTodayKey();
+}
+
+function getNextMonday() {
+  const now = new Date();
+  const day = now.getDay();
+
+  if (day === 1) {
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  const daysUntilMonday = day === 0 ? 1 : 8 - day;
+  const target = new Date(now);
+  target.setDate(target.getDate() + daysUntilMonday);
+
+  const y = target.getFullYear();
+  const m = String(target.getMonth() + 1).padStart(2, '0');
+  const d = String(target.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getDaysSinceStart(startDate) {
+  if (!startDate) return -1;
+  const start = new Date(startDate + 'T00:00:00');
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.floor((now - start) / (1000 * 60 * 60 * 24));
+}
+
+function getChallengeTimeStatus(challenge) {
+  if (!challenge || !challenge.startDate) return 'pending';
+  const diffDays = getDaysSinceStart(challenge.startDate);
+  const duration = challenge.durationDays || 14;
+  if (diffDays < 0) return 'pending';
+  if (diffDays < 7) return 'primary';
+  if (diffDays < duration) return 'background';
+  return 'closed';
+}
+
+function countCompletedDays(challenge) {
+  if (!challenge) return 0;
+  return Object.values(challenge.checkIns || {}).filter(
+    (v) => v === 'si' || v === 'masOMenos'
+  ).length;
 }
 
 function sortTasksByPriority(tasks) {
@@ -36,6 +113,14 @@ function recomputeStatus(tasks) {
   }));
 
   return [...recomputed, ...completed];
+}
+
+function grantReward(stats, amount) {
+  return {
+    ...stats,
+    xp: (stats.xp || 0) + amount,
+    coins: (stats.coins || 0) + amount
+  };
 }
 
 export const AppProvider = ({ children }) => {
@@ -94,6 +179,116 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     audioService.setEnabled(state.settings.soundEnabled);
   }, [state.settings.soundEnabled]);
+
+  // ============================================
+  // EFECTO 1: DETECTAR RETOS AL DÍA 7 Y DISPARAR COFRE
+  // ============================================
+  useEffect(() => {
+    const challenges = state.activeChallenges || [];
+    if (challenges.length === 0) return;
+
+    let triggeredChest = null;
+    const updated = challenges.map((c) => {
+      if (c.daySevenReached) return c;
+
+      const daysSinceStart = getDaysSinceStart(c.startDate);
+      if (daysSinceStart < 7) return c;
+
+      const completedDays = countCompletedDays(c);
+      const gameId = CHALLENGE_TO_GAME[c.id];
+
+      if (!gameId) {
+        return { ...c, daySevenReached: true };
+      }
+
+      if (state.pendingChest) {
+        return { ...c, daySevenReached: true };
+      }
+
+      const minutes = completedDays >= CHEST_MIN_DAYS_FOR_FULL_REWARD
+        ? CHEST_MINUTES_FULL
+        : CHEST_MINUTES_PARTIAL;
+
+      triggeredChest = {
+        gameId,
+        minutes,
+        challengeId: c.id,
+        challengeTitle: c.title,
+        challengeIcon: c.icon,
+        completedDays,
+        createdAt: Date.now()
+      };
+
+      return { ...c, daySevenReached: true };
+    });
+
+    const hasChanges = updated.some((c, i) => c !== challenges[i]);
+    if (!hasChanges && !triggeredChest) return;
+
+    setState((prev) => ({
+      ...prev,
+      activeChallenges: updated,
+      pendingChest: triggeredChest || prev.pendingChest
+    }));
+  }, [state.activeChallenges, state.pendingChest]);
+
+  // ============================================
+  // EFECTO 2: AUTO-ARCHIVADO DE RETOS
+  // ============================================
+  useEffect(() => {
+    const challenges = state.activeChallenges || [];
+    if (challenges.length === 0) return;
+
+    const toKeep = [];
+    const toArchive = [];
+    let partialChest = null;
+
+    challenges.forEach((c) => {
+      const status = getChallengeTimeStatus(c);
+      if (status === 'closed') {
+        if (!c.daySevenReached) {
+          const gameId = CHALLENGE_TO_GAME[c.id];
+          if (gameId && !state.pendingChest && !partialChest) {
+            partialChest = {
+              gameId,
+              minutes: CHEST_MINUTES_PARTIAL,
+              challengeId: c.id,
+              challengeTitle: c.title,
+              challengeIcon: c.icon,
+              completedDays: countCompletedDays(c),
+              createdAt: Date.now()
+            };
+          }
+        }
+        toArchive.push({ ...c, archivedAt: Date.now(), status: 'archived' });
+      } else {
+        toKeep.push(c);
+      }
+    });
+
+    toKeep.sort((a, b) => {
+      if (a.startDate !== b.startDate) {
+        return (b.startDate || '').localeCompare(a.startDate || '');
+      }
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
+    if (toKeep.length > 2) {
+      const extra = toKeep.splice(2);
+      extra.forEach((c) => {
+        toArchive.push({ ...c, archivedAt: Date.now(), status: 'archived' });
+      });
+    }
+
+    if (toArchive.length === 0 && !partialChest) return;
+
+    setState((prev) => ({
+      ...prev,
+      activeChallenges: toKeep,
+      archivedChallenges: [...(prev.archivedChallenges || []), ...toArchive],
+      pendingChest: partialChest || prev.pendingChest
+    }));
+  }, [state.activeChallenges, state.pendingChest]);
 
   useEffect(() => {
     if (!state.settings.reminderNudgeEnabled) return;
@@ -155,10 +350,11 @@ export const AppProvider = ({ children }) => {
     try { audioService.playSuccess(); } catch (e) {}
     setState((prev) => {
       if (prev.unlockedAccessories.includes(accessoryId)) return prev;
+      if ((prev.stats.coins || 0) < cost) return prev;
       return {
         ...prev,
         unlockedAccessories: [...prev.unlockedAccessories, accessoryId],
-        stats: { ...prev.stats, xp: Math.max(0, (prev.stats.xp || 0) - cost) }
+        stats: { ...prev.stats, coins: (prev.stats.coins || 0) - cost }
       };
     });
   }, [recordActivity]);
@@ -208,13 +404,13 @@ export const AppProvider = ({ children }) => {
   }, [recordActivity]);
 
   // ==========================================
-  // ACCIONES: XP / RACHA
+  // ACCIONES: XP / COINS
   // ==========================================
   const addXp = useCallback((amount) => {
     recordActivity();
     setState((prev) => ({
       ...prev,
-      stats: { ...prev.stats, xp: (prev.stats.xp || 0) + amount }
+      stats: grantReward(prev.stats, amount)
     }));
   }, [recordActivity]);
 
@@ -227,7 +423,7 @@ export const AppProvider = ({ children }) => {
 
     setState((prev) => ({
       ...prev,
-      stats: { ...prev.stats, xp: (prev.stats.xp || 0) + amount }
+      stats: grantReward(prev.stats, amount)
     }));
 
     setCelebration({
@@ -369,8 +565,7 @@ export const AppProvider = ({ children }) => {
         ...prev,
         tasks: recomputed,
         stats: {
-          ...prev.stats,
-          xp: (prev.stats.xp || 0) + taskToComplete.xpReward,
+          ...grantReward(prev.stats, taskToComplete.xpReward),
           tasksCompletedToday: (prev.stats.tasksCompletedToday || 0) + 1
         }
       };
@@ -404,10 +599,7 @@ export const AppProvider = ({ children }) => {
       return {
         ...prev,
         tasks: recomputeStatus(updatedTasks),
-        stats: {
-          ...prev.stats,
-          xp: (prev.stats.xp || 0) + bonusXp
-        }
+        stats: bonusXp > 0 ? grantReward(prev.stats, bonusXp) : prev.stats
       };
     });
   }, [recordActivity]);
@@ -536,17 +728,35 @@ export const AppProvider = ({ children }) => {
     recordActivity();
     setState((prev) => ({
       ...prev,
-      activeChallenges: (prev.activeChallenges || []).map((c) =>
-        c.id === challengeId
-          ? {
-              ...c,
-              checkIns: {
-                ...(c.checkIns || {}),
-                [dateKey]: value
-              }
-            }
-          : c
-      )
+      activeChallenges: (prev.activeChallenges || []).map((c) => {
+        if (c.id !== challengeId) return c;
+
+        if (!c.startDate) return c;
+
+        const start = new Date(c.startDate + 'T00:00:00');
+        const today = new Date(dateKey + 'T00:00:00');
+        const diffDays = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+        const duration = c.durationDays || 14;
+
+        if (diffDays < 0 || diffDays >= duration) return c;
+
+        const now = new Date();
+        const todayKey = (() => {
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, '0');
+          const d = String(now.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        })();
+        if (dateKey !== todayKey) return c;
+
+        return {
+          ...c,
+          checkIns: {
+            ...(c.checkIns || {}),
+            [dateKey]: value
+          }
+        };
+      })
     }));
   }, [recordActivity]);
 
@@ -558,13 +768,7 @@ export const AppProvider = ({ children }) => {
       );
       if (existing) return prev;
 
-      const todayKey = (() => {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      })();
+      const startDate = getNextMonday();
 
       return {
         ...prev,
@@ -572,15 +776,99 @@ export const AppProvider = ({ children }) => {
           ...(prev.activeChallenges || []),
           {
             ...challengeData,
-            startDate: todayKey,
+            startDate,
+            durationDays: challengeData.durationDays || 14,
             checkIns: {},
-            status: 'pending'
+            status: 'pending',
+            createdAt: Date.now(),
+            daySevenReached: false
           }
         ]
       };
     });
   }, [recordActivity]);
 
+  // ==========================================
+  // COFRE
+  // ==========================================
+  const openChest = useCallback(() => {
+    recordActivity();
+    setState((prev) => {
+      const chest = prev.pendingChest;
+      if (!chest) return prev;
+
+      try { audioService.playSuccess(); } catch (e) {}
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 90,
+          origin: { y: 0.5 },
+          colors: ['#fbbf24', '#f59e0b', '#ea580c', '#10b981', '#06b6d4']
+        });
+      } catch (e) {}
+
+      const alreadyUnlocked = prev.unlockedGames.includes(chest.gameId);
+
+      return {
+        ...prev,
+        pendingChest: null,
+        unlockedGames: alreadyUnlocked
+          ? prev.unlockedGames
+          : [...prev.unlockedGames, chest.gameId],
+        gameBalances: {
+          ...(prev.gameBalances || {}),
+          [chest.gameId]:
+            ((prev.gameBalances || {})[chest.gameId] || 0) + chest.minutes
+        }
+      };
+    });
+  }, [recordActivity]);
+
+  // ==========================================
+  // CONSUMO DE TIEMPO DE JUEGO
+  // ==========================================
+  const consumeGameTime = useCallback((gameId, minutes) => {
+    if (!gameId || !minutes || minutes <= 0) return;
+    setState((prev) => {
+      const today = getTodayKeyForPlay();
+      const isSameDay = prev.dailyPlayDate === today;
+      const currentDaily = isSameDay ? (prev.dailyPlayMinutes || 0) : 0;
+      const newDaily = Math.min(MAX_DAILY_PLAY_MINUTES, currentDaily + minutes);
+
+      const currentBalance = (prev.gameBalances || {})[gameId] || 0;
+      const newBalance = Math.max(0, currentBalance - minutes);
+
+      return {
+        ...prev,
+        dailyPlayDate: today,
+        dailyPlayMinutes: newDaily,
+        gameBalances: {
+          ...(prev.gameBalances || {}),
+          [gameId]: newBalance
+        }
+      };
+    });
+  }, []);
+    const buyGameTime = useCallback((gameId, minutes, cost) => {
+    if (!gameId || !minutes || minutes <= 0) return false;
+    if ((state.stats.coins || 0) < cost) return false;
+
+    recordActivity();
+    setState((prev) => {
+      if ((prev.stats.coins || 0) < cost) return prev;
+      return {
+        ...prev,
+        stats: { ...prev.stats, coins: (prev.stats.coins || 0) - cost },
+        gameBalances: {
+          ...(prev.gameBalances || {}),
+          [gameId]: ((prev.gameBalances || {})[gameId] || 0) + minutes
+        }
+      };
+    });
+    try { audioService.playSuccess(); } catch (e) {}
+    return true;
+  }, [recordActivity, state.stats.coins]);
+  
   const saveQuizAnswers = useCallback((key, payload) => {
     recordActivity();
     setState((prev) => ({
@@ -940,10 +1228,11 @@ export const AppProvider = ({ children }) => {
     recordActivity();
     setState((prev) => {
       if (prev.unlockedSounds.includes(soundId)) return prev;
+      if ((prev.stats.coins || 0) < cost) return prev;
       return {
         ...prev,
         unlockedSounds: [...prev.unlockedSounds, soundId],
-        stats: { ...prev.stats, xp: Math.max(0, (prev.stats.xp || 0) - cost) }
+        stats: { ...prev.stats, coins: (prev.stats.coins || 0) - cost }
       };
     });
   }, [recordActivity]);
@@ -952,10 +1241,11 @@ export const AppProvider = ({ children }) => {
     recordActivity();
     setState((prev) => {
       if (prev.unlockedGames.includes(gameId)) return prev;
+      if ((prev.stats.coins || 0) < cost) return prev;
       return {
         ...prev,
         unlockedGames: [...prev.unlockedGames, gameId],
-        stats: { ...prev.stats, xp: Math.max(0, (prev.stats.xp || 0) - cost) }
+        stats: { ...prev.stats, coins: (prev.stats.coins || 0) - cost }
       };
     });
   }, [recordActivity]);
@@ -964,10 +1254,11 @@ export const AppProvider = ({ children }) => {
     recordActivity();
     setState((prev) => {
       if (prev.unlockedRewards.includes(rewardId)) return prev;
+      if ((prev.stats.coins || 0) < cost) return prev;
       return {
         ...prev,
         unlockedRewards: [...prev.unlockedRewards, rewardId],
-        stats: { ...prev.stats, xp: Math.max(0, (prev.stats.xp || 0) - cost) }
+        stats: { ...prev.stats, coins: (prev.stats.coins || 0) - cost }
       };
     });
   }, [recordActivity]);
@@ -993,11 +1284,49 @@ export const AppProvider = ({ children }) => {
 
   const level = Math.floor((state.stats.xp || 0) / 100) + 1;
 
+  const isChallengeActive = useCallback((challenge) => {
+    const status = getChallengeTimeStatus(challenge);
+    return status === 'primary' || status === 'background' || status === 'pending';
+  }, []);
+
+  const getChallengeStatus = useCallback((challenge) => {
+    return getChallengeTimeStatus(challenge);
+  }, []);
+
+  const getActiveChallengesOrdered = useCallback(() => {
+    const sorted = (state.activeChallenges || [])
+      .slice()
+      .filter((c) => {
+        const status = getChallengeTimeStatus(c);
+        return status === 'primary' || status === 'background' || status === 'pending';
+      })
+      .sort((a, b) => {
+        if (a.startDate !== b.startDate) {
+          return (b.startDate || '').localeCompare(a.startDate || '');
+        }
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+
+    return sorted.map((c, i) => {
+      const timeStatus = getChallengeTimeStatus(c);
+      let displayPriority;
+      if (i === 0) {
+        displayPriority = timeStatus === 'pending' ? 'pending' : 'primary';
+      } else if (i === 1) {
+        displayPriority = 'background';
+      } else {
+        displayPriority = 'toArchive';
+      }
+      return { ...c, displayPriority, timeStatus };
+    });
+  }, [state.activeChallenges]);
+
   return (
     <AppContext.Provider
       value={{
         state,
         xp: state.stats.xp,
+        coins: state.stats.coins || 0,
         level,
         streak: state.stats.streak,
         impulses: state.stats.impulses,
@@ -1040,6 +1369,7 @@ export const AppProvider = ({ children }) => {
         quizAnswers: state.quizAnswers || {},
         saveQuizAnswers,
         activeChallenges: state.activeChallenges || [],
+        archivedChallenges: state.archivedChallenges || [],
         checklists: state.checklists || [],
         addChecklist,
         updateChecklist,
@@ -1059,6 +1389,17 @@ export const AppProvider = ({ children }) => {
         acceptChallenge,
         setChallengeCheckIn,
         completeChallenge,
+        isChallengeActive,
+        getChallengeStatus,
+        getActiveChallengesOrdered,
+        pendingChest: state.pendingChest || null,
+        openChest,
+        consumeGameTime,
+        buyGameTime,
+        dailyPlayMinutes: state.dailyPlayMinutes || 0,
+        dailyPlayDate: state.dailyPlayDate || null,
+        maxDailyPlayMinutes: MAX_DAILY_PLAY_MINUTES,
+        gameBalances: state.gameBalances || {},
         addCustomTip,
         updateCustomTip,
         deleteCustomTip,

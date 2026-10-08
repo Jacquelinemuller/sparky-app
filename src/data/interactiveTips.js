@@ -1,8 +1,14 @@
 // Datos de los tips interactivos día por día.
 // Clave: 'w{semana}-d{día}'
 //
-// layout: 'twoColumns' (default) | 'single' | 'quiz'
+// layout: 'twoColumns' (default) | 'single' | 'quiz' | 'challenge' | 'challengeClose'
 // titleImage: (opcional) ruta a una imagen que reemplaza el título HTML
+//
+// Los retos duran 14 días:
+//   - Días 1-7: periodo "primary" (check-in diario con banner principal)
+//   - Días 8-14: periodo "background" (check-in opcional, en segundo plano)
+// El reto se considera "cumplido" al llegar al día 7 → se dispara el cofre.
+// A los 14 días se cierra definitivamente.
 
 // ============================================
 // SEMANA 1
@@ -138,7 +144,7 @@ const DIA_7 = {
   layout: 'challenge',
   sparkyIntro: [
     'Recorriste toda la semana. Ya sabés cosas sobre tu cerebro que muchos adultos no saben.',
-    'Ahora toca lo más importante: probar. Un reto chiquito para los próximos 7 días.'
+    'Ahora toca lo más importante: probar. Un reto chiquito para las próximas 2 semanas.'
   ],
   titleAccent: 'y organización escolar',
   subtitle: 'El reto de la semana.',
@@ -149,7 +155,7 @@ const DIA_7 = {
     description: 'Antes de dormir, escribí las 3 cosas importantes para mañana.',
     icon: '📝',
     why: 'Porque escribir en papel lo que va a pasar mañana libera espacio en tu cabeza y te ayuda a arrancar el día más ordenado.',
-    durationDays: 7
+    durationDays: 14
   },
   reward: 15
 };
@@ -304,7 +310,7 @@ const W2_DIA_7 = {
     description: 'Cuando no querés empezar algo, comprometete a hacerlo solo 5 minutos. Si después querés seguir, seguís. Si no, ya está.',
     icon: '⏱️',
     why: 'Porque arrancar es lo más difícil. Una vez que el cerebro entra en modo tarea, seguir es mucho más fácil. Y 5 minutos no asustan a nadie.',
-    durationDays: 7
+    durationDays: 14
   },
   sparkyIntro: [
     'Terminaste la Semana 2. Vamos a ver cómo te fue con el reto.',

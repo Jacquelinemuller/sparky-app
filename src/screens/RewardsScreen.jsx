@@ -33,7 +33,7 @@ const ARCADE_COLORS = {
 
 export const RewardsScreen = () => {
   const {
-    xp,
+    coins,
     userAvatar,
     userName,
     activeTab,
@@ -118,7 +118,7 @@ export const RewardsScreen = () => {
             </div>
           </div>
 
-          {/* XP + Avatar */}
+          {/* Coins + Avatar */}
           <div className="flex items-center gap-2">
             <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
@@ -128,9 +128,9 @@ export const RewardsScreen = () => {
                 boxShadow: '0 0 12px rgba(250, 204, 21, 0.2)'
               }}
             >
-              <span className="text-sm leading-none">⭐</span>
+              <span className="text-sm leading-none">🪙</span>
               <span className="text-xs font-black text-amber-300 tracking-wide">
-                {xp} XP
+                {coins}
               </span>
             </div>
 

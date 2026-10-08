@@ -9,10 +9,10 @@ import { GAMES_CATALOG } from '../../services/gamesCatalog';
 // ============================================
 const SOUNDS_CATALOG = [
   { id: 'rain',       label: 'Lluvia',           icon: '🌧️', unlock: { type: 'free' } },
-  { id: 'waves',      label: 'Olas del mar',     icon: '🌊', unlock: { type: 'xp', cost: 70 } },
-  { id: 'forest',     label: 'Bosque',           icon: '🌲', unlock: { type: 'xp', cost: 90 } },
-  { id: 'cafe',       label: 'Cafetería',        icon: '☕', unlock: { type: 'xp', cost: 120 } },
-  { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'xp', cost: 180 } }
+  { id: 'waves',      label: 'Olas del mar',     icon: '🌊', unlock: { type: 'coins', cost: 70 } },
+  { id: 'forest',     label: 'Bosque',           icon: '🌲', unlock: { type: 'coins', cost: 90 } },
+  { id: 'cafe',       label: 'Cafetería',        icon: '☕', unlock: { type: 'coins', cost: 120 } },
+  { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'coins', cost: 180 } }
 ];
 
 // ============================================
@@ -135,8 +135,8 @@ export default function CollectionTab() {
               <span>PENDIENTE</span>
             ) : (
               <>
-                <span>⭐</span>
-                <span>{cost} XP</span>
+                <span>💰</span>
+                <span>{cost}</span>
               </>
             )}
           </span>

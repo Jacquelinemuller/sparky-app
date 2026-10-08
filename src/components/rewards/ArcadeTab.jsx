@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
+import { useGameSession } from '../../hooks/useGameSession';
 import MemoriaGame from './games/MemoriaGame';
 import SimonGame from './games/SimonGame';
+import ChestModal from './ChestModal';
+import GameTimer, { GameTimeUpModal } from './GameTimer';
 
 const C = {
   card: '#131322',
@@ -18,26 +21,30 @@ const C = {
 };
 
 export default function ArcadeTab() {
-  const { unlockedGames } = useApp();
+  const { unlockedGames, pendingChest, gameBalances } = useApp();
   const [feedback, setFeedback] = useState(null);
   const [activeGame, setActiveGame] = useState(null);
+
+  // Hook del timer
+  const session = useGameSession(activeGame, !!activeGame);
 
   const handlePlayAttempt = (game, isUnlocked) => {
     try { audioService.playClick(); } catch (e) {}
 
     if (!isUnlocked) {
-      setFeedback(`Necesitás desbloquear "${game.label}" en la Tienda`);
-      setTimeout(() => setFeedback(null), 3000);
+      if (game.unlock.type === 'challenge') {
+        setFeedback(
+          `"${game.label}" se desbloquea con el Reto ${game.unlock.week}. ¡Seguí cumpliendo retos! 🎯`
+        );
+      } else {
+        setFeedback(`"${game.label}" todavía no está disponible.`);
+      }
+      setTimeout(() => setFeedback(null), 3500);
       return;
     }
 
-    if (game.id === 'memory') {
-      setActiveGame('memory');
-      return;
-    }
-
-    if (game.id === 'simon') {
-      setActiveGame('simon');
+    if (game.id === 'memory' || game.id === 'simon') {
+      setActiveGame(game.id);
       return;
     }
 
@@ -47,17 +54,47 @@ export default function ArcadeTab() {
 
   const handleExitGame = () => {
     try { audioService.playClick(); } catch (e) {}
+    session.endSession();
     setActiveGame(null);
   };
 
-  if (activeGame === 'memory') {
-    return <MemoriaGame onExit={handleExitGame} />;
+  const handleTimeUp = () => {
+    try { audioService.playClick(); } catch (e) {}
+    setActiveGame(null);
+  };
+
+  // ============================================
+  // PANTALLA DE JUEGO ACTIVO
+  // ============================================
+  if (activeGame) {
+    // Bloqueado: mostrar modal sin cargar el juego
+    if (session.blockReason) {
+      return (
+        <div className="w-full flex flex-col gap-3">
+          <GameTimeUpModal reason={session.blockReason} onClose={handleTimeUp} />
+        </div>
+      );
+    }
+
+    // Sesión activa: mostrar juego + timer
+    return (
+      <div className="w-full flex flex-col gap-3">
+        <GameTimer
+          formattedTime={session.formattedTime}
+          formattedDaily={session.formattedDaily}
+          secondsLeft={session.secondsLeft}
+          dailySecondsLeft={session.dailySecondsLeft}
+          onExit={handleExitGame}
+        />
+        {activeGame === 'memory' && <MemoriaGame onExit={handleExitGame} />}
+        {activeGame === 'simon' && <SimonGame onExit={handleExitGame} />}
+      </div>
+    );
   }
 
-  if (activeGame === 'simon') {
-    return <SimonGame onExit={handleExitGame} />;
-  }
-
+  // ============================================
+  // PANTALLA DEL ARCADE
+  // ============================================
   const totalUnlocked =
     GAMES_CATALOG.filter(
       (g) => g.unlock.type === 'free' || unlockedGames?.includes(g.id)
@@ -65,6 +102,8 @@ export default function ArcadeTab() {
 
   return (
     <div className="w-full flex flex-col gap-3">
+
+      {pendingChest && <ChestModal />}
 
       <div
         className="w-full px-3 py-2 rounded-xl flex items-center justify-between"
@@ -80,6 +119,27 @@ export default function ArcadeTab() {
           {totalUnlocked} / {GAMES_CATALOG.length}
         </span>
       </div>
+
+      {pendingChest && (
+        <div
+          className="w-full px-3 py-3 rounded-2xl flex items-center gap-2 cursor-pointer animate-pulse"
+          style={{
+            background: `linear-gradient(135deg, ${C.amber}22 0%, ${C.magenta}22 100%)`,
+            border: `2px solid ${C.amber}`,
+            boxShadow: `0 0 20px ${C.amber}60`
+          }}
+        >
+          <span className="text-2xl">🎁</span>
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.amber }}>
+              ¡Tenés un cofre!
+            </span>
+            <span className="text-[11px] font-bold text-white">
+              Tocá para abrirlo y desbloquear tu premio
+            </span>
+          </div>
+        </div>
+      )}
 
       {feedback && (
         <div
@@ -100,11 +160,13 @@ export default function ArcadeTab() {
         {GAMES_CATALOG.map((game) => {
           const isUnlocked =
             game.unlock.type === 'free' || unlockedGames?.includes(game.id);
+          const balance = (gameBalances || {})[game.id] || 0;
           return (
             <GameCard
               key={game.id}
               game={game}
               isUnlocked={isUnlocked}
+              balance={balance}
               onPlay={handlePlayAttempt}
             />
           );
@@ -114,9 +176,54 @@ export default function ArcadeTab() {
   );
 }
 
-function GameCard({ game, isUnlocked, onPlay }) {
-  const cost = game.unlock.cost || 0;
+function GameCard({ game, isUnlocked, balance, onPlay }) {
   const isFree = game.unlock.type === 'free';
+  const isChallenge = game.unlock.type === 'challenge';
+  const challengeWeek = game.unlock.week;
+
+  let badge = null;
+  if (isUnlocked) {
+    badge = (
+      <span
+        className="text-[9px] font-black px-2 py-0.5 rounded-full"
+        style={{
+          background: 'rgba(6, 182, 212, 0.2)',
+          color: C.cyanBright,
+          border: '1px solid rgba(6, 182, 212, 0.4)'
+        }}
+      >
+        {balance > 0 ? `⏱ ${Math.floor(balance)} min` : 'Sin saldo'}
+      </span>
+    );
+  } else if (isFree) {
+    badge = (
+      <span
+        className="text-[9px] font-black px-2 py-0.5 rounded-full"
+        style={{
+          background: 'rgba(250, 204, 21, 0.15)',
+          color: C.amber,
+          border: '1px solid rgba(250, 204, 21, 0.4)'
+        }}
+      >
+        Gratis
+      </span>
+    );
+  } else if (isChallenge) {
+    badge = (
+      <span
+        className="text-[9px] font-black px-2 py-0.5 rounded-full"
+        style={{
+          background: 'rgba(148, 163, 184, 0.15)',
+          color: C.textMuted,
+          border: '1px solid rgba(148, 163, 184, 0.25)'
+        }}
+      >
+        🎯 Reto {challengeWeek}
+      </span>
+    );
+  }
+
+  const canPlay = isUnlocked && balance > 0;
 
   return (
     <div
@@ -145,40 +252,7 @@ function GameCard({ game, isUnlocked, onPlay }) {
           )}
         </div>
 
-        {isUnlocked ? (
-          <span
-            className="text-[9px] font-black px-2 py-0.5 rounded-full"
-            style={{
-              background: 'rgba(6, 182, 212, 0.2)',
-              color: C.cyanBright,
-              border: '1px solid rgba(6, 182, 212, 0.4)'
-            }}
-          >
-            Listo
-          </span>
-        ) : isFree ? (
-          <span
-            className="text-[9px] font-black px-2 py-0.5 rounded-full"
-            style={{
-              background: 'rgba(250, 204, 21, 0.15)',
-              color: C.amber,
-              border: '1px solid rgba(250, 204, 21, 0.4)'
-            }}
-          >
-            Gratis
-          </span>
-        ) : (
-          <span
-            className="text-[9px] font-black px-2 py-0.5 rounded-full"
-            style={{
-              background: 'rgba(148, 163, 184, 0.15)',
-              color: C.textMuted,
-              border: '1px solid rgba(148, 163, 184, 0.25)'
-            }}
-          >
-            {cost} XP
-          </span>
-        )}
+        {badge}
       </div>
 
       <div className="mb-3">
@@ -198,21 +272,23 @@ function GameCard({ game, isUnlocked, onPlay }) {
         onClick={() => onPlay(game, isUnlocked)}
         className="w-full py-2 rounded-xl text-[10px] font-black transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1"
         style={{
-          background: isUnlocked
+          background: canPlay
             ? `linear-gradient(135deg, ${C.cyan} 0%, ${C.cyanBright} 100%)`
             : 'rgba(148, 163, 184, 0.12)',
-          color: isUnlocked ? '#000' : C.textMuted,
-          border: isUnlocked ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
-          boxShadow: isUnlocked ? `0 0 12px ${C.cyan}60` : 'none'
+          color: canPlay ? '#000' : C.textMuted,
+          border: canPlay ? 'none' : '1px solid rgba(148, 163, 184, 0.2)',
+          boxShadow: canPlay ? `0 0 12px ${C.cyan}60` : 'none'
         }}
       >
-        {isUnlocked ? (
+        {!isUnlocked ? (
+          <span>🔒 Bloqueado</span>
+        ) : balance > 0 ? (
           <>
             <span>▶</span>
             <span>Jugar</span>
           </>
         ) : (
-          <span>🔒 Bloqueado</span>
+          <span>Sin minutos</span>
         )}
       </button>
     </div>

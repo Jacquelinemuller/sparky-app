@@ -39,6 +39,11 @@ export default function VoiceInput({
   const [errorMsg, setErrorMsg] = useState('');
   const [debugLog, setDebugLog] = useState([]);
 
+  // 🆕 Estado de conexión
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
   const recognitionRef = useRef(null);
   const isRecordingRef = useRef(false);
   const fragmentsRef = useRef(new Set());
@@ -57,6 +62,20 @@ export default function VoiceInput({
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   useEffect(() => { maxLengthRef.current = maxLength; }, [maxLength]);
   useEffect(() => { interimRef.current = interim; }, [interim]);
+
+  // 🆕 Listener de conexión (online / offline)
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const log = (msg) => {
     console.log('🎤', msg);
@@ -100,6 +119,15 @@ export default function VoiceInput({
   const startNativeRecording = async (retryCount = 0) => {
     log(`▶️ startNativeRecording (intento ${retryCount + 1})`);
     if (retryCount === 0) setDebugLog([]);
+
+    // 🆕 Chequear conexión ANTES de empezar
+    if (!isOnline) {
+      log('❌ Sin conexión');
+      setErrorMsg('El dictado necesita internet. Podés escribir mientras tanto ✏️');
+      setTimeout(() => setErrorMsg(''), 4000);
+      try { audioService.playError(); } catch (e) {}
+      return;
+    }
 
     try {
       log('🔐 Pidiendo permisos...');
@@ -180,7 +208,12 @@ export default function VoiceInput({
         return;
       }
 
-      setErrorMsg('No pudimos iniciar el dictado');
+      // 🆕 Mensajes de error más claros
+      let msg = 'No pudimos iniciar el dictado';
+      if (err?.message?.includes('network') || err?.message?.includes('Network')) {
+        msg = 'Parece que no hay internet. Probá de nuevo cuando tengas conexión';
+      }
+      setErrorMsg(msg);
       setTimeout(() => setErrorMsg(''), 4000);
       setIsRecording(false);
       isRecordingRef.current = false;
@@ -249,6 +282,14 @@ export default function VoiceInput({
       return;
     }
 
+    // 🆕 Chequear conexión también en web
+    if (!isOnline) {
+      setErrorMsg('El dictado necesita internet. Podés escribir mientras tanto ✏️');
+      setTimeout(() => setErrorMsg(''), 4000);
+      try { audioService.playError(); } catch (e) {}
+      return;
+    }
+
     setErrorMsg('');
     setInterim('');
     fragmentsRef.current = new Set();
@@ -288,6 +329,9 @@ export default function VoiceInput({
           setErrorMsg('Necesitamos permiso para el micrófono 🎤');
         } else if (e.error === 'no-speech' || e.error === 'aborted') {
           // ignorar
+        } else if (e.error === 'network') {
+          setErrorMsg('Sin internet. El dictado necesita conexión 🌐');
+          setTimeout(() => setErrorMsg(''), 3500);
         } else {
           setErrorMsg('Hubo un problema con el dictado');
         }
@@ -315,6 +359,14 @@ export default function VoiceInput({
   };
 
   const handleMicClick = () => {
+    // 🆕 Si está offline, avisar antes de intentar
+    if (!isOnline) {
+      setErrorMsg('Sin internet. El dictado necesita conexión 🌐');
+      setTimeout(() => setErrorMsg(''), 3500);
+      try { audioService.playError(); } catch (e) {}
+      return;
+    }
+
     if (isRecording) {
       if (IS_NATIVE) {
         stopNativeRecording();
@@ -342,13 +394,30 @@ export default function VoiceInput({
   const useCustomIcon = Boolean(micIconSrc);
 
   // ============================================
-  // 🎨 RENDER: VARIANTE BIG MIC (botón grande circular)
+  // 🎨 VARIANTE BIG MIC
   // ============================================
   if (bigMic) {
     return (
       <div className="flex flex-col items-center gap-3 w-full">
 
-        {/* Botón grande circular */}
+        {/* 🆕 Aviso de sin conexión */}
+        {!isOnline && (
+          <div
+            className="w-full px-3 py-2 rounded-xl flex items-center gap-2"
+            style={{
+              background: '#fef3c7',
+              border: '1.5px solid #fbbf24'
+            }}
+          >
+            <span className="material-symbols-outlined text-[#b45309]" style={{ fontSize: '18px' }}>
+              wifi_off
+            </span>
+            <span className="text-[11px] font-black text-[#78350f] leading-tight">
+              Sin internet. El dictado necesita conexión, pero podés escribir ✏️
+            </span>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={handleMicClick}
@@ -359,15 +428,18 @@ export default function VoiceInput({
             height: '96px',
             background: isRecording
               ? 'linear-gradient(to bottom right, #ef4444, #dc2626)'
+              : !isOnline
+              ? 'linear-gradient(to bottom right, #94a3b8, #64748b)'
               : 'linear-gradient(to bottom right, #ff6b00, #ea580c)',
             boxShadow: isRecording
               ? '0 6px 0 0 #991b1b, 0 8px 24px rgba(239, 68, 68, 0.4)'
+              : !isOnline
+              ? '0 6px 0 0 #475569, 0 8px 24px rgba(100, 116, 139, 0.4)'
               : '0 6px 0 0 #c2410c, 0 8px 24px rgba(255, 107, 0, 0.4)',
             position: 'relative'
           }}
           title={isRecording ? 'Parar dictado' : 'Dictar por voz'}
         >
-          {/* Anillo pulsante al grabar */}
           {isRecording && (
             <span
               className="absolute inset-0 rounded-full"
@@ -390,12 +462,10 @@ export default function VoiceInput({
           </span>
         </button>
 
-        {/* Etiqueta debajo del botón */}
         <p className="font-title-md font-black text-on-surface text-center">
           {isRecording ? bigMicLabelRecording : bigMicLabelIdle}
         </p>
 
-        {/* Textarea debajo (para ver y editar lo dictado) */}
         <textarea
           ref={ref}
           value={displayValue}
@@ -425,7 +495,6 @@ export default function VoiceInput({
           </span>
         )}
 
-        {/* Panel de debug */}
         {SHOW_DEBUG && debugLog.length > 0 && (
           <div
             style={{
@@ -461,7 +530,7 @@ export default function VoiceInput({
   }
 
   // ============================================
-  // 🎨 RENDER: VARIANTE INLINE (default)
+  // 🎨 VARIANTE INLINE (default)
   // ============================================
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -503,9 +572,16 @@ export default function VoiceInput({
               width: '48px',
               height: '48px',
               marginTop: micOffsetY,
-              animation: isRecording ? 'micPulse 1s ease-in-out infinite' : 'none'
+              animation: isRecording ? 'micPulse 1s ease-in-out infinite' : 'none',
+              opacity: !isOnline ? 0.5 : 1
             }}
-            title={isRecording ? 'Parar dictado' : 'Dictar por voz'}
+            title={
+              !isOnline
+                ? 'Sin internet'
+                : isRecording
+                ? 'Parar dictado'
+                : 'Dictar por voz'
+            }
           >
             {isRecording ? (
               <span
@@ -541,24 +617,37 @@ export default function VoiceInput({
             style={{
               background: isRecording
                 ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                : !isOnline
+                ? '#f1f5f9'
                 : '#ffffff',
               border: isRecording ? 'none' : `2px solid ${borderColor}`,
               boxShadow: isRecording
                 ? '0 2px 0 0 #991b1b'
                 : `0 2px 0 0 ${borderColor}`,
               animation: isRecording ? 'micPulse 1s ease-in-out infinite' : 'none',
-              minHeight: '48px'
+              minHeight: '48px',
+              opacity: !isOnline ? 0.6 : 1
             }}
-            title={isRecording ? 'Parar dictado' : 'Dictar por voz'}
+            title={
+              !isOnline
+                ? 'Sin internet'
+                : isRecording
+                ? 'Parar dictado'
+                : 'Dictar por voz'
+            }
           >
             <span
               className="material-symbols-outlined text-[22px]"
               style={{
-                color: isRecording ? '#ffffff' : color,
+                color: isRecording
+                  ? '#ffffff'
+                  : !isOnline
+                  ? '#94a3b8'
+                  : color,
                 fontVariationSettings: '"FILL" 1'
               }}
             >
-              {isRecording ? 'stop_circle' : 'mic'}
+              {isRecording ? 'stop_circle' : !isOnline ? 'wifi_off' : 'mic'}
             </span>
           </button>
         )}

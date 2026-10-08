@@ -7,6 +7,13 @@ class AudioService {
     this.ambientNode = null;
     this.ambientGain = null;
     this.barkAudio = null;
+        this.barkAudio = null;
+
+    // 🌊 Para sonidos ambientales (barco, árbol, etc.)
+    this.ambientAudio = null;
+    this.ambientAudioSrc = null;
+    this.ambientFadeInterval = null;
+    this.ambientTargetVolume = 0.35;
   }
 
   init() {

@@ -546,6 +546,18 @@ export const MonthlyCalendarScreen = () => {
                             {evt.time}
                           </span>
                         )}
+                        {evt.hasAlarm && (
+                          <span
+                            className="font-label-sm text-[11px] font-black flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
+                            style={{
+                              background: '#fef3c7',
+                              color: '#b45309',
+                              border: '1px solid #fbbf24'
+                            }}
+                          >
+                            🔔 {evt.alarmLead === 1440 ? '1d' : evt.alarmLead === 60 ? '1h' : '15m'}
+                          </span>
+                        )}
                       </div>
                       {evt.notes && (
                         <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">

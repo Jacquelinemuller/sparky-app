@@ -10,10 +10,10 @@ export default function InteractiveTip({
   onComplete,
   hasSheet,
   onOpenSheet,
-  activeWeekId = 1,   // 🆕
-  activeDay = 1       // 🆕
+  activeWeekId = 1,
+  activeDay = 1
 }) {
-  const { activeChallenges } = useApp();
+  const { getActiveChallengesOrdered } = useApp();
   const [revealed, setRevealed] = useState({});
 
   const pairs = data?.pairs || [];
@@ -180,31 +180,52 @@ export default function InteractiveTip({
   };
 
   // ============================================
-  // BANNER DEL RETO
+  // RETO PRIMARY (arriba del tip, días 1-7)
   // ============================================
-  const renderChallengeBanner = () => {
-    // 🔧 FIX: Los retos son de la Semana 2 en adelante
+  const renderPrimaryChallenge = () => {
     if (activeWeekId < 2) return null;
-
     if (isChallenge || isChallengeClose) return null;
-    if (!activeChallenges || activeChallenges.length === 0) return null;
 
-    const active = activeChallenges.filter(
-      (c) => c.status === 'pending' || c.status === 'accepted'
+    const ordered = getActiveChallengesOrdered();
+    if (!ordered || ordered.length === 0) return null;
+
+    const primary = ordered.find(
+      (c) => c.displayPriority === 'primary' && c.status === 'accepted'
     );
-    if (active.length === 0) return null;
+    if (!primary) return null;
 
     return (
-      <div className="flex flex-col gap-2">
-        {active.map((challenge) => (
-          <ChallengeTip
-            key={challenge.id}
-            data={{ challenge }}
-            variant="banner"
-            onComplete={() => {}}
-          />
-        ))}
-      </div>
+      <ChallengeTip
+        key={primary.id}
+        data={{ challenge: primary }}
+        variant="banner"
+        onComplete={() => {}}
+      />
+    );
+  };
+
+  // ============================================
+  // RETO BACKGROUND (abajo del tip, días 8-14)
+  // ============================================
+  const renderBackgroundChallenge = () => {
+    if (activeWeekId < 2) return null;
+    if (isChallenge || isChallengeClose) return null;
+
+    const ordered = getActiveChallengesOrdered();
+    if (!ordered || ordered.length === 0) return null;
+
+    const background = ordered.find(
+      (c) => c.displayPriority === 'background' && c.status === 'accepted'
+    );
+    if (!background) return null;
+
+    return (
+      <ChallengeTip
+        key={background.id}
+        data={{ challenge: background }}
+        variant="background"
+        onComplete={() => {}}
+      />
     );
   };
 
@@ -251,6 +272,8 @@ export default function InteractiveTip({
   if (isQuiz) {
     return (
       <div className="flex flex-col gap-4 w-full">
+        {renderPrimaryChallenge()}
+
         {renderTitle()}
 
         <QuizTip
@@ -259,7 +282,6 @@ export default function InteractiveTip({
           onComplete={onComplete}
         />
 
-        {/* 🔧 FIX: Ver lámina solo desde Día 4 */}
         {isCompleted && hasSheet && activeDay >= 4 && (
           <button
             type="button"
@@ -277,6 +299,8 @@ export default function InteractiveTip({
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
         )}
+
+        {renderBackgroundChallenge()}
       </div>
     );
   }
@@ -287,7 +311,7 @@ export default function InteractiveTip({
   return (
     <div className="flex flex-col gap-4 w-full">
 
-      {renderChallengeBanner()}
+      {renderPrimaryChallenge()}
 
       {renderTitle()}
 
@@ -435,7 +459,6 @@ export default function InteractiveTip({
         )}
       </div>
 
-      {/* 🔧 FIX: Ver lámina solo desde Día 4 */}
       {isCompleted && hasSheet && activeDay >= 4 && (
         <button
           type="button"
@@ -453,6 +476,8 @@ export default function InteractiveTip({
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       )}
+
+      {renderBackgroundChallenge()}
 
       <style>{`
         @keyframes fadeIn {

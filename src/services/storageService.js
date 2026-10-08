@@ -33,18 +33,18 @@ export const PRESET_AVATARS = [
 // ============================================
 export const ACCESSORIES_CATALOG = [
   // Cabeza
-  { id: 'acc-gorra-roja',   slot: 'head',  label: 'Gorra roja',       icon: '🧢', unlock: { type: 'xp', cost: 80 } },
-  { id: 'acc-sombrero',     slot: 'head',  label: 'Sombrero mágico',  icon: '🎩', unlock: { type: 'xp', cost: 150 } },
+  { id: 'acc-gorra-roja',   slot: 'head',  label: 'Gorra roja',       icon: '🧢', unlock: { type: 'coins', cost: 80 } },
+  { id: 'acc-sombrero',     slot: 'head',  label: 'Sombrero mágico',  icon: '🎩', unlock: { type: 'coins', cost: 150 } },
   { id: 'acc-corona',       slot: 'head',  label: 'Corona dorada',    icon: '👑', unlock: { type: 'achievement', key: 'streak7' } },
   // Cara
-  { id: 'acc-gafas-sol',    slot: 'face',  label: 'Gafas de sol',     icon: '🕶️', unlock: { type: 'xp', cost: 50 } },
-  { id: 'acc-gafas-red',    slot: 'face',  label: 'Gafas redondas',   icon: '👓', unlock: { type: 'xp', cost: 100 } },
+  { id: 'acc-gafas-sol',    slot: 'face',  label: 'Gafas de sol',     icon: '🕶️', unlock: { type: 'coins', cost: 50 } },
+  { id: 'acc-gafas-red',    slot: 'face',  label: 'Gafas redondas',   icon: '👓', unlock: { type: 'coins', cost: 100 } },
   { id: 'acc-gafas-buzo',   slot: 'face',  label: 'Gafas de buzo',    icon: '🥽', unlock: { type: 'achievement', key: 'level5' } },
   // Ropa (color de remera)
   { id: 'shirt-rojo',       slot: 'shirt', label: 'Remera roja',      icon: '🔴', color: '#dc2626', unlock: { type: 'free' } },
-  { id: 'shirt-azul',       slot: 'shirt', label: 'Remera azul',      icon: '🔵', color: '#3b82f6', unlock: { type: 'xp', cost: 30 } },
-  { id: 'shirt-violeta',    slot: 'shirt', label: 'Remera violeta',   icon: '🟣', color: '#8b5cf6', unlock: { type: 'xp', cost: 60 } },
-  { id: 'shirt-verde',      slot: 'shirt', label: 'Remera verde',     icon: '🟢', color: '#10b981', unlock: { type: 'xp', cost: 90 } },
+  { id: 'shirt-azul',       slot: 'shirt', label: 'Remera azul',      icon: '🔵', color: '#3b82f6', unlock: { type: 'coins', cost: 30 } },
+  { id: 'shirt-violeta',    slot: 'shirt', label: 'Remera violeta',   icon: '🟣', color: '#8b5cf6', unlock: { type: 'coins', cost: 60 } },
+  { id: 'shirt-verde',      slot: 'shirt', label: 'Remera verde',     icon: '🟢', color: '#10b981', unlock: { type: 'coins', cost: 90 } },
 ];
 
 const DEFAULT_WEEKLY_TEMPLATE = {
@@ -134,6 +134,7 @@ const DEFAULT_STATE = {
   },
   stats: {
     xp: 0,
+    coins: 0,
     streak: 0,
     impulses: 0,
     tasksCompletedToday: 0
@@ -207,23 +208,39 @@ const DEFAULT_STATE = {
   customTips: [],
   quizAnswers: {},
   checklists: [],
-    diaryEntries: [],
+  diaryEntries: [],
   alarms: [],
   activeChallenges: [],
+  archivedChallenges: [],
+  pendingChest: null,
+  gameBalances: {},
+  dailyPlayDate: null,
+  dailyPlayMinutes: 0,
   unlockedSounds: ['rain'],
   unlockedGames: [],
   unlockedRewards: [],
-  unlockedAccessories: ['shirt-rojo'],   // 🆕 La remera roja viene gratis
+  unlockedAccessories: ['shirt-rojo'],
   equippedAccessories: {
     head: null,
     face: null,
-    shirt: 'shirt-rojo'                  // 🆕 Por defecto la roja
+    shirt: 'shirt-rojo'
   },
   activeWeek: 1,
   parentPin: '1234',
   lastResetDate: null,
   dailyHistory: []
 };
+
+// ============================================
+// NORMALIZACIÓN DE STATS (migración xp → coins)
+// ============================================
+function normalizeStats(stats) {
+  const s = { ...DEFAULT_STATE.stats, ...(stats || {}) };
+  if (s.coins === undefined || s.coins === null) {
+    s.coins = s.xp || 0;
+  }
+  return s;
+}
 
 function migrateLegacyData() {
   try {
@@ -238,7 +255,11 @@ function migrateLegacyData() {
 
     const migrated = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-    if (legacyXp) migrated.stats.xp = parseInt(legacyXp, 10) || 0;
+    if (legacyXp) {
+      const parsedXp = parseInt(legacyXp, 10) || 0;
+      migrated.stats.xp = parsedXp;
+      migrated.stats.coins = parsedXp;
+    }
     if (legacyTasks) migrated.tasks = JSON.parse(legacyTasks);
     if (legacyName) migrated.profile.username = legacyName;
     if (legacyAvatar) migrated.profile.avatar = legacyAvatar;
@@ -275,7 +296,7 @@ export const storageService = {
           ...DEFAULT_STATE,
           ...parsed,
           profile: { ...DEFAULT_STATE.profile, ...(parsed.profile || {}) },
-          stats: { ...DEFAULT_STATE.stats, ...(parsed.stats || {}) },
+          stats: normalizeStats(parsed.stats),
           settings: { ...DEFAULT_STATE.settings, ...(parsed.settings || {}) },
           weeklyTemplate: parsed.weeklyTemplate || DEFAULT_WEEKLY_TEMPLATE,
           dayOverrides: parsed.dayOverrides || {},
@@ -284,6 +305,7 @@ export const storageService = {
           customEvents: parsed.customEvents || [],
           unlockedAccessories: parsed.unlockedAccessories || DEFAULT_STATE.unlockedAccessories,
           equippedAccessories: parsed.equippedAccessories || DEFAULT_STATE.equippedAccessories,
+          gameBalances: parsed.gameBalances || {},
           tasks: normalizedTasks
         };
       }
@@ -293,10 +315,12 @@ export const storageService = {
         return {
           ...migrated,
           tasks: migrated.tasks.map(normalizeTask),
+          stats: normalizeStats(migrated.stats),
           notes: migrated.notes || [],
           customEvents: migrated.customEvents || [],
           unlockedAccessories: migrated.unlockedAccessories || DEFAULT_STATE.unlockedAccessories,
-          equippedAccessories: migrated.equippedAccessories || DEFAULT_STATE.equippedAccessories
+          equippedAccessories: migrated.equippedAccessories || DEFAULT_STATE.equippedAccessories,
+          gameBalances: migrated.gameBalances || {}
         };
       }
 

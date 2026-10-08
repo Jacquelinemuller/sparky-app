@@ -9,10 +9,19 @@ import { GAMES_CATALOG } from '../../services/gamesCatalog';
 // ============================================
 const SOUNDS_CATALOG = [
   { id: 'rain',       label: 'Lluvia',           icon: '🌧️', unlock: { type: 'free' } },
-  { id: 'waves',      label: 'Olas del mar',     icon: '🌊', unlock: { type: 'xp', cost: 70 } },
-  { id: 'forest',     label: 'Bosque',           icon: '🌲', unlock: { type: 'xp', cost: 90 } },
-  { id: 'cafe',       label: 'Cafetería',        icon: '☕', unlock: { type: 'xp', cost: 120 } },
-  { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'xp', cost: 180 } }
+  { id: 'waves',      label: 'Olas del mar',     icon: '🌊', unlock: { type: 'coins', cost: 70 } },
+  { id: 'forest',     label: 'Bosque',           icon: '🌲', unlock: { type: 'coins', cost: 90 } },
+  { id: 'cafe',       label: 'Cafetería',        icon: '☕', unlock: { type: 'coins', cost: 120 } },
+  { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'coins', cost: 180 } }
+];
+
+// ============================================
+// PACKS DE TIEMPO
+// ============================================
+const TIME_PACKS = [
+  { minutes: 5,  cost: 15 },
+  { minutes: 15, cost: 42 },
+  { minutes: 30, cost: 78 }
 ];
 
 // ============================================
@@ -34,24 +43,26 @@ const C = {
 };
 
 const SUB_TABS = [
-  { id: 'accessories', label: 'Accesorios', icon: '🎨' },
+  { id: 'time',        label: 'Tiempo',     icon: '⏱️' },
   { id: 'sounds',      label: 'Sonidos',    icon: '🎵' },
-  { id: 'games',       label: 'Minijuegos', icon: '🎮' }
+  { id: 'accessories', label: 'Accesorios', icon: '🎨' }
 ];
 
 export default function ShopTab() {
   const {
-    xp,
+    coins,
     unlockedAccessories,
     unlockedSounds,
     unlockedGames,
+    gameBalances,
     unlockAccessory,
     unlockSound,
-    unlockGame
+    buyGameTime
   } = useApp();
 
   const [subTab, setSubTab] = useState('accessories');
   const [confirmItem, setConfirmItem] = useState(null);
+  const [confirmTime, setConfirmTime] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
   const handleSubTabClick = (id) => {
@@ -59,6 +70,9 @@ export default function ShopTab() {
     setSubTab(id);
   };
 
+  // ============================================
+  // COMPRA: ACCESORIOS Y SONIDOS
+  // ============================================
   const handleBuyAttempt = (item, catalogType) => {
     try { audioService.playClick(); } catch (e) {}
 
@@ -73,10 +87,10 @@ export default function ShopTab() {
       return;
     }
 
-    if (xp < cost) {
+    if (coins < cost) {
       setFeedback({
         type: 'error',
-        message: `Te faltan ${cost - xp} XP para "${item.label}"`
+        message: `Te faltan ${cost - coins} monedas para "${item.label}"`
       });
       setTimeout(() => setFeedback(null), 3000);
       return;
@@ -90,8 +104,6 @@ export default function ShopTab() {
       unlockAccessory(item.id, cost);
     } else if (catalogType === 'sounds') {
       unlockSound(item.id, cost);
-    } else if (catalogType === 'games') {
-      unlockGame(item.id, cost);
     }
 
     setFeedback({
@@ -115,6 +127,55 @@ export default function ShopTab() {
     setConfirmItem(null);
   };
 
+  // ============================================
+  // COMPRA: TIEMPO DE JUEGO
+  // ============================================
+  const handleBuyTime = (gameId, gameLabel, gameIcon, minutes, cost) => {
+    try { audioService.playClick(); } catch (e) {}
+
+    if (coins < cost) {
+      setFeedback({
+        type: 'error',
+        message: `Te faltan ${cost - coins} monedas`
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+
+    setConfirmTime({ gameId, gameLabel, gameIcon, minutes, cost });
+  };
+
+  const confirmTimePurchase = () => {
+    if (!confirmTime) return;
+    const { gameId, minutes, cost } = confirmTime;
+
+    try {
+      if (typeof buyGameTime !== 'function') {
+        throw new Error('buyGameTime no está disponible');
+      }
+      buyGameTime(gameId, minutes, cost);
+      setFeedback({
+        type: 'success',
+        message: `¡+${minutes} min desbloqueados!`
+      });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (e) {
+      console.error('Error comprando tiempo:', e);
+      setFeedback({
+        type: 'error',
+        message: 'No se pudo completar la compra'
+      });
+      setTimeout(() => setFeedback(null), 3000);
+    }
+
+    setConfirmTime(null);
+  };
+
+  const cancelTimePurchase = () => {
+    try { audioService.playClick(); } catch (e) {}
+    setConfirmTime(null);
+  };
+
   const accessoriesFiltered = ACCESSORIES_CATALOG.filter(
     (a) => a.unlock.type !== 'achievement'
   );
@@ -122,7 +183,7 @@ export default function ShopTab() {
   const renderItemCard = (item, catalogType, isUnlocked) => {
     const cost = item.unlock.cost || 0;
     const isFree = item.unlock.type === 'free';
-    const canAfford = isFree || xp >= cost;
+    const canAfford = isFree || coins >= cost;
 
     return (
       <div
@@ -181,12 +242,111 @@ export default function ShopTab() {
               <span>OBTENER</span>
             ) : (
               <>
-                <span>⭐</span>
-                <span>{cost} XP</span>
+                <span>🪙</span>
+                <span>{cost}</span>
               </>
             )}
           </button>
         )}
+      </div>
+    );
+  };
+
+  // ============================================
+  // RENDER: TIENDA DE MINUTOS
+  // ============================================
+  const renderTimeShop = () => {
+    const unlockedList = GAMES_CATALOG.filter(
+      (g) => g.unlock.type === 'free' || unlockedGames?.includes(g.id)
+    );
+
+    if (unlockedList.length === 0) {
+      return (
+        <div
+          className="w-full p-6 rounded-2xl flex flex-col items-center text-center"
+          style={{ background: C.card, border: `1px solid ${C.cardBorder}` }}
+        >
+          <span className="text-4xl mb-2">🔒</span>
+          <span className="text-sm font-black text-white mb-1">Ningún juego desbloqueado</span>
+          <span className="text-[11px] font-bold" style={{ color: C.textMuted }}>
+            Completá retos semanales para desbloquear juegos
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full flex flex-col gap-3">
+        {unlockedList.map((game) => {
+          const balance = (gameBalances || {})[game.id] || 0;
+          return (
+            <div
+              key={game.id}
+              className="w-full rounded-2xl p-4 flex flex-col gap-3"
+              style={{ background: C.card, border: `1.5px solid ${C.cardBorder}` }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+                  style={{ background: 'rgba(6, 182, 212, 0.12)' }}
+                >
+                  <span>{game.icon}</span>
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm font-black text-white leading-tight">
+                    {game.label}
+                  </span>
+                  <span
+                    className="text-[11px] font-bold mt-0.5"
+                    style={{ color: balance > 0 ? C.limeBright : C.textMuted }}
+                  >
+                    {balance > 0
+                      ? `⏱ Te quedan ${Math.floor(balance)} min`
+                      : '⏱ Sin minutos'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {TIME_PACKS.map((pack) => {
+                  const canAfford = coins >= pack.cost;
+                  return (
+                    <button
+                      key={pack.minutes}
+                      type="button"
+                      onClick={() =>
+                        handleBuyTime(game.id, game.label, game.icon, pack.minutes, pack.cost)
+                      }
+                      className="flex flex-col items-center gap-1 py-3 rounded-xl cursor-pointer active:scale-95 transition-all"
+                      style={{
+                        background: canAfford
+                          ? `linear-gradient(135deg, ${C.lime}22 0%, ${C.cyan}22 100%)`
+                          : 'rgba(148, 163, 184, 0.08)',
+                        border: `1.5px solid ${
+                          canAfford ? C.lime : 'rgba(148, 163, 184, 0.2)'
+                        }`,
+                        boxShadow: canAfford ? `0 0 10px ${C.lime}40` : 'none'
+                      }}
+                    >
+                      <span
+                        className="text-[13px] font-black"
+                        style={{ color: canAfford ? C.limeBright : C.textMuted }}
+                      >
+                        +{pack.minutes} min
+                      </span>
+                      <span
+                        className="text-[11px] font-black flex items-center gap-0.5"
+                        style={{ color: canAfford ? C.amber : C.textMuted }}
+                      >
+                        🪙 {pack.cost}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -227,7 +387,7 @@ export default function ShopTab() {
         })}
       </div>
 
-      {/* Banner de XP */}
+      {/* Banner de monedas */}
       <div
         className="w-full px-3 py-2 rounded-xl flex items-center justify-between"
         style={{
@@ -239,7 +399,7 @@ export default function ShopTab() {
           Tu tesoro
         </span>
         <span className="text-sm font-black" style={{ color: C.amber }}>
-          ⭐ {xp} XP
+          🪙 {coins}
         </span>
       </div>
 
@@ -267,7 +427,7 @@ export default function ShopTab() {
         </div>
       )}
 
-      {/* Grid de items */}
+      {/* Contenido */}
       {subTab === 'accessories' && (
         <div className="grid grid-cols-3 gap-2.5">
           {accessoriesFiltered.map((item) =>
@@ -288,15 +448,9 @@ export default function ShopTab() {
         </div>
       )}
 
-      {subTab === 'games' && (
-        <div className="grid grid-cols-3 gap-2.5">
-          {GAMES_CATALOG.map((item) =>
-            renderItemCard(item, 'games', unlockedGames?.includes(item.id))
-          )}
-        </div>
-      )}
+      {subTab === 'time' && renderTimeShop()}
 
-      {/* Modal de confirmación */}
+      {/* Modal de confirmación: accesorios y sonidos */}
       {confirmItem && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
@@ -326,7 +480,7 @@ export default function ShopTab() {
               <p className="text-xs font-bold mb-4" style={{ color: C.textMuted }}>
                 Vas a gastar{' '}
                 <span style={{ color: C.amber }}>
-                  ⭐ {confirmItem.item.unlock.cost} XP
+                  🪙 {confirmItem.item.unlock.cost} monedas
                 </span>
               </p>
 
@@ -346,6 +500,69 @@ export default function ShopTab() {
                 <button
                   type="button"
                   onClick={handleConfirm}
+                  className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer transition-all active:scale-95"
+                  style={{
+                    background: `linear-gradient(135deg, ${C.lime} 0%, ${C.limeBright} 100%)`,
+                    color: '#000',
+                    boxShadow: `0 0 16px ${C.lime}80`
+                  }}
+                >
+                  ¡Comprar!
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación: tiempo */}
+      {confirmTime && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+          onClick={cancelTimePurchase}
+        >
+          <div
+            className="w-full max-w-sm p-5 rounded-3xl"
+            style={{
+              background: C.card,
+              border: `2px solid ${C.lime}`,
+              boxShadow: `0 0 40px ${C.lime}60`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-3"
+                style={{ background: 'rgba(34, 197, 94, 0.15)' }}
+              >
+                <span>{confirmTime.gameIcon}</span>
+              </div>
+
+              <h3 className="text-lg font-black text-white mb-1">
+                +{confirmTime.minutes} min de {confirmTime.gameLabel}
+              </h3>
+              <p className="text-xs font-bold mb-4" style={{ color: C.textMuted }}>
+                Vas a gastar{' '}
+                <span style={{ color: C.amber }}>🪙 {confirmTime.cost} monedas</span>
+              </p>
+
+              <div className="flex gap-2 w-full mt-2">
+                <button
+                  type="button"
+                  onClick={cancelTimePurchase}
+                  className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer transition-all active:scale-95"
+                  style={{
+                    background: 'rgba(148, 163, 184, 0.15)',
+                    color: C.textMuted,
+                    border: '1px solid rgba(148, 163, 184, 0.2)'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmTimePurchase}
                   className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer transition-all active:scale-95"
                   style={{
                     background: `linear-gradient(135deg, ${C.lime} 0%, ${C.limeBright} 100%)`,
