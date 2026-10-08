@@ -20,7 +20,6 @@ const C = {
   textMuted: '#94a3b8'
 };
 
-// Partículas flotantes alrededor del cofre
 const ORBITING_PARTICLES = Array.from({ length: 18 }).map((_, i) => ({
   id: i,
   angle: (i / 18) * 360,
@@ -47,17 +46,12 @@ export default function ChestModal() {
   const game = GAMES_CATALOG.find((g) => g.id === pendingChest.gameId);
   const isFullReward = pendingChest.minutes >= 20;
 
-  // ============================================
-  // ABRIR EL COFRE: 4 pasos sincronizados
-  // ============================================
   const handleOpen = () => {
     if (stage !== 'closed') return;
 
-    // Paso 1: temblor + sonido
     try { audioService.playPop(); } catch (e) {}
     setStage('shaking');
 
-    // Paso 2 (600ms): explosión de luz + confetti burst
     setTimeout(() => {
       try { audioService.playSuccess(); } catch (e) {}
       setStage('burst');
@@ -73,12 +67,10 @@ export default function ChestModal() {
       } catch (e) {}
     }, 600);
 
-    // Paso 3 (1400ms): vuela la carta del juego
     setTimeout(() => {
       setStage('flying');
 
       try {
-        // Segundo confetti, más ancho
         confetti({
           particleCount: 120,
           spread: 160,
@@ -89,12 +81,10 @@ export default function ChestModal() {
       } catch (e) {}
     }, 1400);
 
-    // Paso 4 (2200ms): todo revelado + Sparky festejando
     setTimeout(() => {
       setStage('revealed');
 
       try {
-        // Tercer confetti, desde abajo, tipo "fuegos artificiales"
         const duration = 1500;
         const end = Date.now() + duration;
         const frame = () => {
@@ -130,7 +120,6 @@ export default function ChestModal() {
       className="fixed inset-0 z-[300] flex items-center justify-center p-4 overflow-hidden"
       style={{ background: C.overlay, backdropFilter: 'blur(10px)' }}
     >
-      {/* Flash blanco en el momento de la explosión */}
       {stage === 'burst' && (
         <div
           className="absolute inset-0 pointer-events-none"
@@ -142,7 +131,6 @@ export default function ChestModal() {
         />
       )}
 
-      {/* Rayos de luz saliendo del centro */}
       {(stage === 'burst' || stage === 'flying' || stage === 'revealed') && (
         <div
           className="absolute inset-0 pointer-events-none flex items-center justify-center"
@@ -178,7 +166,6 @@ export default function ChestModal() {
           transition: 'border-color 0.5s ease, box-shadow 0.5s ease'
         }}
       >
-        {/* Estrellas de fondo (más cantidad, más sutiles) */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {Array.from({ length: 24 }).map((_, i) => {
             const top = (i * 37) % 100;
@@ -201,9 +188,6 @@ export default function ChestModal() {
           })}
         </div>
 
-        {/* ============================================ */}
-        {/* FASE 1: Cofre cerrado                        */}
-        {/* ============================================ */}
         {stage === 'closed' && (
           <>
             <span
@@ -225,7 +209,6 @@ export default function ChestModal() {
               {pendingChest.challengeIcon} {pendingChest.challengeTitle}
             </p>
 
-            {/* Cofre con aura y partículas */}
             <button
               type="button"
               onClick={handleOpen}
@@ -233,7 +216,6 @@ export default function ChestModal() {
               style={{ animation: 'chestWobble 3s ease-in-out infinite' }}
               aria-label="Abrir cofre"
             >
-              {/* Aura pulsante */}
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -241,7 +223,6 @@ export default function ChestModal() {
                   animation: 'auraPulse 2s ease-in-out infinite'
                 }}
               />
-              {/* Aura magenta secundaria */}
               <div
                 className="absolute inset-4 rounded-full"
                 style={{
@@ -250,7 +231,6 @@ export default function ChestModal() {
                 }}
               />
 
-              {/* Partículas orbitando */}
               {ORBITING_PARTICLES.map((p) => (
                 <span
                   key={p.id}
@@ -267,7 +247,6 @@ export default function ChestModal() {
                 </span>
               ))}
 
-              {/* Cofre principal */}
               <span
                 className="text-[110px] leading-none select-none relative z-10"
                 style={{
@@ -291,9 +270,6 @@ export default function ChestModal() {
           </>
         )}
 
-        {/* ============================================ */}
-        {/* FASE 2: Temblando (600ms)                    */}
-        {/* ============================================ */}
         {stage === 'shaking' && (
           <>
             <span
@@ -337,9 +313,6 @@ export default function ChestModal() {
           </>
         )}
 
-        {/* ============================================ */}
-        {/* FASE 3: Explosión (200ms visible)            */}
-        {/* ============================================ */}
         {stage === 'burst' && (
           <div className="flex flex-col items-center justify-center py-10 z-10 min-h-[280px]">
             <span
@@ -354,19 +327,17 @@ export default function ChestModal() {
           </div>
         )}
 
-        {/* ============================================ */}
-        {/* FASE 4: Carta volando (800ms)                */}
-        {/* ============================================ */}
         {stage === 'flying' && (
           <div className="flex flex-col items-center justify-center py-6 z-10 min-h-[280px] w-full">
-            <span
-              className="text-[80px] leading-none mb-2"
+            <img
+              src={game?.icon}
+              alt={game?.label || ''}
+              className="w-24 h-24 object-contain mb-2"
               style={{
                 animation: 'cardFly 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
               }}
-            >
-              {game?.icon || '🎮'}
-            </span>
+              draggable={false}
+            />
             <span
               className="text-sm font-black"
               style={{ color: C.amberBright, animation: 'pulseText 0.8s ease-in-out infinite' }}
@@ -376,9 +347,6 @@ export default function ChestModal() {
           </div>
         )}
 
-        {/* ============================================ */}
-        {/* FASE 5: Revelado completo                    */}
-        {/* ============================================ */}
         {stage === 'revealed' && game && (
           <div
             className="flex flex-col items-center w-full z-10"
@@ -391,9 +359,8 @@ export default function ChestModal() {
               🎉 ¡Nuevo juego desbloqueado!
             </span>
 
-            {/* Carta del juego con efecto de brillo */}
             <div
-              className="w-32 h-32 rounded-3xl flex items-center justify-center text-7xl mb-3 relative"
+              className="w-32 h-32 rounded-3xl flex items-center justify-center mb-3 relative overflow-hidden"
               style={{
                 background: `linear-gradient(135deg, ${C.lime}30 0%, ${C.cyan}30 100%)`,
                 border: `2px solid ${C.limeBright}`,
@@ -401,9 +368,13 @@ export default function ChestModal() {
                 animation: 'cardFloat 2.5s ease-in-out infinite'
               }}
             >
-              <span>{game.icon}</span>
+              <img
+                src={game.icon}
+                alt={game.label}
+                className="w-full h-full object-contain p-3 relative z-10"
+                draggable={false}
+              />
 
-              {/* Rayos alrededor de la carta */}
               <span
                 className="absolute inset-0 rounded-3xl pointer-events-none"
                 style={{
@@ -424,7 +395,6 @@ export default function ChestModal() {
               {game.subtitle}
             </p>
 
-            {/* Bonus de minutos */}
             <div
               className="w-full p-3 rounded-2xl mb-3 flex items-center justify-center gap-2 relative overflow-hidden"
               style={{
@@ -448,7 +418,6 @@ export default function ChestModal() {
               </span>
             </div>
 
-            {/* Sparky festejando */}
             <div className="flex items-center gap-2 mb-4">
               <div
                 className="w-12 h-12 rounded-full overflow-hidden bg-white"

@@ -268,17 +268,22 @@ function GameCard({ game, isUnlocked, balance, onPlay }) {
         opacity: isUnlocked ? 1 : 0.7
       }}
     >
-      <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between mb-2">
         <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl relative"
+          className="w-14 h-14 rounded-2xl flex items-center justify-center relative overflow-hidden"
           style={{
             background: isUnlocked ? 'rgba(34, 197, 94, 0.12)' : 'rgba(148, 163, 184, 0.06)',
             filter: isUnlocked ? 'none' : 'grayscale(1)'
           }}
         >
-          <span>{game.icon}</span>
+          <img
+            src={game.icon}
+            alt={game.label}
+            className="w-full h-full object-contain p-1.5"
+            draggable={false}
+          />
           {!isUnlocked && (
-            <span className="absolute inset-0 flex items-center justify-center text-lg">
+            <span className="absolute inset-0 flex items-center justify-center text-lg bg-black/40">
               🔒
             </span>
           )}
@@ -286,7 +291,6 @@ function GameCard({ game, isUnlocked, balance, onPlay }) {
 
         {badge}
       </div>
-
       <div className="mb-3">
         <h4
           className="text-sm font-black leading-tight mb-0.5"

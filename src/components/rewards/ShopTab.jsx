@@ -4,9 +4,6 @@ import { audioService } from '../../services/audioService';
 import { ACCESSORIES_CATALOG } from '../../services/storageService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
 
-// ============================================
-// CATÁLOGO DE SONIDOS
-// ============================================
 const SOUNDS_CATALOG = [
   { id: 'rain',       label: 'Lluvia',           icon: '🌧️', unlock: { type: 'free' } },
   { id: 'waves',      label: 'Olas del mar',     icon: '🌊', unlock: { type: 'coins', cost: 70 } },
@@ -15,18 +12,12 @@ const SOUNDS_CATALOG = [
   { id: 'spaceship',  label: 'Nave espacial',    icon: '🚀', unlock: { type: 'coins', cost: 180 } }
 ];
 
-// ============================================
-// PACKS DE TIEMPO
-// ============================================
 const TIME_PACKS = [
   { minutes: 5,  cost: 15 },
   { minutes: 15, cost: 42 },
   { minutes: 30, cost: 78 }
 ];
 
-// ============================================
-// COLORES ARCADE
-// ============================================
 const C = {
   bg: '#09090f',
   card: '#131322',
@@ -60,7 +51,7 @@ export default function ShopTab() {
     buyGameTime
   } = useApp();
 
-  const [subTab, setSubTab] = useState('accessories');
+  const [subTab, setSubTab] = useState('time');
   const [confirmItem, setConfirmItem] = useState(null);
   const [confirmTime, setConfirmTime] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -70,9 +61,6 @@ export default function ShopTab() {
     setSubTab(id);
   };
 
-  // ============================================
-  // COMPRA: ACCESORIOS Y SONIDOS
-  // ============================================
   const handleBuyAttempt = (item, catalogType) => {
     try { audioService.playClick(); } catch (e) {}
 
@@ -127,9 +115,6 @@ export default function ShopTab() {
     setConfirmItem(null);
   };
 
-  // ============================================
-  // COMPRA: TIEMPO DE JUEGO
-  // ============================================
   const handleBuyTime = (gameId, gameLabel, gameIcon, minutes, cost) => {
     try { audioService.playClick(); } catch (e) {}
 
@@ -180,10 +165,14 @@ export default function ShopTab() {
     (a) => a.unlock.type !== 'achievement'
   );
 
+  const isImageIcon = (icon) =>
+    typeof icon === 'string' && icon.startsWith('/');
+
   const renderItemCard = (item, catalogType, isUnlocked) => {
     const cost = item.unlock.cost || 0;
     const isFree = item.unlock.type === 'free';
     const canAfford = isFree || coins >= cost;
+    const imageIcon = isImageIcon(item.icon);
 
     return (
       <div
@@ -201,12 +190,21 @@ export default function ShopTab() {
         }}
       >
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-2"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-2 overflow-hidden"
           style={{
             background: isUnlocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(6, 182, 212, 0.08)'
           }}
         >
-          <span>{item.icon}</span>
+          {imageIcon ? (
+            <img
+              src={item.icon}
+              alt={item.label}
+              className="w-full h-full object-contain p-1.5"
+              draggable={false}
+            />
+          ) : (
+            <span>{item.icon}</span>
+          )}
         </div>
 
         <span className="text-[11px] font-black text-white text-center leading-tight mb-2 min-h-[26px]">
@@ -252,9 +250,6 @@ export default function ShopTab() {
     );
   };
 
-  // ============================================
-  // RENDER: TIENDA DE MINUTOS
-  // ============================================
   const renderTimeShop = () => {
     const unlockedList = GAMES_CATALOG.filter(
       (g) => g.unlock.type === 'free' || unlockedGames?.includes(g.id)
@@ -279,6 +274,7 @@ export default function ShopTab() {
       <div className="w-full flex flex-col gap-3">
         {unlockedList.map((game) => {
           const balance = (gameBalances || {})[game.id] || 0;
+          const imageIcon = isImageIcon(game.icon);
           return (
             <div
               key={game.id}
@@ -287,10 +283,19 @@ export default function ShopTab() {
             >
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl overflow-hidden"
                   style={{ background: 'rgba(6, 182, 212, 0.12)' }}
                 >
-                  <span>{game.icon}</span>
+                  {imageIcon ? (
+                    <img
+                      src={game.icon}
+                      alt={game.label}
+                      className="w-full h-full object-contain p-1.5"
+                      draggable={false}
+                    />
+                  ) : (
+                    <span>{game.icon}</span>
+                  )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-sm font-black text-white leading-tight">
@@ -354,7 +359,6 @@ export default function ShopTab() {
   return (
     <div className="w-full flex flex-col gap-3">
 
-      {/* Sub-tabs */}
       <div
         className="w-full p-1 rounded-2xl flex items-center gap-1"
         style={{
@@ -387,7 +391,6 @@ export default function ShopTab() {
         })}
       </div>
 
-      {/* Banner de monedas */}
       <div
         className="w-full px-3 py-2 rounded-xl flex items-center justify-between"
         style={{
@@ -403,10 +406,9 @@ export default function ShopTab() {
         </span>
       </div>
 
-      {/* Feedback temporal */}
       {feedback && (
         <div
-          className="w-full px-3 py-2.5 rounded-xl flex items-center gap-2 animate-[fadeIn_0.3s_ease-out]"
+          className="w-full px-3 py-2.5 rounded-xl flex items-center gap-2"
           style={{
             background:
               feedback.type === 'success'
@@ -427,7 +429,6 @@ export default function ShopTab() {
         </div>
       )}
 
-      {/* Contenido */}
       {subTab === 'accessories' && (
         <div className="grid grid-cols-3 gap-2.5">
           {accessoriesFiltered.map((item) =>
@@ -450,7 +451,6 @@ export default function ShopTab() {
 
       {subTab === 'time' && renderTimeShop()}
 
-      {/* Modal de confirmación: accesorios y sonidos */}
       {confirmItem && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
@@ -468,10 +468,19 @@ export default function ShopTab() {
           >
             <div className="flex flex-col items-center text-center">
               <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-3"
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-3 overflow-hidden"
                 style={{ background: 'rgba(6, 182, 212, 0.15)' }}
               >
-                <span>{confirmItem.item.icon}</span>
+                {isImageIcon(confirmItem.item.icon) ? (
+                  <img
+                    src={confirmItem.item.icon}
+                    alt={confirmItem.item.label}
+                    className="w-full h-full object-contain p-2"
+                    draggable={false}
+                  />
+                ) : (
+                  <span>{confirmItem.item.icon}</span>
+                )}
               </div>
 
               <h3 className="text-lg font-black text-white mb-1">
@@ -515,7 +524,6 @@ export default function ShopTab() {
         </div>
       )}
 
-      {/* Modal de confirmación: tiempo */}
       {confirmTime && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
@@ -533,10 +541,19 @@ export default function ShopTab() {
           >
             <div className="flex flex-col items-center text-center">
               <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-3"
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-3 overflow-hidden"
                 style={{ background: 'rgba(34, 197, 94, 0.15)' }}
               >
-                <span>{confirmTime.gameIcon}</span>
+                {isImageIcon(confirmTime.gameIcon) ? (
+                  <img
+                    src={confirmTime.gameIcon}
+                    alt={confirmTime.gameLabel}
+                    className="w-full h-full object-contain p-2"
+                    draggable={false}
+                  />
+                ) : (
+                  <span>{confirmTime.gameIcon}</span>
+                )}
               </div>
 
               <h3 className="text-lg font-black text-white mb-1">
@@ -578,12 +595,6 @@ export default function ShopTab() {
         </div>
       )}
 
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

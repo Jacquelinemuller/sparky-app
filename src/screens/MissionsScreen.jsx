@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import EditTaskModal from '../components/EditTaskModal';
 import PhotoViewerModal from '../components/PhotoViewerModal';
 import VoiceInput from '../components/VoiceInput';
+import TaskAlarmModal from '../components/tasks/TaskAlarmModal';
 import { getXpFromDifficulty, suggestDifficultyFromTime } from '../services/storageService';
 import { compressImage, getBase64SizeKb } from '../utils/imageUtils';
 import { audioService } from '../services/audioService';
@@ -56,7 +57,19 @@ function PriorityDots({ current, onChange }) {
 }
 
 export const MissionsScreen = () => {
-  const { tasks, addTask, deleteTask, setTaskPriority, setTaskDifficulty, editTask, setTaskPhoto, userName } = useApp();
+  const {
+    tasks,
+    addTask,
+    deleteTask,
+    setTaskPriority,
+    setTaskDifficulty,
+    editTask,
+    setTaskPhoto,
+    userName,
+    moveTaskOrder,
+    alarms
+  } = useApp();
+
   const [title, setTitle] = useState('');
   const [timeMinutes, setTimeMinutes] = useState(15);
   const [difficulty, setDifficulty] = useState('media');
@@ -69,6 +82,7 @@ export const MissionsScreen = () => {
   const [difficultyEdited, setDifficultyEdited] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
+  const [alarmTask, setAlarmTask] = useState(null);
 
   // Foto en creación
   const [newTaskPhoto, setNewTaskPhoto] = useState(null);
@@ -245,10 +259,25 @@ export const MissionsScreen = () => {
   const suggestedDifficulty = suggestDifficultyFromTime(timeMinutes);
   const showSuggestionNote = difficulty !== suggestedDifficulty;
 
+  const getTaskAlarm = (taskId) => {
+    return (alarms || []).find((a) => a.taskId === taskId);
+  };
+
+  const canMoveUp = (task) => {
+    const idx = filteredTasks.findIndex((t) => t.id === task.id);
+    if (idx <= 0) return false;
+    return filteredTasks[idx - 1].priority === task.priority;
+  };
+
+  const canMoveDown = (task) => {
+    const idx = filteredTasks.findIndex((t) => t.id === task.id);
+    if (idx === -1 || idx >= filteredTasks.length - 1) return false;
+    return filteredTasks[idx + 1].priority === task.priority;
+  };
+
   return (
     <div className="flex flex-col w-full max-w-md mx-auto items-center select-none pb-8 px-2">
 
-      {/* Input file oculto para foto rápida */}
       <input
         ref={quickPhotoInputRef}
         type="file"
@@ -278,7 +307,7 @@ export const MissionsScreen = () => {
         </button>
       </div>
 
-      {/* Formulario de creación */}
+      {/* Formulario */}
       {isAdding && (
         <form
           onSubmit={handleSubmit}
@@ -366,7 +395,6 @@ export const MissionsScreen = () => {
             )}
           </div>
 
-          {/* 🎤 TÍTULO con micrófono */}
           <div>
             <label className="text-xs font-bold text-on-surface-variant mb-1 block">
               ✏️ ¿Qué misión toca?
@@ -383,7 +411,6 @@ export const MissionsScreen = () => {
             />
           </div>
 
-          {/* Tiempo */}
           <div>
             <label className="text-xs font-bold text-on-surface-variant">
               ⏱️ ¿Cuánto tiempo crees que te va a llevar?
@@ -404,7 +431,6 @@ export const MissionsScreen = () => {
             </div>
           </div>
 
-          {/* Dificultad */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-on-surface-variant">
@@ -447,7 +473,6 @@ export const MissionsScreen = () => {
             </div>
           </div>
 
-          {/* Preview XP */}
           <div className="p-3 rounded-xl bg-white border-2 border-[#fed7aa] flex items-center justify-between">
             <span className="text-[11px] font-bold text-on-surface-variant">
               🎁 Recompensa
@@ -467,7 +492,6 @@ export const MissionsScreen = () => {
             </div>
           )}
 
-          {/* Micro-pasos */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-on-surface-variant">
@@ -505,7 +529,6 @@ export const MissionsScreen = () => {
 
             {microSteps.length < MAX_MICROSTEPS && (
               <div className="flex items-start gap-2">
-                {/* 🎤 MICRO-PASO con micrófono */}
                 <div className="flex-1">
                   <VoiceInput
                     value={newStep}
@@ -531,7 +554,6 @@ export const MissionsScreen = () => {
             )}
           </div>
 
-          {/* Categoría */}
           <div>
             <label className="text-xs font-bold text-on-surface-variant">Categoría</label>
             <div className="grid grid-cols-3 gap-2 mt-1 w-full">
@@ -553,7 +575,6 @@ export const MissionsScreen = () => {
             </div>
           </div>
 
-          {/* Prioridad */}
           <div>
             <label className="text-xs font-bold text-on-surface-variant">Prioridad</label>
             <div className="flex items-center gap-3 mt-1.5">
@@ -640,6 +661,8 @@ export const MissionsScreen = () => {
             const hasSteps = (task.microSteps || []).length > 0;
             const hasPhoto = !!task.photo;
             const isExpanded = expandedTaskId === task.id;
+            const taskAlarm = getTaskAlarm(task.id);
+            const hasAlarm = !!taskAlarm;
 
             return (
               <div
@@ -666,6 +689,11 @@ export const MissionsScreen = () => {
                         {hasPhoto && (
                           <span className="material-symbols-outlined text-[#8b5cf6] text-[16px]" title="Tiene foto">
                             image
+                          </span>
+                        )}
+                        {hasAlarm && (
+                          <span className="material-symbols-outlined text-[#f59e0b] text-[16px]" title="Tiene alarma">
+                            notifications_active
                           </span>
                         )}
                         <span
@@ -741,7 +769,52 @@ export const MissionsScreen = () => {
                         />
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
+                        {/* ⬆️ Subir */}
+                        <button
+                          type="button"
+                          onClick={() => moveTaskOrder(task.id, 'up')}
+                          disabled={!canMoveUp(task)}
+                          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#fff7ed] active:scale-95 transition-all cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
+                          title="Subir"
+                        >
+                          <span className="material-symbols-outlined text-[#ea580c] text-[22px]">
+                            arrow_upward
+                          </span>
+                        </button>
+
+                        {/* ⬇️ Bajar */}
+                        <button
+                          type="button"
+                          onClick={() => moveTaskOrder(task.id, 'down')}
+                          disabled={!canMoveDown(task)}
+                          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#fff7ed] active:scale-95 transition-all cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
+                          title="Bajar"
+                        >
+                          <span className="material-symbols-outlined text-[#ea580c] text-[22px]">
+                            arrow_downward
+                          </span>
+                        </button>
+
+                        {/* 🔔 Alarma */}
+                        <button
+                          type="button"
+                          onClick={() => setAlarmTask(task)}
+                          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#fff7ed] active:scale-95 transition-all cursor-pointer"
+                          title={hasAlarm ? 'Cambiar alarma' : 'Poner alarma'}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[20px]"
+                            style={{
+                              color: hasAlarm ? '#f59e0b' : '#94a3b8',
+                              fontVariationSettings: hasAlarm ? '"FILL" 1' : '"FILL" 0'
+                            }}
+                          >
+                            {hasAlarm ? 'notifications_active' : 'notifications_none'}
+                          </span>
+                        </button>
+
+                        {/* 📷 Foto */}
                         <button
                           type="button"
                           onClick={() => handleQuickPhotoClick(task)}
@@ -759,6 +832,7 @@ export const MissionsScreen = () => {
                           </span>
                         </button>
 
+                        {/* ✏️ Editar */}
                         <button
                           type="button"
                           onClick={() => setEditingTask(task)}
@@ -768,6 +842,7 @@ export const MissionsScreen = () => {
                           <span className="material-symbols-outlined text-[#ea580c] text-[20px]">edit</span>
                         </button>
 
+                        {/* 🗑️ Eliminar */}
                         <button
                           onClick={() => deleteTask(task.id)}
                           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-100 active:scale-95 transition-all cursor-pointer"
@@ -873,7 +948,14 @@ export const MissionsScreen = () => {
         onSave={(taskId, updates) => editTask(taskId, updates)}
       />
 
-      {/* Visor de foto a pantalla completa */}
+      {/* Modal de alarma */}
+      <TaskAlarmModal
+        isOpen={!!alarmTask}
+        onClose={() => setAlarmTask(null)}
+        task={alarmTask}
+      />
+
+      {/* Visor de foto */}
       <PhotoViewerModal
         isOpen={!!photoToView}
         onClose={() => {

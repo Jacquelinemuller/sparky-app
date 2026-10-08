@@ -13,20 +13,10 @@ const MAX_DAILY_PLAY_MINUTES = 30;
 
 // ============================================
 // MAPEO RETO → JUEGO
-// Cuando un reto se cumple al día 7, dispara el cofre con el juego mapeado.
-// Si no está en el mapa, no dispara cofre (fallback seguro).
 // ============================================
 const CHALLENGE_TO_GAME = {
   'ch-organizacion-escolar': 'simon',
   'ch-procrastinacion-5min': 'minesweeper',
-  // Agregar los retos 3-10 cuando los tengas:
-  // 'ch-...': 'maze',
-  // 'ch-...': 'stroop',
-  // 'ch-...': 'sequences',
-  // 'ch-...': 'sudoku4',
-  // 'ch-...': 'differences',
-  // 'ch-...': 'reaction',
-  // 'ch-...': 'chess',
 };
 
 // ============================================
@@ -99,7 +89,9 @@ function sortTasksByPriority(tasks) {
     const pa = PRIORITY_ORDER[a.priority] ?? 1;
     const pb = PRIORITY_ORDER[b.priority] ?? 1;
     if (pa !== pb) return pa - pb;
-    return parseInt(a.id) - parseInt(b.id);
+    const oa = a.order ?? parseInt(a.id) ?? 0;
+    const ob = b.order ?? parseInt(b.id) ?? 0;
+    return oa - ob;
   });
 }
 
@@ -458,7 +450,8 @@ export const AppProvider = ({ children }) => {
         microSteps: newTask.microSteps || [],
         slotId: newTask.slotId || null,
         slotDate: newTask.slotDate || null,
-        photo: newTask.photo || null
+        photo: newTask.photo || null,
+        order: Date.now()
       };
       const allTasks = [...prev.tasks, taskObj];
       return { ...prev, tasks: recomputeStatus(allTasks) };
@@ -483,6 +476,75 @@ export const AppProvider = ({ children }) => {
       );
       return { ...prev, tasks: recomputeStatus(updated) };
     });
+  }, [recordActivity]);
+
+  const moveTaskOrder = useCallback((taskId, direction) => {
+    recordActivity();
+    try { audioService.playPop(); } catch (e) {}
+    setState((prev) => {
+      const sorted = sortTasksByPriority(prev.tasks);
+      const idx = sorted.findIndex((t) => t.id === taskId);
+      if (idx === -1) return prev;
+
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= sorted.length) return prev;
+
+      const task = sorted[idx];
+      const neighbor = sorted[targetIdx];
+
+      if (task.priority !== neighbor.priority) return prev;
+
+      const taskOrder = task.order ?? parseInt(task.id) ?? Date.now();
+      const neighborOrder = neighbor.order ?? parseInt(neighbor.id) ?? Date.now();
+
+      const updated = prev.tasks.map((t) => {
+        if (t.id === task.id) return { ...t, order: neighborOrder };
+        if (t.id === neighbor.id) return { ...t, order: taskOrder };
+        return t;
+      });
+
+      return { ...prev, tasks: updated };
+    });
+  }, [recordActivity]);
+
+  const setTaskAlarm = useCallback((taskId, time, sound = 'campanita') => {
+    recordActivity();
+    try { audioService.playSuccess(); } catch (e) {}
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
+
+      const todayKey = getTodayKey();
+      const existingAlarms = (prev.alarms || []).filter(
+        (a) => a.taskId !== taskId
+      );
+
+      return {
+        ...prev,
+        alarms: [
+          ...existingAlarms,
+          {
+            id: 'al_task_' + Date.now(),
+            taskId,
+            dateKey: todayKey,
+            time,
+            label: task.title,
+            sound,
+            enabled: true,
+            triggered: false
+          }
+        ]
+      };
+    });
+  }, [recordActivity]);
+
+  const removeTaskAlarm = useCallback((taskId) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      alarms: (prev.alarms || []).filter((a) => a.taskId !== taskId)
+    }));
   }, [recordActivity]);
 
   const setTaskDifficulty = useCallback((taskId, difficulty) => {
@@ -730,7 +792,6 @@ export const AppProvider = ({ children }) => {
       ...prev,
       activeChallenges: (prev.activeChallenges || []).map((c) => {
         if (c.id !== challengeId) return c;
-
         if (!c.startDate) return c;
 
         const start = new Date(c.startDate + 'T00:00:00');
@@ -849,7 +910,8 @@ export const AppProvider = ({ children }) => {
       };
     });
   }, []);
-    const buyGameTime = useCallback((gameId, minutes, cost) => {
+
+  const buyGameTime = useCallback((gameId, minutes, cost) => {
     if (!gameId || !minutes || minutes <= 0) return false;
     if ((state.stats.coins || 0) < cost) return false;
 
@@ -868,7 +930,7 @@ export const AppProvider = ({ children }) => {
     try { audioService.playSuccess(); } catch (e) {}
     return true;
   }, [recordActivity, state.stats.coins]);
-  
+
   const saveQuizAnswers = useCallback((key, payload) => {
     recordActivity();
     setState((prev) => ({
@@ -1164,7 +1226,8 @@ export const AppProvider = ({ children }) => {
         microSteps: [],
         slotId: null,
         slotDate: null,
-        photo: null
+        photo: null,
+        order: Date.now()
       };
 
       const allTasks = [...prev.tasks, newTask];
@@ -1348,6 +1411,9 @@ export const AppProvider = ({ children }) => {
         completeActiveTask,
         toggleMicroStep,
         setTaskPriority,
+        moveTaskOrder,
+        setTaskAlarm,
+        removeTaskAlarm,
         setTaskDifficulty,
         editTask,
         setTaskPhoto,

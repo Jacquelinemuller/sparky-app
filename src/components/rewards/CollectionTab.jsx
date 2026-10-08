@@ -89,21 +89,34 @@ export default function CollectionTab() {
           opacity: isUnlocked ? 1 : 0.55
         }}
       >
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-2 relative"
-          style={{
-            background: isUnlocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.06)',
-            filter: isUnlocked ? 'none' : 'grayscale(1)'
-          }}
-        >
-          <span>{item.icon}</span>
-          {!isUnlocked && (
-            <span className="absolute inset-0 flex items-center justify-center text-lg">
-              🔒
-            </span>
-          )}
-        </div>
-
+               {(() => {
+          const isImageIcon = typeof item.icon === 'string' && item.icon.startsWith('/');
+          return (
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-2 relative overflow-hidden"
+              style={{
+                background: isUnlocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.06)',
+                filter: isUnlocked ? 'none' : 'grayscale(1)'
+              }}
+            >
+              {isImageIcon ? (
+                <img
+                  src={item.icon}
+                  alt={item.label}
+                  className="w-full h-full object-contain p-1.5"
+                  draggable={false}
+                />
+              ) : (
+                <span>{item.icon}</span>
+              )}
+              {!isUnlocked && (
+                <span className="absolute inset-0 flex items-center justify-center text-lg bg-black/40">
+                  🔒
+                </span>
+              )}
+            </div>
+          );
+        })()}
         <span
           className="text-[11px] font-black text-center leading-tight mb-2 min-h-[26px]"
           style={{ color: isUnlocked ? C.text : C.textMuted }}

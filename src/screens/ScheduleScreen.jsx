@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { getDayProgress, getTodayTipKey } from '../utils/dayProgress';
+import { audioService } from '../services/audioService';
 import DaySelector from '../components/schedule/DaySelector';
 import EnergyBall from '../components/schedule/EnergyBall';
 import SparkyDayBanner from '../components/schedule/SparkyDayBanner';
@@ -9,6 +10,9 @@ import FreeSlotCard from '../components/schedule/FreeSlotCard';
 import EditDayModal from '../components/schedule/EditDayModal';
 import WeeklyTemplateModal from '../components/schedule/WeeklyTemplateModal';
 import AssignTaskModal from '../components/schedule/AssignTaskModal';
+import TaskDetailModal from '../components/tasks/TaskDetailModal';
+import EditTaskModal from '../components/EditTaskModal';
+import TaskAlarmModal from '../components/tasks/TaskAlarmModal';
 
 const DAY_NAMES = [
   'sunday',
@@ -53,7 +57,9 @@ export const ScheduleScreen = () => {
     updateTemplateBlock,
     addTemplateBlock,
     deleteTemplateBlock,
-    setActiveScreen
+    setActiveScreen,
+    editTask,
+    alarms
   } = useApp();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -61,6 +67,11 @@ export const ScheduleScreen = () => {
   const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [assignSlot, setAssignSlot] = useState(null);
+
+  // Modales de la tarea asignada
+  const [detailTask, setDetailTask] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
+  const [alarmingTask, setAlarmingTask] = useState(null);
 
   const dayOfWeekKey = DAY_NAMES[selectedDate.getDay()];
   const dateKey = getDateKey(selectedDate);
@@ -78,6 +89,10 @@ export const ScheduleScreen = () => {
 
   const getAssignedTask = (slotId) => {
     return tasks.find((t) => t.slotId === slotId && t.slotDate === dateKey);
+  };
+
+  const getTaskAlarm = (taskId) => {
+    return (alarms || []).find((a) => a.taskId === taskId);
   };
 
   const todayTipKey = useMemo(
@@ -100,7 +115,21 @@ export const ScheduleScreen = () => {
   };
 
   const handleViewTask = (task) => {
-    // placeholder
+    if (!task) return;
+    try { audioService.playPop(); } catch (e) {}
+    setDetailTask(task);
+  };
+
+  const handleEditTaskDirect = (task) => {
+    if (!task) return;
+    try { audioService.playPop(); } catch (e) {}
+    setEditingTask(task);
+  };
+
+  const handleAlarmTaskDirect = (task) => {
+    if (!task) return;
+    try { audioService.playPop(); } catch (e) {}
+    setAlarmingTask(task);
   };
 
   const handleSaveDay = (newBlocks) => {
@@ -108,7 +137,6 @@ export const ScheduleScreen = () => {
   };
 
   const handleSaveBlock = (updatedBlock) => {
-    // Reemplaza el bloque en la lista y guarda como override del día
     const newBlocks = blocks.map((b) =>
       b.id === updatedBlock.id ? updatedBlock : b
     );
@@ -143,7 +171,6 @@ export const ScheduleScreen = () => {
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* 📅 Calendario mensual */}
           <button
             type="button"
             onClick={() => setActiveScreen('monthly')}
@@ -155,7 +182,6 @@ export const ScheduleScreen = () => {
             </span>
           </button>
 
-          {/* ⚙️ Editar plantilla */}
           <button
             type="button"
             onClick={() => setIsEditTemplateOpen(true)}
@@ -174,17 +200,17 @@ export const ScheduleScreen = () => {
         <DaySelector selectedDate={selectedDate} onSelectDate={setSelectedDate} />
       </div>
 
-      {/* Bola de Energía (versión mini-compacta) */}
+      {/* Bola de Energía */}
       <div className="w-full mb-3">
         <EnergyBall progress={progress} />
       </div>
 
-      {/* Banner de Sparky con el mapeo del día */}
+      {/* Banner de Sparky */}
       <div className="w-full mb-4">
         <SparkyDayBanner freeSlots={freeSlots} />
       </div>
 
-      {/* Título de la línea de tiempo */}
+      {/* Título timeline */}
       <div className="w-full flex items-center justify-between mb-2 px-1">
         <span className="font-label-md text-label-md uppercase tracking-wider text-[#3f6212] font-black">
           Línea de Tiempo
@@ -208,13 +234,17 @@ export const ScheduleScreen = () => {
           blocks.map((block) => {
             if (block.type === 'free_slot') {
               const assignedTask = getAssignedTask(block.id);
+              const taskAlarm = assignedTask ? getTaskAlarm(assignedTask.id) : null;
               return (
                 <FreeSlotCard
                   key={block.id}
                   block={block}
                   assignedTask={assignedTask}
+                  taskAlarm={taskAlarm}
                   onAssign={handleAssign}
                   onViewTask={handleViewTask}
+                  onEditTask={handleEditTaskDirect}
+                  onAlarmTask={handleAlarmTaskDirect}
                 />
               );
             }
@@ -275,6 +305,31 @@ export const ScheduleScreen = () => {
         onClose={() => setIsAssignOpen(false)}
         slot={assignSlot}
         dateKey={dateKey}
+      />
+
+      {/* Modal de detalle de tarea asignada */}
+      <TaskDetailModal
+        isOpen={!!detailTask}
+        onClose={() => setDetailTask(null)}
+        task={detailTask}
+      />
+
+      {/* Modal de edición directa (desde la tarjeta) */}
+      <EditTaskModal
+        isOpen={!!editingTask}
+        onClose={() => setEditingTask(null)}
+        task={editingTask}
+        onSave={(taskId, updates) => {
+          editTask(taskId, updates);
+          setEditingTask(null);
+        }}
+      />
+
+      {/* Modal de alarma directa (desde la tarjeta) */}
+      <TaskAlarmModal
+        isOpen={!!alarmingTask}
+        onClose={() => setAlarmingTask(null)}
+        task={alarmingTask}
       />
 
     </div>
