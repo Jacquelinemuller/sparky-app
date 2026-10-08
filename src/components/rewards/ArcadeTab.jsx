@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
+import StroopGame from './games/StroopGame';
+import SequencesGame from './games/SequencesGame';
 import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
 import { useGameSession } from '../../hooks/useGameSession';
 import MemoriaGame from './games/MemoriaGame';
 import SimonGame from './games/SimonGame';
+import MinesweeperGame from './games/MinesweeperGame';
+import MazeGame from './games/MazeGame';
 import ChestModal from './ChestModal';
 import GameTimer, { GameTimeUpModal } from './GameTimer';
 
@@ -25,7 +29,6 @@ export default function ArcadeTab() {
   const [feedback, setFeedback] = useState(null);
   const [activeGame, setActiveGame] = useState(null);
 
-  // Hook del timer
   const session = useGameSession(activeGame, !!activeGame);
 
   const handlePlayAttempt = (game, isUnlocked) => {
@@ -42,11 +45,37 @@ export default function ArcadeTab() {
       setTimeout(() => setFeedback(null), 3500);
       return;
     }
-
-    if (game.id === 'memory' || game.id === 'simon') {
-      setActiveGame(game.id);
+    if (game.id === 'sequences') {
+  setActiveGame('sequences');
+  return;
+}
+if (game.id === 'sequences') {
+  setActiveGame('sequences');
+  return;
+}
+    if (game.id === 'memory') {
+      setActiveGame('memory');
       return;
     }
+
+    if (game.id === 'simon') {
+      setActiveGame('simon');
+      return;
+    }
+
+    if (game.id === 'minesweeper') {
+      setActiveGame('minesweeper');
+      return;
+    }
+
+    if (game.id === 'maze') {
+      setActiveGame('maze');
+      return;
+    }
+    if (game.id === 'stroop') {
+  setActiveGame('stroop');
+  return;
+}
 
     setFeedback(`¡${game.label} próximamente! 🎮`);
     setTimeout(() => setFeedback(null), 3000);
@@ -67,7 +96,6 @@ export default function ArcadeTab() {
   // PANTALLA DE JUEGO ACTIVO
   // ============================================
   if (activeGame) {
-    // Bloqueado: mostrar modal sin cargar el juego
     if (session.blockReason) {
       return (
         <div className="w-full flex flex-col gap-3">
@@ -76,7 +104,6 @@ export default function ArcadeTab() {
       );
     }
 
-    // Sesión activa: mostrar juego + timer
     return (
       <div className="w-full flex flex-col gap-3">
         <GameTimer
@@ -86,8 +113,13 @@ export default function ArcadeTab() {
           dailySecondsLeft={session.dailySecondsLeft}
           onExit={handleExitGame}
         />
+        
         {activeGame === 'memory' && <MemoriaGame onExit={handleExitGame} />}
         {activeGame === 'simon' && <SimonGame onExit={handleExitGame} />}
+        {activeGame === 'minesweeper' && <MinesweeperGame onExit={handleExitGame} />}
+        {activeGame === 'maze' && <MazeGame onExit={handleExitGame} />}
+        {activeGame === 'stroop' && <StroopGame onExit={handleExitGame} />}
+        {activeGame === 'sequences' && <SequencesGame onExit={handleExitGame} />}
       </div>
     );
   }
