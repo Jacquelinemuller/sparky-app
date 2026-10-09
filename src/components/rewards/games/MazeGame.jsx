@@ -28,11 +28,10 @@ const C = {
 // NIVELES
 // ============================================
 const LEVELS = {
-  facil:   { size: 7,  label: 'Fácil',   emoji: '🟢', visionRadius: 3 },
-  medio:   { size: 10, label: 'Medio',   emoji: '🟡', visionRadius: 3 },
-  dificil: { size: 13, label: 'Difícil', emoji: '🔴', visionRadius: 2 }
+  facil:   { size: 5, mines: 3,  shields: 1, label: 'Fácil',   emoji: '🥉' },
+  medio:   { size: 7, mines: 6,  shields: 1, label: 'Medio',   emoji: '🥈' },
+  dificil: { size: 9, mines: 12, shields: 0, label: 'Difícil', emoji: '🥇' }
 };
-
 // ============================================
 // GENERACIÓN DEL LABERINTO (DFS)
 // ============================================
@@ -233,7 +232,12 @@ export default function MazeGame({ onExit }) {
   if (gameState === 'select') {
     return (
       <div className="w-full flex flex-col gap-4 items-center py-6 px-4">
-        <div className="text-5xl mb-2">🌀</div>
+        <img
+          src="/games/laberinto.png"
+          alt="Laberinto"
+          className="w-24 h-24 object-contain mb-2"
+          draggable={false}
+        />
         <h2 className="text-2xl font-black text-white">Laberinto</h2>
         <p className="text-xs font-bold text-center mb-4" style={{ color: C.textMuted }}>
           Sparky se perdió. Encontralo.<br />
@@ -404,6 +408,12 @@ export default function MazeGame({ onExit }) {
 // ============================================
 // VISTA DEL LABERINTO
 // ============================================
+// ============================================
+// VISTA DEL LABERINTO — Estética de madera
+// ============================================
+// ============================================
+// VISTA DEL LABERINTO — Estética azul glossy
+// ============================================
 function MazeView({
   grid,
   size,
@@ -423,104 +433,161 @@ function MazeView({
     return manhattan([r, c], playerPos) <= visionRadius;
   };
 
-  const wallSize = size <= 7 ? '3px' : size <= 10 ? '2.5px' : '2px';
-  const avatarSize = size <= 7 ? '26px' : size <= 10 ? '20px' : '16px';
+  const wallSize = size <= 7 ? '6px' : size <= 10 ? '5px' : '4px';
+  const avatarSize = size <= 7 ? '30px' : size <= 10 ? '24px' : '18px';
 
   return (
     <div
-      className="grid p-2 rounded-2xl"
+      className="relative p-2.5 rounded-3xl"
       style={{
-        gridTemplateColumns: `repeat(${size}, 1fr)`,
-        background: C.card,
-        border: '1.5px solid rgba(6, 182, 212, 0.25)',
+        // Marco exterior azul glossy
+        background: 'linear-gradient(180deg, #60a5fa 0%, #2563eb 50%, #1e40af 100%)',
+        border: '3px solid #1e3a8a',
+        boxShadow: `
+          0 6px 0 #1e3a8a,
+          inset 0 2px 0 rgba(255,255,255,0.5),
+          inset 0 -3px 0 rgba(0,0,0,0.35),
+          0 12px 28px rgba(0,0,0,0.6)
+        `,
         width: '100%',
-        maxWidth: size <= 7 ? '340px' : size <= 10 ? '370px' : '400px',
-        aspectRatio: '1 / 1',
-        gap: 0
+        maxWidth: size <= 7 ? '340px' : size <= 10 ? '380px' : '410px'
       }}
     >
-      {grid.map((row, r) =>
-        row.map((cell, c) => {
-          const isPlayer = pr === r && pc === c;
-          const isExit = er === r && ec === c;
-          const visible = isCellVisible(r, c);
-          const isAdjacent =
-            gameState === 'playing' &&
-            Math.abs(r - pr) + Math.abs(c - pc) === 1;
+      <div
+        className="grid rounded-2xl overflow-hidden relative"
+        style={{
+          gridTemplateColumns: `repeat(${size}, 1fr)`,
+          background: '#030a1a',
+          aspectRatio: '1 / 1',
+          gap: 0,
+          boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.9)'
+        }}
+      >
+        {grid.map((row, r) =>
+          row.map((cell, c) => {
+            const isPlayer = pr === r && pc === c;
+            const isExit = er === r && ec === c;
+            const visible = isCellVisible(r, c);
+            const isAdjacent =
+              gameState === 'playing' &&
+              Math.abs(r - pr) + Math.abs(c - pc) === 1;
 
-          return (
-            <button
-              key={`${r}-${c}`}
-              type="button"
-              onClick={() => onCellTap(r, c)}
-              disabled={gameState !== 'playing' || !isAdjacent}
-              className="relative flex items-center justify-center transition-all"
-              style={{
-                aspectRatio: '1 / 1',
-                background: isPlayer
-                  ? 'rgba(250, 204, 21, 0.18)'
-                  : isExit
-                  ? 'rgba(34, 197, 94, 0.18)'
-                  : visible
-                  ? C.path
-                  : C.fog,
-                borderTop: cell.top ? `${wallSize} solid ${C.wall}` : `${wallSize} solid transparent`,
-                borderRight: cell.right ? `${wallSize} solid ${C.wall}` : `${wallSize} solid transparent`,
-                borderBottom: cell.bottom ? `${wallSize} solid ${C.wall}` : `${wallSize} solid transparent`,
-                borderLeft: cell.left ? `${wallSize} solid ${C.wall}` : `${wallSize} solid transparent`,
-                cursor: isAdjacent ? 'pointer' : 'default',
-                opacity: visible ? 1 : 0.35,
-                transition: 'background 0.15s, opacity 0.2s'
-              }}
-            >
-              {isPlayer && (
-                <img
-                  src={userAvatar}
-                  alt="Vos"
-                  onError={(e) => { e.target.src = '/favicon.png'; }}
-                  style={{
-                    width: avatarSize,
-                    height: avatarSize,
-                    objectFit: 'cover',
-                    borderRadius: '50%',
-                    border: `2px solid ${C.amber}`,
-                    boxShadow: `0 0 10px ${C.amber}`,
-                    animation: 'playerBob 1s ease-in-out infinite',
-                    pointerEvents: 'none'
-                  }}
-                  draggable={false}
-                />
-              )}
-              {isExit && !isPlayer && (
-                <img
-                  src="/favicon.png"
-                  alt="Sparky"
-                  style={{
-                    width: avatarSize,
-                    height: avatarSize,
-                    objectFit: 'cover',
-                    borderRadius: '50%',
-                    border: `2px solid ${C.limeBright}`,
-                    boxShadow: `0 0 10px ${C.limeBright}`,
-                    animation: 'sparkyBounce 1.2s ease-in-out infinite',
-                    pointerEvents: 'none'
-                  }}
-                  draggable={false}
-                />
-              )}
-              {isAdjacent && !isPlayer && !isExit && (
-                <span
-                  className="absolute inset-0"
-                  style={{
-                    background: 'rgba(250, 204, 21, 0.08)',
-                    pointerEvents: 'none'
-                  }}
-                />
-              )}
-            </button>
-          );
-        })
-      )}
+            // Camino: azul muy oscuro
+            const pathBase = '#0f2447';
+            const pathDeep = '#030a1a';
+
+            return (
+              <button
+                key={`${r}-${c}`}
+                type="button"
+                onClick={() => onCellTap(r, c)}
+                disabled={gameState !== 'playing' || !isAdjacent}
+                className="relative flex items-center justify-center transition-all"
+                style={{
+                  aspectRatio: '1 / 1',
+                  background: visible
+                    ? `radial-gradient(circle at 50% 40%, ${pathBase} 0%, ${pathDeep} 100%)`
+                    : 'rgba(0,0,0,0.95)',
+                  // Paredes azules con 3D (luz arriba, sombra abajo)
+                  borderTop: cell.top
+                    ? `${wallSize} solid #93c5fd`
+                    : `${wallSize} solid transparent`,
+                  borderLeft: cell.left
+                    ? `${wallSize} solid #60a5fa`
+                    : `${wallSize} solid transparent`,
+                  borderRight: cell.right
+                    ? `${wallSize} solid #3b82f6`
+                    : `${wallSize} solid transparent`,
+                  borderBottom: cell.bottom
+                    ? `${wallSize} solid #1e40af`
+                    : `${wallSize} solid transparent`,
+                  cursor: isAdjacent ? 'pointer' : 'default',
+                  opacity: visible ? 1 : 0.25,
+                  transition: 'background 0.15s, opacity 0.2s',
+                  boxShadow: isPlayer || isExit
+                    ? 'inset 0 0 8px rgba(96, 165, 250, 0.5)'
+                    : 'inset 0 2px 4px rgba(0,0,0,0.7)'
+                }}
+              >
+                {/* Brillo en el jugador */}
+                {isPlayer && (
+                  <>
+                    <span
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background:
+                          'radial-gradient(circle, rgba(147,197,253,0.6) 0%, rgba(96,165,250,0.2) 60%, transparent 100%)',
+                        animation: 'playerGlow 1.5s ease-in-out infinite'
+                      }}
+                    />
+                    <img
+                      src={userAvatar}
+                      alt="Vos"
+                      onError={(e) => { e.target.src = '/favicon.png'; }}
+                      style={{
+                        width: avatarSize,
+                        height: avatarSize,
+                        objectFit: 'cover',
+                        borderRadius: '50%',
+                        border: `2px solid #fbbf24`,
+                        boxShadow: `0 0 12px #fbbf24, 0 0 24px rgba(251, 191, 36, 0.6)`,
+                        animation: 'playerBob 1s ease-in-out infinite',
+                        pointerEvents: 'none',
+                        position: 'relative',
+                        zIndex: 2
+                      }}
+                      draggable={false}
+                    />
+                  </>
+                )}
+
+                {/* Brillo en Sparky (la salida) */}
+                {isExit && !isPlayer && (
+                  <>
+                    <span
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background:
+                          'radial-gradient(circle, rgba(253,224,71,0.7) 0%, rgba(251,191,36,0.3) 50%, transparent 100%)',
+                        animation: 'exitGlow 2s ease-in-out infinite'
+                      }}
+                    />
+                    <img
+                      src="/favicon.png"
+                      alt="Sparky"
+                      style={{
+                        width: avatarSize,
+                        height: avatarSize,
+                        objectFit: 'cover',
+                        borderRadius: '50%',
+                        border: `2px solid #fde047`,
+                        boxShadow: `0 0 14px #fde047, 0 0 28px rgba(253, 224, 71, 0.7)`,
+                        animation: 'sparkyBounce 1.2s ease-in-out infinite',
+                        pointerEvents: 'none',
+                        position: 'relative',
+                        zIndex: 2
+                      }}
+                      draggable={false}
+                    />
+                  </>
+                )}
+
+                {/* Celdas adyacentes — zona de tap */}
+                {isAdjacent && !isPlayer && !isExit && (
+                  <span
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        'radial-gradient(circle, rgba(147, 197, 253, 0.25) 0%, transparent 80%)',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
 
       <style>{`
         @keyframes playerBob {
@@ -531,11 +598,18 @@ function MazeView({
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.15); }
         }
+        @keyframes playerGlow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        @keyframes exitGlow {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
       `}</style>
     </div>
   );
 }
-
 // ============================================
 // MODAL DE VICTORIA
 // ============================================

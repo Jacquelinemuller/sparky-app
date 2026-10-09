@@ -2,22 +2,34 @@ import React, { useState, useCallback } from 'react';
 import { audioService } from '../../../services/audioService';
 
 // ============================================
-// COLORES ARCADE
+// PALETA METÁLICA
 // ============================================
-const C = {
+const M = {
+  frameTop: '#e5e7eb',
+  frameMid: '#9ca3af',
+  frameBot: '#4b5563',
+  frameBorder: '#1f2937',
+  frameHighlight: 'rgba(255,255,255,0.6)',
+
+  tileTop: '#e5e7eb',
+  tileMid: '#b8bcc2',
+  tileBot: '#7a7e85',
+  tileHighlight: 'rgba(255,255,255,0.8)',
+
+  revealedBg: '#2a2d33',
+  revealedBgDeep: '#14161a',
+  revealedBorder: '#0a0a0d',
+
+  num1: '#3b82f6',
+  num2: '#22c55e',
+  num3: '#f97316',
+  num4: '#ef4444',
+
   bg: '#09090f',
   card: '#131322',
-  cardBack: '#1e1e36',
-  cardBackBorder: '#2a2a4a',
-  revealed: '#0f0f1e',
-  lime: '#22c55e',
-  limeBright: '#4ade80',
   cyan: '#06b6d4',
   cyanBright: '#38bdf8',
-  magenta: '#ff2d87',
-  amber: '#facc15',
-  amberBright: '#fde047',
-  violet: '#8b5cf6',
+  limeBright: '#4ade80',
   text: '#ffffff',
   textMuted: '#94a3b8'
 };
@@ -37,12 +49,7 @@ const LEVELS = {
 function createEmptyBoard(size) {
   return Array.from({ length: size }, (_, row) =>
     Array.from({ length: size }, (_, col) => ({
-      row,
-      col,
-      revealed: false,
-      flagged: false,
-      mine: false,
-      adjacent: 0
+      row, col, revealed: false, flagged: false, mine: false, adjacent: 0
     }))
   );
 }
@@ -50,28 +57,20 @@ function createEmptyBoard(size) {
 function plantMines(board, mineCount, safeRow, safeCol) {
   const size = board.length;
   const candidates = [];
-
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      // Excluir la celda segura y sus 8 vecinas (garantiza primer toque seguro)
       if (Math.abs(r - safeRow) <= 1 && Math.abs(c - safeCol) <= 1) continue;
       candidates.push({ r, c });
     }
   }
-
-  // Fisher-Yates shuffle
   for (let i = candidates.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
   }
-
   const newBoard = board.map((row) => row.map((cell) => ({ ...cell })));
-
   for (let i = 0; i < mineCount && i < candidates.length; i++) {
     newBoard[candidates[i].r][candidates[i].c].mine = true;
   }
-
-  // Calcular adyacentes
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (newBoard[r][c].mine) continue;
@@ -79,8 +78,7 @@ function plantMines(board, mineCount, safeRow, safeCol) {
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
           if (dr === 0 && dc === 0) continue;
-          const nr = r + dr;
-          const nc = c + dc;
+          const nr = r + dr, nc = c + dc;
           if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
           if (newBoard[nr][nc].mine) count++;
         }
@@ -88,7 +86,6 @@ function plantMines(board, mineCount, safeRow, safeCol) {
       newBoard[r][c].adjacent = count;
     }
   }
-
   return newBoard;
 }
 
@@ -97,17 +94,13 @@ function floodFill(board, row, col) {
   const newBoard = board.map((r) => r.map((c) => ({ ...c })));
   const stack = [[row, col]];
   const revealedCells = [];
-
   while (stack.length > 0) {
     const [r, c] = stack.pop();
     if (r < 0 || r >= size || c < 0 || c >= size) continue;
-
     const cell = newBoard[r][c];
     if (cell.revealed || cell.flagged || cell.mine) continue;
-
     cell.revealed = true;
     revealedCells.push({ r, c });
-
     if (cell.adjacent === 0) {
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
@@ -117,7 +110,6 @@ function floodFill(board, row, col) {
       }
     }
   }
-
   return { board: newBoard, revealedCells };
 }
 
@@ -132,31 +124,19 @@ function checkWin(board) {
 
 function countFlags(board) {
   let count = 0;
-  for (const row of board) {
-    for (const cell of row) {
-      if (cell.flagged) count++;
-    }
-  }
+  for (const row of board) for (const cell of row) if (cell.flagged) count++;
   return count;
 }
 
 function countRevealed(board) {
   let count = 0;
-  for (const row of board) {
-    for (const cell of row) {
-      if (cell.revealed) count++;
-    }
-  }
+  for (const row of board) for (const cell of row) if (cell.revealed) count++;
   return count;
 }
 
 function countSafeCells(board) {
   let count = 0;
-  for (const row of board) {
-    for (const cell of row) {
-      if (!cell.mine) count++;
-    }
-  }
+  for (const row of board) for (const cell of row) if (!cell.mine) count++;
   return count;
 }
 
@@ -166,17 +146,13 @@ function countSafeCells(board) {
 export default function MinesweeperGame({ onExit }) {
   const [difficulty, setDifficulty] = useState(null);
   const [board, setBoard] = useState(null);
-  const [gameState, setGameState] = useState('select'); // 'select' | 'playing' | 'won' | 'lost' | 'shielded'
-  const [mode, setMode] = useState('reveal'); // 'reveal' | 'flag'
+  const [gameState, setGameState] = useState('select');
+  const [mode, setMode] = useState('reveal');
   const [shields, setShields] = useState(0);
   const [firstTap, setFirstTap] = useState(true);
 
-  // ============================================
-  // INICIAR JUEGO
-  // ============================================
   const startGame = (levelKey) => {
     try { audioService.playPop(); } catch (e) {}
-
     const level = LEVELS[levelKey];
     setDifficulty(levelKey);
     setBoard(createEmptyBoard(level.size));
@@ -186,19 +162,13 @@ export default function MinesweeperGame({ onExit }) {
     setGameState('playing');
   };
 
-  // ============================================
-  // CLICK EN CELDA
-  // ============================================
   const handleCellClick = useCallback(
     (row, col) => {
       if (gameState !== 'playing' || !board || !difficulty) return;
-
       const level = LEVELS[difficulty];
       const cell = board[row][col];
-
       if (cell.revealed) return;
 
-      // MODO BANDERA
       if (mode === 'flag') {
         if (cell.revealed) return;
         try { audioService.playClick(); } catch (e) {}
@@ -208,33 +178,23 @@ export default function MinesweeperGame({ onExit }) {
         return;
       }
 
-      // MODO DESCUBRIR
       if (cell.flagged) return;
 
       let currentBoard = board;
-
-      // Primer toque: plantar las minas
       if (firstTap) {
         currentBoard = plantMines(board, level.mines, row, col);
         setFirstTap(false);
       }
 
-      // Tocar una mina
       if (currentBoard[row][col].mine) {
         if (shields > 0) {
-          // Usar escudo
           try { audioService.playError(); } catch (e) {}
           try { audioService.playTone(660, 0.12); } catch (e) {}
-          setTimeout(() => {
-            try { audioService.playTone(440, 0.18); } catch (e) {}
-          }, 100);
-
+          setTimeout(() => { try { audioService.playTone(440, 0.18); } catch (e) {} }, 100);
           const newBoard = currentBoard.map((r) => r.map((c) => ({ ...c })));
           newBoard[row][col].revealed = true;
-          newBoard[row][col].mine = false; // Neutralizar esa mina
+          newBoard[row][col].mine = false;
           newBoard[row][col].shielded = true;
-
-          // Recalcular adyacentes (la mina ya no cuenta)
           const size = newBoard.length;
           for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
@@ -243,8 +203,7 @@ export default function MinesweeperGame({ onExit }) {
               for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                   if (dr === 0 && dc === 0) continue;
-                  const nr = r + dr;
-                  const nc = c + dc;
+                  const nr = r + dr, nc = c + dc;
                   if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
                   if (newBoard[nr][nc].mine) count++;
                 }
@@ -252,62 +211,39 @@ export default function MinesweeperGame({ onExit }) {
               newBoard[r][c].adjacent = count;
             }
           }
-
           setShields(shields - 1);
           setBoard(newBoard);
           setGameState('shielded');
           setTimeout(() => setGameState('playing'), 1200);
           return;
         } else {
-          // Perder
           try { audioService.playError(); } catch (e) {}
-
           const newBoard = currentBoard.map((r) => r.map((c) => ({ ...c })));
           newBoard[row][col].revealed = true;
-
-          // Revelar todas las minas restantes
           for (let r = 0; r < newBoard.length; r++) {
             for (let c = 0; c < newBoard.length; c++) {
               if (newBoard[r][c].mine) newBoard[r][c].revealed = true;
             }
           }
-
           setBoard(newBoard);
           setGameState('lost');
           return;
         }
       }
 
-      // Celda segura: revelar con flood fill
-      const { board: newBoard, revealedCells } = floodFill(
-        currentBoard,
-        row,
-        col
-      );
-
-      // Sonidos en cascada (cada 30ms)
+      const { board: newBoard, revealedCells } = floodFill(currentBoard, row, col);
       revealedCells.slice(0, 12).forEach((_, i) => {
-        setTimeout(() => {
-          try { audioService.playPop(); } catch (e) {}
-        }, i * 30);
+        setTimeout(() => { try { audioService.playPop(); } catch (e) {} }, i * 30);
       });
-
       setBoard(newBoard);
-
-      // Verificar victoria
       if (checkWin(newBoard)) {
-        setTimeout(() => {
-          try { audioService.playSuccess(); } catch (e) {}
-        }, 200);
+        setTimeout(() => { try { audioService.playSuccess(); } catch (e) {} }, 200);
         setGameState('won');
       }
     },
     [board, difficulty, gameState, mode, firstTap, shields]
   );
 
-  // ============================================
-  // RESET / OTRA RONDA
-  // ============================================
   const handleRetry = () => {
     if (!difficulty) return;
     startGame(difficulty);
@@ -321,15 +257,10 @@ export default function MinesweeperGame({ onExit }) {
   };
 
   // ============================================
-  // RENDER
+  // SELECTOR DE NIVEL
   // ============================================
   if (gameState === 'select') {
-    return (
-      <LevelSelector
-        onSelect={startGame}
-        onExit={onExit}
-      />
-    );
+    return <LevelSelector onSelect={startGame} onExit={onExit} />;
   }
 
   const level = LEVELS[difficulty];
@@ -338,9 +269,13 @@ export default function MinesweeperGame({ onExit }) {
   const flagCount = countFlags(board);
   const progress = Math.min(100, Math.round((revealedCount / safeCells) * 100));
 
+  // ============================================
+  // JUEGO
+  // ============================================
   return (
     <div className="w-full flex flex-col gap-3">
-      {/* Header del juego */}
+
+      {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -348,7 +283,7 @@ export default function MinesweeperGame({ onExit }) {
           className="px-3 py-1.5 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 transition-all"
           style={{
             background: 'rgba(148, 163, 184, 0.12)',
-            color: C.textMuted,
+            color: M.textMuted,
             border: '1px solid rgba(148, 163, 184, 0.2)'
           }}
         >
@@ -361,8 +296,8 @@ export default function MinesweeperGame({ onExit }) {
               className="px-2 py-1 rounded-full text-[10px] font-black flex items-center gap-1"
               style={{
                 background: 'rgba(34, 197, 94, 0.15)',
-                color: C.limeBright,
-                border: `1px solid ${C.lime}60`
+                color: M.limeBright,
+                border: `1px solid ${M.limeBright}60`
               }}
             >
               🛡️ {shields}
@@ -372,7 +307,7 @@ export default function MinesweeperGame({ onExit }) {
             className="px-2 py-1 rounded-full text-[10px] font-black"
             style={{
               background: 'rgba(6, 182, 212, 0.15)',
-              color: C.cyanBright,
+              color: M.cyanBright,
               border: '1px solid rgba(6, 182, 212, 0.4)'
             }}
           >
@@ -389,18 +324,18 @@ export default function MinesweeperGame({ onExit }) {
           border: '1px solid rgba(6, 182, 212, 0.25)'
         }}
       >
-        <span className="text-[11px] font-black" style={{ color: C.textMuted }}>
+        <span className="text-[11px] font-black" style={{ color: M.textMuted }}>
           🔍 {revealedCount}/{safeCells}
         </span>
-        <span className="text-[11px] font-black" style={{ color: C.textMuted }}>
+        <span className="text-[11px] font-black" style={{ color: M.textMuted }}>
           🚩 {flagCount}
         </span>
-        <span className="text-[11px] font-black" style={{ color: C.cyanBright }}>
+        <span className="text-[11px] font-black" style={{ color: M.cyanBright }}>
           {progress}%
         </span>
       </div>
 
-      {/* Barra de progreso */}
+      {/* Barra progreso */}
       <div
         className="w-full h-1.5 rounded-full overflow-hidden"
         style={{ background: 'rgba(148, 163, 184, 0.15)' }}
@@ -409,14 +344,13 @@ export default function MinesweeperGame({ onExit }) {
           className="h-full rounded-full transition-all duration-500"
           style={{
             width: `${progress}%`,
-            background: `linear-gradient(90deg, ${C.cyan} 0%, ${C.limeBright} 100%)`,
-            boxShadow: `0 0 10px ${C.cyan}80`
+            background: `linear-gradient(90deg, ${M.cyan} 0%, ${M.limeBright} 100%)`,
+            boxShadow: `0 0 10px ${M.cyan}80`
           }}
         />
       </div>
 
-      {/* Título */}
-      <p className="text-center text-xs font-black" style={{ color: C.textMuted }}>
+      <p className="text-center text-xs font-black" style={{ color: M.textMuted }}>
         Encontrá las minas sin pisarlas
       </p>
 
@@ -434,25 +368,22 @@ export default function MinesweeperGame({ onExit }) {
         <div
           className="flex-1 p-1 rounded-2xl flex items-center gap-1"
           style={{
-            background: C.card,
+            background: M.card,
             border: '1px solid rgba(6, 182, 212, 0.2)'
           }}
         >
           <button
             type="button"
-            onClick={() => {
-              try { audioService.playClick(); } catch (e) {}
-              setMode('reveal');
-            }}
+            onClick={() => { try { audioService.playClick(); } catch (e) {} setMode('reveal'); }}
             className="flex-1 py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer flex items-center justify-center gap-1"
             style={
               mode === 'reveal'
                 ? {
-                    background: `linear-gradient(135deg, ${C.cyan} 0%, ${C.cyanBright} 100%)`,
+                    background: `linear-gradient(135deg, ${M.cyan} 0%, ${M.cyanBright} 100%)`,
                     color: '#000',
-                    boxShadow: `0 0 12px ${C.cyan}60`
+                    boxShadow: `0 0 12px ${M.cyan}60`
                   }
-                : { color: C.textMuted }
+                : { color: M.textMuted }
             }
           >
             <span>🔍</span>
@@ -460,19 +391,16 @@ export default function MinesweeperGame({ onExit }) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              try { audioService.playClick(); } catch (e) {}
-              setMode('flag');
-            }}
+            onClick={() => { try { audioService.playClick(); } catch (e) {} setMode('flag'); }}
             className="flex-1 py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer flex items-center justify-center gap-1"
             style={
               mode === 'flag'
                 ? {
-                    background: `linear-gradient(135deg, ${C.amber} 0%, ${C.amberBright} 100%)`,
-                    color: '#000',
-                    boxShadow: `0 0 12px ${C.amber}60`
+                    background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                    color: '#fff',
+                    boxShadow: '0 0 12px rgba(239, 68, 68, 0.6)'
                   }
-                : { color: C.textMuted }
+                : { color: M.textMuted }
             }
           >
             <span>🚩</span>
@@ -485,9 +413,9 @@ export default function MinesweeperGame({ onExit }) {
           onClick={handleRetry}
           className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl cursor-pointer active:scale-95 transition-all"
           style={{
-            background: C.card,
+            background: M.card,
             border: '1px solid rgba(255, 45, 135, 0.4)',
-            color: C.magenta
+            color: '#ff2d87'
           }}
           title="Reiniciar ronda"
         >
@@ -505,12 +433,12 @@ export default function MinesweeperGame({ onExit }) {
             className="px-5 py-3 rounded-2xl flex items-center gap-3"
             style={{
               background: 'rgba(19, 19, 34, 0.95)',
-              border: `2px solid ${C.limeBright}`,
-              boxShadow: `0 0 32px ${C.lime}80`
+              border: `2px solid ${M.limeBright}`,
+              boxShadow: `0 0 32px ${M.limeBright}80`
             }}
           >
             <span className="text-2xl">🛡️</span>
-            <span className="font-black text-sm" style={{ color: C.limeBright }}>
+            <span className="font-black text-sm" style={{ color: M.limeBright }}>
               ¡Sparky te cubrió!
             </span>
           </div>
@@ -546,9 +474,14 @@ export default function MinesweeperGame({ onExit }) {
 function LevelSelector({ onSelect, onExit }) {
   return (
     <div className="w-full flex flex-col gap-4 items-center py-6 px-4">
-      <div className="text-5xl mb-2">💣</div>
+      <img
+        src="/games/buscaminas.png"
+        alt="Buscaminas"
+        className="w-24 h-24 object-contain mb-2"
+        draggable={false}
+      />
       <h2 className="text-2xl font-black text-white">Buscaminas</h2>
-      <p className="text-xs font-bold text-center mb-4" style={{ color: C.textMuted }}>
+      <p className="text-xs font-bold text-center mb-4" style={{ color: M.textMuted }}>
         Tocá las casillas para descubrir el campo.<br />
         Cuidado con las minas 💣
       </p>
@@ -561,19 +494,35 @@ function LevelSelector({ onSelect, onExit }) {
             onClick={() => onSelect(key)}
             className="w-full p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all"
             style={{
-              background: C.card,
-              border: `1.5px solid ${C.cyan}40`
+              background: `linear-gradient(180deg, ${M.frameTop} 0%, ${M.frameMid} 60%, ${M.frameBot} 100%)`,
+              border: `2px solid ${M.frameBorder}`,
+              boxShadow: `
+                0 4px 0 ${M.frameBorder},
+                inset 0 2px 0 ${M.frameHighlight},
+                inset 0 -3px 0 rgba(0,0,0,0.3)
+              `
             }}
           >
-            <span className="text-3xl">{level.emoji}</span>
+            <span
+              className="text-3xl w-12 h-12 flex items-center justify-center rounded-full"
+              style={{
+                background: 'rgba(255,255,255,0.4)',
+                border: '2px solid rgba(0,0,0,0.15)',
+                boxShadow: 'inset 0 -2px 0 rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.8)'
+              }}
+            >
+              {level.emoji}
+            </span>
             <div className="flex flex-col flex-1 items-start">
-              <span className="text-sm font-black text-white">{level.label}</span>
-              <span className="text-[10px] font-bold" style={{ color: C.textMuted }}>
+              <span className="text-sm font-black" style={{ color: '#1f2937' }}>
+                {level.label}
+              </span>
+              <span className="text-[10px] font-bold" style={{ color: '#374151' }}>
                 {level.size}×{level.size} · {level.mines} minas
                 {level.shields > 0 ? ` · 🛡️ ${level.shields}` : ' · sin escudo'}
               </span>
             </div>
-            <span className="material-symbols-outlined text-[20px]" style={{ color: C.cyanBright }}>
+            <span className="material-symbols-outlined text-[20px]" style={{ color: '#1f2937' }}>
               arrow_forward
             </span>
           </button>
@@ -586,7 +535,7 @@ function LevelSelector({ onSelect, onExit }) {
         className="mt-4 px-6 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
         style={{
           background: 'rgba(148, 163, 184, 0.12)',
-          color: C.textMuted,
+          color: M.textMuted,
           border: '1px solid rgba(148, 163, 184, 0.2)'
         }}
       >
@@ -597,43 +546,58 @@ function LevelSelector({ onSelect, onExit }) {
 }
 
 // ============================================
-// TABLERO
+// TABLERO CON MADERA INTERIOR — MARCO CUADRADO
 // ============================================
 function BoardView({ board, size, mode, onCellClick, disabled }) {
   return (
-    <div
-      className="w-full flex items-center justify-center"
-      style={{ touchAction: 'manipulation' }}
-    >
+    <div className="w-full flex items-center justify-center">
       <div
-        className="grid gap-1 p-2 rounded-2xl"
+        className="p-3 rounded-none"
         style={{
-          gridTemplateColumns: `repeat(${size}, 1fr)`,
-          background: C.card,
-          border: '1.5px solid rgba(6, 182, 212, 0.2)',
+          background: `linear-gradient(180deg, ${M.frameTop} 0%, ${M.frameMid} 50%, ${M.frameBot} 100%)`,
+          border: `3px solid ${M.frameBorder}`,
+          boxShadow: `
+            0 8px 0 ${M.frameBorder},
+            inset 0 3px 0 ${M.frameHighlight},
+            inset 0 -4px 0 rgba(0,0,0,0.35),
+            0 12px 32px rgba(0,0,0,0.6)
+          `,
           width: '100%',
           maxWidth: size <= 5 ? '320px' : size <= 7 ? '360px' : '400px',
           aspectRatio: '1 / 1'
         }}
       >
-        {board.map((row, r) =>
-          row.map((cell, c) => (
-            <Cell
-              key={`${r}-${c}`}
-              cell={cell}
-              onPress={() => onCellClick(r, c)}
-              mode={mode}
-              disabled={disabled}
-            />
-          ))
-        )}
+        <div
+          className="grid rounded-none overflow-hidden relative"
+          style={{
+            gridTemplateColumns: `repeat(${size}, 1fr)`,
+            background: '#1a1d22',
+            width: '100%',
+            height: '100%',
+            boxShadow: 'inset 0 4px 16px rgba(0,0,0,0.85)',
+            padding: '6px',
+            gap: '3px',
+            border: '1px solid #0a0a0d'
+          }}
+        >
+          {board.map((row, r) =>
+            row.map((cell, c) => (
+              <Cell
+                key={`${r}-${c}`}
+                cell={cell}
+                onPress={() => onCellClick(r, c)}
+                mode={mode}
+                disabled={disabled}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
 // ============================================
-// CELDA
+// CELDA — Ficha metálica cuadrada
 // ============================================
 function Cell({ cell, onPress, mode, disabled }) {
   const isRevealed = cell.revealed;
@@ -641,48 +605,92 @@ function Cell({ cell, onPress, mode, disabled }) {
   const isMine = cell.mine;
   const isShielded = cell.shielded;
 
-  // Color del número
   const getNumberColor = (n) => {
-    if (n === 1) return C.cyanBright;
-    if (n === 2) return C.amberBright;
-    if (n === 3) return C.magenta;
-    return C.violet;
+    if (n === 1) return M.num1;
+    if (n === 2) return M.num2;
+    if (n === 3) return M.num3;
+    return M.num4;
   };
 
-  // Contenido
   let content = null;
   if (isRevealed && isShielded) {
-    content = <span className="text-lg">🛡️</span>;
+    content = <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>🛡️</span>;
   } else if (isRevealed && isMine) {
-    content = <span className="text-lg">💥</span>;
+    content = (
+      <span
+        style={{
+          fontSize: '1.4rem',
+          lineHeight: 1,
+          filter: 'drop-shadow(0 2px 4px rgba(255, 45, 135, 0.8)) drop-shadow(0 0 12px rgba(255, 45, 135, 0.6))'
+        }}
+      >
+        💣
+      </span>
+    );
   } else if (isRevealed && cell.adjacent > 0) {
     content = (
       <span
-        className="text-base font-black"
-        style={{ color: getNumberColor(cell.adjacent) }}
+        className="font-black"
+        style={{
+          fontSize: 'clamp(14px, 4vw, 22px)',
+          color: getNumberColor(cell.adjacent),
+          textShadow: `0 1px 0 rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.4)`,
+          fontWeight: 900,
+          letterSpacing: '-0.02em'
+        }}
       >
         {cell.adjacent}
       </span>
     );
   } else if (isFlagged) {
-    content = <span className="text-base">🚩</span>;
+    content = (
+      <span
+        style={{
+          fontSize: '1.3rem',
+          lineHeight: 1,
+          filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.5))'
+        }}
+      >
+        🚩
+      </span>
+    );
   }
 
-  // Fondo
-  let background = C.cardBack;
-  let borderColor = C.cardBackBorder;
+  let background, border, boxShadow, opacity;
+
   if (isRevealed && isShielded) {
-    background = 'rgba(34, 197, 94, 0.25)';
-    borderColor = C.lime;
+    background = 'linear-gradient(180deg, #16a34a 0%, #15803d 100%)';
+    border = '2px solid #052e16';
+    boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.4)';
+    opacity = 1;
   } else if (isRevealed && isMine) {
-    background = 'rgba(255, 45, 135, 0.25)';
-    borderColor = C.magenta;
+    background = 'linear-gradient(180deg, #dc2626 0%, #7f1d1d 100%)';
+    border = '2px solid #450a0a';
+    boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.7), 0 0 12px rgba(239, 68, 68, 0.8)';
+    opacity = 1;
   } else if (isRevealed) {
-    background = C.revealed;
-    borderColor = 'rgba(148, 163, 184, 0.15)';
+    background = `radial-gradient(circle at 50% 50%, ${M.revealedBg} 0%, ${M.revealedBgDeep} 100%)`;
+    border = `2px solid ${M.revealedBorder}`;
+    boxShadow = 'inset 0 2px 6px rgba(0,0,0,0.9)';
+    opacity = 1;
   } else if (isFlagged) {
-    background = 'rgba(250, 204, 21, 0.15)';
-    borderColor = `${C.amber}80`;
+    background = 'linear-gradient(180deg, #fca5a5 0%, #b91c1c 100%)';
+    border = `2px solid ${M.frameBorder}`;
+    boxShadow = `
+      inset 0 2px 0 rgba(255,255,255,0.5),
+      inset 0 -3px 0 rgba(0,0,0,0.3),
+      0 3px 0 ${M.frameBorder}
+    `;
+    opacity = 1;
+  } else {
+    background = `linear-gradient(180deg, ${M.tileTop} 0%, ${M.tileMid} 50%, ${M.tileBot} 100%)`;
+    border = `2px solid ${M.frameBorder}`;
+    boxShadow = `
+      inset 0 2px 0 ${M.tileHighlight},
+      inset 0 -3px 0 rgba(0,0,0,0.3),
+      0 3px 0 ${M.frameBorder}
+    `;
+    opacity = 1;
   }
 
   return (
@@ -690,12 +698,38 @@ function Cell({ cell, onPress, mode, disabled }) {
       type="button"
       onClick={onPress}
       disabled={disabled || (isRevealed && !isMine && !isShielded)}
-      className="rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90 select-none"
+      className="rounded-none flex items-center justify-center transition-all select-none"
       style={{
         background,
-        border: `1.5px solid ${borderColor}`,
+        border,
+        boxShadow,
+        opacity,
         aspectRatio: '1 / 1',
-        animation: isRevealed ? 'cellReveal 0.15s ease-out' : 'none'
+        cursor: disabled || (isRevealed && !isMine && !isShielded) ? 'default' : 'pointer',
+        padding: 0,
+        animation: isRevealed ? 'cellReveal 0.2s ease-out' : 'none',
+        transform: 'translateY(0)',
+        transition: 'all 0.08s ease-out'
+      }}
+      onMouseDown={(e) => {
+        if (disabled || isRevealed) return;
+        e.currentTarget.style.transform = 'translateY(2px)';
+        e.currentTarget.style.boxShadow = `
+          inset 0 2px 0 rgba(255,255,255,0.2),
+          inset 0 -1px 0 rgba(0,0,0,0.4),
+          0 1px 0 ${M.frameBorder}
+        `;
+      }}
+      onMouseUp={(e) => {
+        if (disabled || isRevealed) return;
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = isFlagged
+          ? `inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -3px 0 rgba(0,0,0,0.3), 0 3px 0 ${M.frameBorder}`
+          : `inset 0 2px 0 ${M.tileHighlight}, inset 0 -3px 0 rgba(0,0,0,0.3), 0 3px 0 ${M.frameBorder}`;
+      }}
+      onMouseLeave={(e) => {
+        if (disabled || isRevealed) return;
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       {content}
@@ -723,9 +757,9 @@ function ResultModal({ type, stats, onRetry, onChangeLevel, onExit }) {
       <div
         className="w-full max-w-sm p-6 rounded-3xl flex flex-col items-center text-center"
         style={{
-          background: `linear-gradient(180deg, ${C.card} 0%, #08081a 100%)`,
-          border: `2px solid ${isWon ? C.limeBright : C.magenta}`,
-          boxShadow: `0 0 40px ${isWon ? C.lime : C.magenta}80`
+          background: `linear-gradient(180deg, ${M.card} 0%, #08081a 100%)`,
+          border: `2px solid ${isWon ? M.limeBright : '#ff2d87'}`,
+          boxShadow: `0 0 40px ${isWon ? M.limeBright : '#ff2d87'}80`
         }}
       >
         <span className="text-6xl mb-3">{isWon ? '🎉' : '💥'}</span>
@@ -734,7 +768,7 @@ function ResultModal({ type, stats, onRetry, onChangeLevel, onExit }) {
           {isWon ? '¡Ganaste!' : '¡Boom!'}
         </h2>
 
-        <p className="text-sm font-bold mb-4" style={{ color: C.textMuted }}>
+        <p className="text-sm font-bold mb-4" style={{ color: M.textMuted }}>
           {isWon
             ? 'Encontraste todas las casillas seguras'
             : 'Pisaste una mina. Otra ronda y la próxima sale'}
@@ -748,19 +782,19 @@ function ResultModal({ type, stats, onRetry, onChangeLevel, onExit }) {
           }}
         >
           <div className="flex flex-col items-center">
-            <span className="text-lg font-black" style={{ color: C.cyanBright }}>
+            <span className="text-lg font-black" style={{ color: M.cyanBright }}>
               {stats.revealed}
             </span>
-            <span className="text-[9px] font-black" style={{ color: C.textMuted }}>
+            <span className="text-[9px] font-black" style={{ color: M.textMuted }}>
               descubiertas
             </span>
           </div>
-          <span className="text-xs" style={{ color: C.textMuted }}>/</span>
+          <span className="text-xs" style={{ color: M.textMuted }}>/</span>
           <div className="flex flex-col items-center">
-            <span className="text-lg font-black" style={{ color: C.limeBright }}>
+            <span className="text-lg font-black" style={{ color: M.limeBright }}>
               {stats.total}
             </span>
-            <span className="text-[9px] font-black" style={{ color: C.textMuted }}>
+            <span className="text-[9px] font-black" style={{ color: M.textMuted }}>
               seguras
             </span>
           </div>
@@ -772,9 +806,9 @@ function ResultModal({ type, stats, onRetry, onChangeLevel, onExit }) {
             onClick={onRetry}
             className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
             style={{
-              background: `linear-gradient(135deg, ${C.lime} 0%, ${C.limeBright} 100%)`,
+              background: `linear-gradient(135deg, #22c55e 0%, ${M.limeBright} 100%)`,
               color: '#000',
-              boxShadow: `0 0 16px ${C.lime}80`
+              boxShadow: `0 0 16px #22c55e80`
             }}
           >
             Otra ronda
@@ -785,8 +819,8 @@ function ResultModal({ type, stats, onRetry, onChangeLevel, onExit }) {
             className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
             style={{
               background: 'rgba(6, 182, 212, 0.15)',
-              color: C.cyanBright,
-              border: `1.5px solid ${C.cyan}60`
+              color: M.cyanBright,
+              border: `1.5px solid ${M.cyan}60`
             }}
           >
             Cambiar nivel
@@ -797,7 +831,7 @@ function ResultModal({ type, stats, onRetry, onChangeLevel, onExit }) {
           type="button"
           onClick={onExit}
           className="mt-3 text-[11px] font-black cursor-pointer active:scale-95 transition-all"
-          style={{ color: C.textMuted }}
+          style={{ color: M.textMuted }}
         >
           Salir al arcade
         </button>

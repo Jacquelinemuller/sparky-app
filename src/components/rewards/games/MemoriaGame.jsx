@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { audioService } from '../../../services/audioService';
 
-// ============================================
-// IMÁGENES DE LOS PARES
-// Los archivos van en: public/memoria/1.png ... 6.png
-// ============================================
 const IMAGES = [
   '/memoria/1.png',
   '/memoria/2.png',
@@ -14,9 +10,6 @@ const IMAGES = [
   '/memoria/6.png'
 ];
 
-// ============================================
-// COLORES ARCADE
-// ============================================
 const C = {
   bg: '#09090f',
   cardBack: '#1e1e36',
@@ -28,9 +21,6 @@ const C = {
   textMuted: '#94a3b8'
 };
 
-// ============================================
-// HELPERS
-// ============================================
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -48,9 +38,6 @@ function buildDeck() {
   }));
 }
 
-// ============================================
-// COMPONENTE
-// ============================================
 export default function MemoriaGame({ onExit }) {
   const [deck, setDeck] = useState(buildDeck);
   const [flipped, setFlipped] = useState([]);
@@ -149,93 +136,121 @@ export default function MemoriaGame({ onExit }) {
   // TABLERO
   // ============================================
   return (
-    <div className="w-full flex flex-col gap-3">
+    <div
+      className="w-full flex flex-col gap-3 relative rounded-3xl overflow-hidden p-3"
+      style={{
+        backgroundImage: 'url(/memoria/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100%'
+      }}
+    >
+      {/* O        {/* Overlay suave para legibilidad */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 30%, rgba(9,9,15,0.15) 0%, rgba(9,9,15,0.55) 100%)'
+        }}
+      />
 
-      {/* Barra superior */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onExit}
-          className="px-3 py-1.5 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 transition-all"
-          style={{
-            background: 'rgba(148, 163, 184, 0.12)',
-            color: C.textMuted,
-            border: '1px solid rgba(148, 163, 184, 0.2)'
-          }}
-        >
-          ← Volver
-        </button>
+      {/* Contenido sobre el fondo */}
+      <div className="relative z-10 flex flex-col gap-3">
 
-        <div
-          className="px-3 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1"
-          style={{
-            background: 'rgba(6, 182, 212, 0.12)',
-            color: C.cyanBright,
-            border: '1px solid rgba(6, 182, 212, 0.3)'
-          }}
-        >
-          <span>🎯</span>
-          <span>{moves} intentos</span>
+        {/* Barra superior */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onExit}
+            className="px-3 py-1.5 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 transition-all backdrop-blur-sm"
+            style={{
+              background: 'rgba(9, 9, 15, 0.6)',
+              color: C.textMuted,
+              border: '1px solid rgba(148, 163, 184, 0.3)'
+            }}
+          >
+            ← Volver
+          </button>
+
+          <div
+            className="px-3 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1 backdrop-blur-sm"
+            style={{
+              background: 'rgba(6, 182, 212, 0.25)',
+              color: C.cyanBright,
+              border: '1px solid rgba(6, 182, 212, 0.5)'
+            }}
+          >
+            <span>🎯</span>
+            <span>{moves} intentos</span>
+          </div>
         </div>
-      </div>
 
-      {/* Instrucción */}
-      <p className="text-center text-xs font-black" style={{ color: C.textMuted }}>
-        Encontrá los 6 pares ✨
-      </p>
+        {/* Instrucción */}
+        <p
+          className="text-center text-xs font-black"
+          style={{
+            color: C.text,
+            textShadow: '0 2px 6px rgba(0,0,0,0.8)'
+          }}
+        >
+          Encontrá los 6 pares ✨
+        </p>
 
-      {/* Grid */}
-      <div className="grid grid-cols-3 gap-2.5">
-        {deck.map((card, idx) => {
-          const isFlipped = flipped.includes(idx);
-          const isMatched = matched.includes(idx);
-          const showImage = isFlipped || isMatched;
+        {/* Grid */}
+        <div className="grid grid-cols-3 gap-2.5">
+          {deck.map((card, idx) => {
+            const isFlipped = flipped.includes(idx);
+            const isMatched = matched.includes(idx);
+            const showImage = isFlipped || isMatched;
 
-          return (
-            <button
-              key={card.id}
-              type="button"
-              onClick={() => handleCardClick(idx)}
-              className="aspect-square rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95 cursor-pointer p-1.5"
-              style={{
-                background: isMatched
-                  ? 'rgba(34, 197, 94, 0.15)'
-                  : showImage
-                  ? 'rgba(6, 182, 212, 0.12)'
-                  : C.cardBack,
-                border: `2px solid ${
-                  isMatched
-                    ? 'rgba(34, 197, 94, 0.6)'
+            return (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => handleCardClick(idx)}
+                className="aspect-square rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95 cursor-pointer backdrop-blur-sm"
+                style={{
+                  background: isMatched
+                    ? 'rgba(34, 197, 94, 0.35)'
                     : showImage
-                    ? 'rgba(6, 182, 212, 0.5)'
-                    : 'rgba(6, 182, 212, 0.2)'
-                }`,
-                boxShadow: isMatched
-                  ? '0 0 12px rgba(34, 197, 94, 0.4)'
-                  : showImage
-                  ? '0 0 10px rgba(6, 182, 212, 0.3)'
-                  : 'none',
-                opacity: isMatched ? 0.75 : 1
-              }}
-            >
-              {showImage ? (
-                <img
-                  src={card.img}
-                  alt=""
-                  className="w-full h-full object-contain rounded-xl"
-                  draggable={false}
-                />
-              ) : (
-                <span
-                  className="text-3xl font-black"
-                  style={{ color: 'rgba(6, 182, 212, 0.5)' }}
-                >
-                  ?
-                </span>
-              )}
-            </button>
-          );
-        })}
+                    ? 'rgba(6, 182, 212, 0.35)'
+                    : 'rgba(19, 19, 34, 0.75)',
+                  border: `2px solid ${
+                    isMatched
+                      ? 'rgba(34, 197, 94, 0.8)'
+                      : showImage
+                      ? 'rgba(6, 182, 212, 0.7)'
+                      : 'rgba(6, 182, 212, 0.35)'
+                  }`,
+                  boxShadow: isMatched
+                    ? '0 0 16px rgba(34, 197, 94, 0.5)'
+                    : showImage
+                    ? '0 0 12px rgba(6, 182, 212, 0.4)'
+                    : '0 4px 12px rgba(0, 0, 0, 0.4)',
+                  opacity: isMatched ? 0.85 : 1
+                }}
+              >
+                {showImage ? (
+                  <img
+                    src={card.img}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                ) : (
+                  <span
+                    className="text-3xl font-black"
+                    style={{ color: 'rgba(6, 182, 212, 0.6)' }}
+                  >
+                    ?
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
       </div>
     </div>
   );

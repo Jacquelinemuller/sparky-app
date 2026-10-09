@@ -42,7 +42,6 @@ function generateRound(colorCount) {
   const wordIdx = Math.floor(Math.random() * colorIds.length);
   let paintIdx = Math.floor(Math.random() * colorIds.length);
 
-  // Asegurar que la palabra y la pintura sean distintas (Stroop incongruente)
   while (paintIdx === wordIdx) {
     paintIdx = Math.floor(Math.random() * colorIds.length);
   }
@@ -60,22 +59,37 @@ function generateRound(colorCount) {
 }
 
 // ============================================
+// HELPERS DE COLOR (para botones glossy)
+// ============================================
+function lighten(hex, pct) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + pct);
+  const g = Math.min(255, ((num >> 8) & 0xff) + pct);
+  const b = Math.min(255, (num & 0xff) + pct);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+function darken(hex, pct) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, (num >> 16) - pct);
+  const g = Math.max(0, ((num >> 8) & 0xff) - pct);
+  const b = Math.max(0, (num & 0xff) - pct);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+// ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
 export default function StroopGame({ onExit }) {
   const [difficulty, setDifficulty] = useState(null);
-  const [gameState, setGameState] = useState('select'); // 'select' | 'tutorial' | 'playing' | 'results'
+  const [gameState, setGameState] = useState('select');
   const [round, setRound] = useState(null);
   const [roundIndex, setRoundIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
-  const [feedback, setFeedback] = useState(null); // { type: 'correct' | 'wrong' | 'timeout', correctId }
+  const [feedback, setFeedback] = useState(null);
 
   const timerRef = useRef(null);
   const feedbackTimeoutRef = useRef(null);
 
-  // ============================================
-  // INICIAR JUEGO
-  // ============================================
   const startGame = (levelId, skipTutorial = false) => {
     try { audioService.playPop(); } catch (e) {}
 
@@ -100,14 +114,10 @@ export default function StroopGame({ onExit }) {
     setGameState('playing');
   };
 
-  // ============================================
-  // RESPONDER
-  // ============================================
   const handleAnswer = useCallback(
     (colorId) => {
       if (!round || feedback) return;
 
-      const level = LEVELS[difficulty];
       const isCorrect = colorId === round.correctId;
 
       if (isCorrect) {
@@ -119,18 +129,14 @@ export default function StroopGame({ onExit }) {
         setFeedback({ type: 'wrong', correctId: round.correctId });
       }
 
-      // Avanzar después del feedback
       const delay = isCorrect ? 400 : 900;
       feedbackTimeoutRef.current = setTimeout(() => {
         advanceRound();
       }, delay);
     },
-    [round, feedback, difficulty]
+    [round, feedback]
   );
 
-  // ============================================
-  // AVANZAR RONDA
-  // ============================================
   const advanceRound = useCallback(() => {
     setFeedback(null);
 
@@ -138,7 +144,6 @@ export default function StroopGame({ onExit }) {
     const nextIndex = roundIndex + 1;
 
     if (nextIndex >= level.rounds) {
-      // Fin del juego
       try { audioService.playSuccess(); } catch (e) {}
       setGameState('results');
       return;
@@ -148,9 +153,6 @@ export default function StroopGame({ onExit }) {
     setRound(generateRound(level.colorCount));
   }, [roundIndex, difficulty]);
 
-  // ============================================
-  // TIMEOUT
-  // ============================================
   useEffect(() => {
     if (gameState !== 'playing' || !round || feedback) return;
 
@@ -171,9 +173,6 @@ export default function StroopGame({ onExit }) {
     };
   }, [gameState, round, feedback, difficulty, advanceRound]);
 
-  // ============================================
-  // LIMPIEZA
-  // ============================================
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -181,9 +180,6 @@ export default function StroopGame({ onExit }) {
     };
   }, []);
 
-  // ============================================
-  // RESET
-  // ============================================
   const handleRetry = () => {
     if (!difficulty) return;
     startGame(difficulty, true);
@@ -197,325 +193,445 @@ export default function StroopGame({ onExit }) {
   };
 
   // ============================================
-  // SELECTOR DE NIVEL
+  // SELECTOR DE NIVEL (con fondo)
   // ============================================
   if (gameState === 'select') {
     return (
-      <div className="w-full flex flex-col gap-4 items-center py-6 px-4">
-        <div className="text-5xl mb-2">🎨</div>
-        <h2 className="text-2xl font-black text-white">Stroop</h2>
-        <p className="text-xs font-bold text-center mb-4" style={{ color: C.textMuted }}>
-          Tocá el color de la pintura,<br />
-          no lo que dice la palabra.
-        </p>
-
-        <div className="w-full flex flex-col gap-2.5">
-          {Object.values(LEVELS).map((level) => (
-            <button
-              key={level.id}
-              type="button"
-              onClick={() => startGame(level.id)}
-              className="w-full p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all"
-              style={{
-                background: C.card,
-                border: `1.5px solid ${C.cyan}40`
-              }}
-            >
-              <span className="text-3xl">{level.emoji}</span>
-              <div className="flex flex-col flex-1 items-start">
-                <span className="text-sm font-black text-white">{level.label}</span>
-                <span className="text-[10px] font-bold" style={{ color: C.textMuted }}>
-                  {level.rounds} rondas · {level.colorCount} colores
-                  {level.timeLimit ? ` · ${level.timeLimit / 1000}s` : ' · sin tiempo'}
-                </span>
-              </div>
-              <span className="material-symbols-outlined text-[20px]" style={{ color: C.cyanBright }}>
-                arrow_forward
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={onExit}
-          className="mt-4 px-6 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
+      <div
+        className="w-full relative rounded-3xl overflow-hidden p-3"
+        style={{
+          backgroundImage: 'url(/memoria/fondo.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '100%'
+        }}
+      >
+        <div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'rgba(148, 163, 184, 0.12)',
-            color: C.textMuted,
-            border: '1px solid rgba(148, 163, 184, 0.2)'
+            background:
+              'radial-gradient(circle at 50% 30%, rgba(9,9,15,0.25) 0%, rgba(9,9,15,0.7) 100%)'
           }}
-        >
-          ← Volver al arcade
-        </button>
+        />
+
+        <div className="relative z-10 flex flex-col gap-4 items-center py-6 px-2">
+          <img
+            src="/games/stroop.png"
+            alt="Stroop"
+            className="w-24 h-24 object-contain mb-2"
+            draggable={false}
+          />
+          <h2 className="text-2xl font-black text-white">Stroop</h2>
+          <p className="text-xs font-bold text-center mb-4" style={{ color: C.textMuted }}>
+            Tocá el color de la pintura,<br />
+            no lo que dice la palabra.
+          </p>
+
+          <div className="w-full flex flex-col gap-2.5">
+            {Object.values(LEVELS).map((level) => (
+              <button
+                key={level.id}
+                type="button"
+                onClick={() => startGame(level.id)}
+                className="w-full p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all backdrop-blur-sm"
+                style={{
+                  background: 'rgba(19, 19, 34, 0.85)',
+                  border: `1.5px solid ${C.cyan}40`
+                }}
+              >
+                <span className="text-3xl">{level.emoji}</span>
+                <div className="flex flex-col flex-1 items-start">
+                  <span className="text-sm font-black text-white">{level.label}</span>
+                  <span className="text-[10px] font-bold" style={{ color: C.textMuted }}>
+                    {level.rounds} rondas · {level.colorCount} colores
+                    {level.timeLimit ? ` · ${level.timeLimit / 1000}s` : ' · sin tiempo'}
+                  </span>
+                </div>
+                <span className="material-symbols-outlined text-[20px]" style={{ color: C.cyanBright }}>
+                  arrow_forward
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={onExit}
+            className="mt-4 px-6 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all backdrop-blur-sm"
+            style={{
+              background: 'rgba(148, 163, 184, 0.2)',
+              color: C.textMuted,
+              border: '1px solid rgba(148, 163, 184, 0.3)'
+            }}
+          >
+            ← Volver al arcade
+          </button>
+        </div>
       </div>
     );
   }
 
   // ============================================
-  // TUTORIAL
+  // TUTORIAL (con fondo)
   // ============================================
   if (gameState === 'tutorial') {
     return (
-      <div className="w-full flex flex-col gap-4 items-center py-6 px-4">
-        <div className="text-5xl mb-2">👀</div>
-        <h2 className="text-xl font-black text-white text-center">
-          ¿Cómo se juega?
-        </h2>
-
-        {/* Ejemplo */}
+      <div
+        className="w-full relative rounded-3xl overflow-hidden p-3"
+        style={{
+          backgroundImage: 'url(/memoria/fondo.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '100%'
+        }}
+      >
         <div
-          className="w-full p-6 rounded-3xl flex flex-col items-center gap-4"
+          className="absolute inset-0 pointer-events-none"
           style={{
-            background: C.card,
-            border: `1.5px solid ${C.cyan}40`
+            background:
+              'radial-gradient(circle at 50% 30%, rgba(9,9,15,0.25) 0%, rgba(9,9,15,0.7) 100%)'
           }}
-        >
-          <span
-            className="text-[64px] leading-none font-black tracking-wider"
-            style={{
-              color: COLORS.azul.hex,
-              textShadow: '0 2px 12px rgba(0,0,0,0.4)'
-            }}
-          >
-            ROJO
-          </span>
+        />
+
+        <div className="relative z-10 flex flex-col gap-4 items-center py-6 px-2">
+          <div className="text-5xl mb-2">👀</div>
+          <h2 className="text-xl font-black text-white text-center">
+            ¿Cómo se juega?
+          </h2>
 
           <div
-            className="w-full p-3 rounded-xl flex flex-col items-center gap-1"
+            className="w-full p-6 rounded-3xl flex flex-col items-center gap-4 backdrop-blur-sm"
             style={{
-              background: 'rgba(6, 182, 212, 0.08)',
-              border: '1px solid rgba(6, 182, 212, 0.25)'
+              background: 'rgba(19, 19, 34, 0.85)',
+              border: `1.5px solid ${C.cyan}40`
             }}
           >
-            <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.textMuted }}>
-              La palabra dice "ROJO"
+            <span
+              className="text-[64px] leading-none font-black tracking-wider"
+              style={{
+                color: COLORS.azul.hex,
+                textShadow: '0 2px 12px rgba(0,0,0,0.4)'
+              }}
+            >
+              ROJO
             </span>
-            <span className="text-[11px] font-black" style={{ color: C.cyanBright }}>
-              pero está pintada de AZUL 🔵
-            </span>
-            <span className="text-[11px] font-black mt-1" style={{ color: C.limeBright }}>
-              👉 Tocá el botón AZUL
-            </span>
+
+            <div
+              className="w-full p-3 rounded-xl flex flex-col items-center gap-1"
+              style={{
+                background: 'rgba(6, 182, 212, 0.08)',
+                border: '1px solid rgba(6, 182, 212, 0.25)'
+              }}
+            >
+              <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.textMuted }}>
+                La palabra dice "ROJO"
+              </span>
+              <span className="text-[11px] font-black" style={{ color: C.cyanBright }}>
+                pero está pintada de AZUL 🔵
+              </span>
+              <span className="text-[11px] font-black mt-1" style={{ color: C.limeBright }}>
+                👉 Tocá el botón AZUL
+              </span>
+            </div>
           </div>
-        </div>
 
-        <p className="text-xs font-bold text-center" style={{ color: C.textMuted }}>
-          Tu cerebro va a querer leer la palabra.<br />
-          Tenés que <strong style={{ color: C.cyanBright }}>ignorarla</strong> y mirar solo el color.
-        </p>
+          <p className="text-xs font-bold text-center" style={{ color: C.textMuted }}>
+            Tu cerebro va a querer leer la palabra.<br />
+            Tenés que <strong style={{ color: C.cyanBright }}>ignorarla</strong> y mirar solo el color.
+          </p>
 
-        <div className="flex gap-2 w-full mt-2">
-          <button
-            type="button"
-            onClick={handleChangeLevel}
-            className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
-            style={{
-              background: 'rgba(148, 163, 184, 0.12)',
-              color: C.textMuted,
-              border: '1px solid rgba(148, 163, 184, 0.2)'
-            }}
-          >
-            ← Nivel
-          </button>
-          <button
-            type="button"
-            onClick={beginPlayAfterTutorial}
-            className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
-            style={{
-              background: `linear-gradient(135deg, ${C.lime} 0%, ${C.limeBright} 100%)`,
-              color: '#000',
-              boxShadow: `0 0 16px ${C.lime}80`
-            }}
-          >
-            ¡Entendido!
-          </button>
+          <div className="flex gap-2 w-full mt-2">
+            <button
+              type="button"
+              onClick={handleChangeLevel}
+              className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all backdrop-blur-sm"
+              style={{
+                background: 'rgba(148, 163, 184, 0.2)',
+                color: C.textMuted,
+                border: '1px solid rgba(148, 163, 184, 0.3)'
+              }}
+            >
+              ← Nivel
+            </button>
+            <button
+              type="button"
+              onClick={beginPlayAfterTutorial}
+              className="flex-1 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
+              style={{
+                background: `linear-gradient(135deg, ${C.lime} 0%, ${C.limeBright} 100%)`,
+                color: '#000',
+                boxShadow: `0 0 16px ${C.lime}80`
+              }}
+            >
+              ¡Entendido!
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   // ============================================
-  // JUEGO
+  // JUEGO (con fondo)
   // ============================================
   const level = LEVELS[difficulty];
   const progress = ((roundIndex + 1) / level.rounds) * 100;
   const activeColorIds = Object.keys(COLORS).slice(0, level.colorCount);
 
   return (
-    <div className="w-full flex flex-col gap-3 select-none">
+    <div
+      className="w-full relative rounded-3xl overflow-hidden p-3 select-none"
+      style={{
+        backgroundImage: 'url(/memoria/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100%'
+      }}
+    >
+      {/* Overlay suave */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 30%, rgba(9,9,15,0.25) 0%, rgba(9,9,15,0.7) 100%)'
+        }}
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={handleChangeLevel}
-          className="px-3 py-1.5 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 transition-all"
+      <div className="relative z-10 flex flex-col gap-3">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handleChangeLevel}
+            className="px-3 py-1.5 rounded-xl text-[11px] font-black cursor-pointer active:scale-95 transition-all backdrop-blur-sm"
+            style={{
+              background: 'rgba(9, 9, 15, 0.6)',
+              color: C.textMuted,
+              border: '1px solid rgba(148, 163, 184, 0.3)'
+            }}
+          >
+            ← Nivel
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span
+              className="px-2 py-1 rounded-full text-[10px] font-black backdrop-blur-sm"
+              style={{
+                background: 'rgba(6, 182, 212, 0.25)',
+                color: C.cyanBright,
+                border: '1px solid rgba(6, 182, 212, 0.5)'
+              }}
+            >
+              {roundIndex + 1}/{level.rounds}
+            </span>
+            <span
+              className="px-2 py-1 rounded-full text-[10px] font-black backdrop-blur-sm"
+              style={{
+                background: 'rgba(34, 197, 94, 0.25)',
+                color: C.limeBright,
+                border: '1px solid rgba(34, 197, 94, 0.5)'
+              }}
+            >
+              ✅ {correct}
+            </span>
+          </div>
+        </div>
+
+        {/* Barra de progreso */}
+        <div
+          className="w-full h-1.5 rounded-full overflow-hidden"
+          style={{ background: 'rgba(148, 163, 184, 0.15)' }}
+        >
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${progress}%`,
+              background: `linear-gradient(90deg, ${C.cyan} 0%, ${C.limeBright} 100%)`,
+              boxShadow: `0 0 10px ${C.cyan}80`
+            }}
+          />
+        </div>
+
+        {/* Instrucción */}
+        <p
+          className="text-center text-xs font-black"
           style={{
-            background: 'rgba(148, 163, 184, 0.12)',
-            color: C.textMuted,
-            border: '1px solid rgba(148, 163, 184, 0.2)'
+            color: C.text,
+            textShadow: '0 2px 6px rgba(0,0,0,0.8)'
           }}
         >
-          ← Nivel
-        </button>
+          Tocá el color de la pintura
+        </p>
 
-        <div className="flex items-center gap-2">
-          <span
-            className="px-2 py-1 rounded-full text-[10px] font-black"
-            style={{
-              background: 'rgba(6, 182, 212, 0.15)',
-              color: C.cyanBright,
-              border: '1px solid rgba(6, 182, 212, 0.4)'
-            }}
-          >
-            {roundIndex + 1}/{level.rounds}
-          </span>
-          <span
-            className="px-2 py-1 rounded-full text-[10px] font-black"
-            style={{
-              background: 'rgba(34, 197, 94, 0.15)',
-              color: C.limeBright,
-              border: '1px solid rgba(34, 197, 94, 0.4)'
-            }}
-          >
-            ✅ {correct}
-          </span>
-        </div>
-      </div>
-
-      {/* Barra de progreso */}
-      <div
-        className="w-full h-1.5 rounded-full overflow-hidden"
-        style={{ background: 'rgba(148, 163, 184, 0.15)' }}
-      >
+        {/* Palabra */}
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="w-full rounded-3xl flex items-center justify-center relative overflow-hidden"
           style={{
-            width: `${progress}%`,
-            background: `linear-gradient(90deg, ${C.cyan} 0%, ${C.limeBright} 100%)`,
-            boxShadow: `0 0 10px ${C.cyan}80`
+            background: 'rgba(19, 19, 34, 0.35)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: `1.5px solid ${C.cardBorder}`,
+            minHeight: '220px',
+            padding: '24px'
           }}
-        />
-      </div>
+        >
+          {round && (
+            <span
+              className="font-black leading-none tracking-tight text-center"
+              style={{
+                fontSize: 'clamp(48px, 14vw, 84px)',
+                color: round.paintColorHex,
+                textShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                transition: 'color 0.15s'
+              }}
+            >
+              {round.word}
+            </span>
+          )}
 
-      {/* Instrucción */}
-      <p className="text-center text-xs font-black" style={{ color: C.textMuted }}>
-        Tocá el color de la pintura
-      </p>
+          {feedback && (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              style={{
+                background:
+                  feedback.type === 'correct'
+                    ? 'rgba(34, 197, 94, 0.15)'
+                    : 'rgba(255, 45, 135, 0.15)',
+                animation: 'feedbackFade 0.5s ease-out'
+              }}
+            >
+              <span className="text-6xl">
+                {feedback.type === 'correct' ? '✅' : feedback.type === 'timeout' ? '⏰' : '❌'}
+              </span>
+            </div>
+          )}
+        </div>
 
-      {/* Palabra */}
-      <div
-        className="w-full rounded-3xl flex items-center justify-center relative overflow-hidden"
-        style={{
-          background: C.card,
-          border: `1.5px solid ${C.cardBorder}`,
-          minHeight: '220px',
-          padding: '24px'
-        }}
-      >
-        {round && (
-          <span
-            className="font-black leading-none tracking-tight text-center"
-            style={{
-              fontSize: 'clamp(48px, 14vw, 84px)',
-              color: round.paintColorHex,
-              textShadow: '0 4px 16px rgba(0,0,0,0.5)',
-              transition: 'color 0.15s'
-            }}
-          >
-            {round.word}
-          </span>
-        )}
-
-        {/* Overlay de feedback */}
-        {feedback && (
+        {/* Corrección visual */}
+        {feedback && feedback.type !== 'correct' && (
           <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            className="w-full px-3 py-2 rounded-xl flex items-center gap-2 justify-center backdrop-blur-sm"
             style={{
-              background:
-                feedback.type === 'correct'
-                  ? 'rgba(34, 197, 94, 0.15)'
-                  : 'rgba(255, 45, 135, 0.15)',
-              animation: 'feedbackFade 0.5s ease-out'
+              background: 'rgba(255, 45, 135, 0.15)',
+              border: '1px solid rgba(255, 45, 135, 0.4)'
             }}
           >
-            <span className="text-6xl">
-              {feedback.type === 'correct' ? '✅' : feedback.type === 'timeout' ? '⏰' : '❌'}
+            <span className="text-[11px] font-black" style={{ color: C.textMuted }}>
+              {feedback.type === 'timeout' ? 'Se acabó el tiempo ·' : 'Era ·'}
+            </span>
+            <span
+              className="text-[12px] font-black px-2 py-0.5 rounded-full"
+              style={{
+                background: COLORS[feedback.correctId].hex,
+                color: '#fff',
+                boxShadow: `0 0 12px ${COLORS[feedback.correctId].hex}80`
+              }}
+            >
+              {COLORS[feedback.correctId].label}
             </span>
           </div>
         )}
-      </div>
 
-      {/* Corrección visual */}
-      {feedback && feedback.type !== 'correct' && (
-        <div
-          className="w-full px-3 py-2 rounded-xl flex items-center gap-2 justify-center"
-          style={{
-            background: 'rgba(255, 45, 135, 0.08)',
-            border: '1px solid rgba(255, 45, 135, 0.3)'
-          }}
-        >
-          <span className="text-[11px] font-black" style={{ color: C.textMuted }}>
-            {feedback.type === 'timeout' ? 'Se acabó el tiempo ·' : 'Era ·'}
-          </span>
-          <span
-            className="text-[12px] font-black px-2 py-0.5 rounded-full"
-            style={{
-              background: COLORS[feedback.correctId].hex,
-              color: '#fff',
-              boxShadow: `0 0 12px ${COLORS[feedback.correctId].hex}80`
-            }}
-          >
-            {COLORS[feedback.correctId].label}
-          </span>
-        </div>
-      )}
+        {/* Botones de color — estilo glossy 3D */}
+                {/* Botones de color — glossy con vetas */}
+        <div className="flex flex-wrap justify-center gap-2 mt-1">
+          {activeColorIds.map((colorId) => {
+            const color = COLORS[colorId];
+            const isTheCorrectOne = feedback && feedback.correctId === colorId;
+            const isWrongChoice =
+              feedback &&
+              feedback.type !== 'correct' &&
+              feedback.correctId !== colorId;
 
-      {/* Botones de color */}
-      <div className="grid grid-cols-4 gap-2 mt-1">
-        {activeColorIds.map((colorId) => {
-          const color = COLORS[colorId];
-          const isTheCorrectOne = feedback && feedback.correctId === colorId;
-          const isWrongChoice =
-            feedback &&
-            feedback.type !== 'correct' &&
-            feedback.correctId !== colorId;
+            const topColor = lighten(color.hex, 50);
+            const bottomColor = darken(color.hex, 30);
+            const deepColor = darken(color.hex, 90);
 
-          return (
-            <button
-              key={colorId}
-              type="button"
-              onClick={() => handleAnswer(colorId)}
-              disabled={!!feedback}
-              className="rounded-2xl font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center"
-              style={{
-                background: isTheCorrectOne ? color.hex : 'rgba(148, 163, 184, 0.08)',
-                border: `2px solid ${color.hex}`,
-                height: '70px',
-                opacity: isWrongChoice ? 0.4 : 1,
-                boxShadow: isTheCorrectOne ? `0 0 24px ${color.hex}` : 'none',
-                transform: isTheCorrectOne ? 'scale(1.08)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }}
-              aria-label={color.label}
-            >
-              <span
-                className="w-8 h-8 rounded-full"
+            return (
+                            <button
+                key={colorId}
+                type="button"
+                onClick={() => handleAnswer(colorId)}
+                disabled={!!feedback}
+                className="rounded-2xl font-black transition-all cursor-pointer active:translate-y-1 flex items-center justify-center relative overflow-hidden"
                 style={{
-                  background: color.hex,
-                  boxShadow: `inset 0 0 12px rgba(0,0,0,0.3)`
+                  flex: '1 1 0',
+                  minWidth: '70px',
+                  maxWidth: '110px',
+                  height: '105px',
+                  backgroundImage: 'url(/memoria/fondo.png)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: `2px solid ${deepColor}`,
+                  opacity: isWrongChoice ? 0.4 : 1,
+                  boxShadow: isTheCorrectOne
+                    ? `0 0 0 4px #fff, 0 6px 0 0 ${deepColor}, 0 0 32px ${color.hex}`
+                    : `0 6px 0 0 ${deepColor}, 0 8px 16px rgba(0,0,0,0.4)`,
+                  transform: isTheCorrectOne ? 'scale(1.05) translateY(-2px)' : 'scale(1)',
+                  transition: 'all 0.15s'
                 }}
-              />
-            </button>
-          );
-        })}
-      </div>
+                aria-label={color.label}
+              >
+                {/* Tinte de color sobre la madera */}
+                <span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: color.hex,
+                    mixBlendMode: 'color',
+                    opacity: 0.85
+                  }}
+                />
+                <span
+                  className="absolute pointer-events-none"
+                  style={{
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '45%',
+                    background: `linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 100%)`,
+                    borderTopLeftRadius: '14px',
+                    borderTopRightRadius: '14px'
+                  }}
+                />
 
-      {/* Instrucción inferior */}
-      <p className="text-center text-[10px] font-bold mt-1" style={{ color: C.textMuted }}>
-        🔵 Azul · 🔴 Rojo · 🟢 Verde · 🟡 Amarillo
-      </p>
+                <span
+                  className="absolute pointer-events-none"
+                  style={{
+                    top: '8px',
+                    left: '12px',
+                    width: '22px',
+                    height: '14px',
+                    background: 'radial-gradient(ellipse, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(-20deg)'
+                  }}
+                />
+
+                <span
+                  className="relative z-10 font-black"
+                  style={{
+                    fontSize: '13px',
+                    color: '#fff',
+                    textShadow: `0 2px 0 ${deepColor}, 0 3px 6px rgba(0,0,0,0.5)`,
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  {color.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-center text-[10px] font-bold mt-1" style={{ color: C.textMuted }}>
+          🔵 Azul · 🔴 Rojo · 🟢 Verde · 🟡 Amarillo
+        </p>
+
+      </div>
 
       {/* Modal de resultados */}
       {gameState === 'results' && (
@@ -579,9 +695,7 @@ function ResultsModal({ correct, total, onRetry, onChangeLevel, onExit }) {
       >
         <span className="text-6xl mb-3">{emoji}</span>
 
-        <h2 className="text-2xl font-black text-white mb-2">
-          {title}
-        </h2>
+        <h2 className="text-2xl font-black text-white mb-2">{title}</h2>
 
         <p className="text-sm font-bold mb-4" style={{ color: C.textMuted }}>
           {message}

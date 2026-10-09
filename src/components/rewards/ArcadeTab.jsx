@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import StroopGame from './games/StroopGame';
-import SequencesGame from './games/SequencesGame';
 import { useApp } from '../../context/AppContext';
 import { audioService } from '../../services/audioService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
@@ -9,6 +7,9 @@ import MemoriaGame from './games/MemoriaGame';
 import SimonGame from './games/SimonGame';
 import MinesweeperGame from './games/MinesweeperGame';
 import MazeGame from './games/MazeGame';
+import StroopGame from './games/StroopGame';
+import SequencesGame from './games/SequencesGame';
+import SudokuGame from './games/SudokuGame';
 import ChestModal from './ChestModal';
 import GameTimer, { GameTimeUpModal } from './GameTimer';
 
@@ -45,14 +46,7 @@ export default function ArcadeTab() {
       setTimeout(() => setFeedback(null), 3500);
       return;
     }
-    if (game.id === 'sequences') {
-  setActiveGame('sequences');
-  return;
-}
-if (game.id === 'sequences') {
-  setActiveGame('sequences');
-  return;
-}
+
     if (game.id === 'memory') {
       setActiveGame('memory');
       return;
@@ -72,10 +66,21 @@ if (game.id === 'sequences') {
       setActiveGame('maze');
       return;
     }
+
     if (game.id === 'stroop') {
-  setActiveGame('stroop');
-  return;
-}
+      setActiveGame('stroop');
+      return;
+    }
+
+    if (game.id === 'sequences') {
+      setActiveGame('sequences');
+      return;
+    }
+
+    if (game.id === 'sudoku4') {
+      setActiveGame('sudoku4');
+      return;
+    }
 
     setFeedback(`¡${game.label} próximamente! 🎮`);
     setTimeout(() => setFeedback(null), 3000);
@@ -113,13 +118,13 @@ if (game.id === 'sequences') {
           dailySecondsLeft={session.dailySecondsLeft}
           onExit={handleExitGame}
         />
-        
         {activeGame === 'memory' && <MemoriaGame onExit={handleExitGame} />}
         {activeGame === 'simon' && <SimonGame onExit={handleExitGame} />}
         {activeGame === 'minesweeper' && <MinesweeperGame onExit={handleExitGame} />}
         {activeGame === 'maze' && <MazeGame onExit={handleExitGame} />}
         {activeGame === 'stroop' && <StroopGame onExit={handleExitGame} />}
         {activeGame === 'sequences' && <SequencesGame onExit={handleExitGame} />}
+        {activeGame === 'sudoku4' && <SudokuGame onExit={handleExitGame} />}
       </div>
     );
   }
@@ -256,34 +261,38 @@ function GameCard({ game, isUnlocked, balance, onPlay }) {
   }
 
   const canPlay = isUnlocked && balance > 0;
+  const gameColor = game.color || '#22c55e';
 
   return (
     <div
       className="flex flex-col justify-between p-3 rounded-2xl transition-all"
       style={{
-        background: isUnlocked ? 'rgba(34, 197, 94, 0.06)' : 'rgba(19, 19, 34, 0.55)',
+        background: isUnlocked
+          ? `${gameColor}12`
+          : 'rgba(19, 19, 34, 0.55)',
         border: `1.5px solid ${
-          isUnlocked ? 'rgba(34, 197, 94, 0.4)' : 'rgba(148, 163, 184, 0.15)'
+          isUnlocked
+            ? `${gameColor}66`
+            : 'rgba(148, 163, 184, 0.15)'
         }`,
         opacity: isUnlocked ? 1 : 0.7
       }}
     >
-            <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-2">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center relative overflow-hidden"
+          className="w-14 h-14 flex items-center justify-center relative"
           style={{
-            background: isUnlocked ? 'rgba(34, 197, 94, 0.12)' : 'rgba(148, 163, 184, 0.06)',
             filter: isUnlocked ? 'none' : 'grayscale(1)'
           }}
         >
           <img
             src={game.icon}
             alt={game.label}
-            className="w-full h-full object-contain p-1.5"
+            className="w-full h-full object-contain"
             draggable={false}
           />
           {!isUnlocked && (
-            <span className="absolute inset-0 flex items-center justify-center text-lg bg-black/40">
+            <span className="absolute inset-0 flex items-center justify-center text-lg">
               🔒
             </span>
           )}
@@ -291,6 +300,7 @@ function GameCard({ game, isUnlocked, balance, onPlay }) {
 
         {badge}
       </div>
+
       <div className="mb-3">
         <h4
           className="text-sm font-black leading-tight mb-0.5"
