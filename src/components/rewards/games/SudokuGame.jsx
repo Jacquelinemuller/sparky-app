@@ -2,10 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { audioService } from '../../../services/audioService';
 
 // ============================================
-// PALETA — Basada en el logo (violeta + papiro + números negros)
+// PALETA
 // ============================================
 const P = {
-  // Marco violeta exterior
   frameTop: '#d8b4fe',
   frameMid: '#a855f7',
   frameBot: '#7e22ce',
@@ -13,68 +12,40 @@ const P = {
   frameBorder: '#3b0764',
   frameHighlight: 'rgba(255,255,255,0.7)',
 
-  // Papiro / Scroll de las celdas — 50% transparente
   scrollLight: 'rgba(254, 243, 213, 0.5)',
   scrollMid: 'rgba(245, 230, 184, 0.5)',
   scrollDark: 'rgba(232, 213, 160, 0.5)',
   scrollDeep: 'rgba(184, 153, 104, 0.5)',
   scrollBorder: 'rgba(139, 111, 71, 0.75)',
 
-  // Tinta (números negros serif)
   ink: '#1a1a1a',
 
-  // Acentos
   cyan: '#06b6d4',
   cyanBright: '#38bdf8',
   limeBright: '#4ade80',
   violet: '#a855f7',
   violetBright: '#c084fc',
   amber: '#facc15',
-  magenta: '#ff2d87'
+  magenta: '#ff2d87',
+
+  // Líneas de la cuadrícula
+  gridLine: '#502910',
+  gridLineGlow: 'rgba(192, 132, 252, 0.75)'
 };
 
-// ============================================
-// NIVELES — con colores
-// ============================================
+const NUMBER_COLORS = {
+  1: '#1a1a1a',
+  2: '#1a1a1a',
+  3: '#1a1a1a',
+  4: '#1a1a1a'
+};
+
 const LEVELS = {
-  facil: {
-    id: 'facil',
-    label: 'Fácil',
-    puzzles: 3,
-    clues: 8,
-    colorTop: '#86efac',
-    colorMid: '#22c55e',
-    colorBot: '#15803d',
-    colorDeep: '#052e16',
-    colorBorder: '#14532d'
-  },
-  medio: {
-    id: 'medio',
-    label: 'Medio',
-    puzzles: 4,
-    clues: 6,
-    colorTop: '#fde68a',
-    colorMid: '#f59e0b',
-    colorBot: '#b45309',
-    colorDeep: '#451a03',
-    colorBorder: '#78350f'
-  },
-  dificil: {
-    id: 'dificil',
-    label: 'Difícil',
-    puzzles: 5,
-    clues: 5,
-    colorTop: '#fca5a5',
-    colorMid: '#ef4444',
-    colorBot: '#991b1b',
-    colorDeep: '#450a0a',
-    colorBorder: '#7f1d1d'
-  }
+  facil: { id: 'facil', label: 'Fácil', puzzles: 3, clues: 8, colorTop: '#86efac', colorMid: '#22c55e', colorBot: '#15803d', colorDeep: '#052e16', colorBorder: '#14532d' },
+  medio: { id: 'medio', label: 'Medio', puzzles: 4, clues: 6, colorTop: '#fde68a', colorMid: '#f59e0b', colorBot: '#b45309', colorDeep: '#451a03', colorBorder: '#78350f' },
+  dificil: { id: 'dificil', label: 'Difícil', puzzles: 5, clues: 5, colorTop: '#fca5a5', colorMid: '#ef4444', colorBot: '#991b1b', colorDeep: '#450a0a', colorBorder: '#7f1d1d' }
 };
 
-// ============================================
-// SOLUCIONES BASE
-// ============================================
 const BASE_SOLUTIONS = [
   [[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]],
   [[1,2,3,4],[4,3,2,1],[2,1,4,3],[3,4,1,2]],
@@ -390,7 +361,6 @@ export default function SudokuGame({ onExit }) {
                   mixBlendMode: 'overlay'
                 }}
               />
-
               <span
                 className="w-14 h-14 rounded-full relative z-10 flex-shrink-0"
                 style={{
@@ -403,7 +373,6 @@ export default function SudokuGame({ onExit }) {
                   `
                 }}
               />
-
               <div className="flex flex-col flex-1 items-start relative z-10">
                 <span
                   className="text-base font-black"
@@ -424,7 +393,6 @@ export default function SudokuGame({ onExit }) {
                   {level.puzzles} puzzles · {level.clues} pistas
                 </span>
               </div>
-
               <span
                 className="relative z-10 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"
                 style={{
@@ -654,7 +622,7 @@ export default function SudokuGame({ onExit }) {
         Completá el Sudoku
       </p>
 
-      {/* Marco violeta + fondo de madera + celdas de papiro */}
+      {/* Marco violeta + fondo de madera + grid con líneas */}
       <div className="w-full flex items-center justify-center">
         <div
           className="p-3 rounded-3xl"
@@ -673,101 +641,138 @@ export default function SudokuGame({ onExit }) {
             aspectRatio: '1 / 1'
           }}
         >
-          {/* Fondo de madera */}
+          {/* Contenedor relativo para posicionar el overlay de líneas */}
           <div
-            className="grid grid-cols-4 rounded-2xl overflow-hidden relative"
-            style={{
-              backgroundImage: 'url(/memoria/fondo.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              width: '100%',
-              height: '100%',
-              padding: '8px',
-              gap: '4px'
-            }}
+            className="relative rounded-2xl overflow-hidden"
+            style={{ width: '100%', height: '100%' }}
           >
-            {grid.map((row, r) =>
-              row.map((cell, c) => {
-                const isSelected =
-                  selectedCell && selectedCell.row === r && selectedCell.col === c;
+            {/* Grid con las celdas */}
+            <div
+              className="grid grid-cols-4"
+              style={{
+                backgroundImage: 'url(/memoria/fondo.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                width: '100%',
+                height: '100%',
+                padding: '8px',
+                gap: '4px'
+              }}
+            >
+              {grid.map((row, r) =>
+                row.map((cell, c) => {
+                  const isSelected =
+                    selectedCell && selectedCell.row === r && selectedCell.col === c;
 
-                const isQuadrantTop = r === 2;
-                const isQuadrantLeft = c === 2;
+                  let bg;
+                  let borderColor = P.scrollBorder;
+                  let shadowInside =
+                    'inset 0 2px 3px rgba(139, 111, 71, 0.15), inset 0 -2px 3px rgba(255,255,255,0.3)';
 
-                // Colores de la celda — papiro como el logo
-                let bg;
-                let borderColor = P.scrollBorder;
-                let shadowInside = 'inset 0 2px 3px rgba(139, 111, 71, 0.2), inset 0 -2px 3px rgba(255,255,255,0.5)';
+                  if (cell.isWrong) {
+                    bg = `linear-gradient(180deg, rgba(254, 226, 226, 0.5) 0%, rgba(252, 165, 165, 0.5) 100%)`;
+                    borderColor = '#dc2626';
+                    shadowInside = 'inset 0 2px 6px rgba(220, 38, 38, 0.4)';
+                  } else if (isSelected) {
+                    bg = `linear-gradient(180deg, rgba(219, 234, 254, 0.5) 0%, rgba(147, 197, 253, 0.5) 100%)`;
+                    borderColor = '#1d4ed8';
+                    shadowInside = 'inset 0 2px 6px rgba(29, 78, 216, 0.4)';
+                  } else if (cell.isFixed) {
+                    bg = `linear-gradient(180deg, rgba(245, 230, 184, 0.5) 0%, rgba(232, 213, 160, 0.5) 100%)`;
+                  } else {
+                    bg = `linear-gradient(180deg, rgba(254, 243, 213, 0.5) 0%, rgba(245, 230, 184, 0.5) 100%)`;
+                  }
 
-                if (cell.isWrong) {
-                  bg = `linear-gradient(180deg, #fee2e2 0%, #fca5a5 100%)`;
-                  borderColor = '#b91c1c';
-                  shadowInside = 'inset 0 2px 6px rgba(185, 28, 28, 0.4)';
-                } else if (isSelected) {
-                  bg = `linear-gradient(180deg, #dbeafe 0%, #93c5fd 100%)`;
-                  borderColor = '#1d4ed8';
-                  shadowInside = 'inset 0 2px 6px rgba(29, 78, 216, 0.4)';
-                } else if (cell.isFixed) {
-                  bg = `linear-gradient(180deg, ${P.scrollMid} 0%, ${P.scrollDark} 100%)`;
-                } else {
-                  bg = `linear-gradient(180deg, ${P.scrollLight} 0%, ${P.scrollMid} 100%)`;
-                }
+                  return (
+                    <button
+                      key={`${r}-${c}`}
+                      type="button"
+                      onClick={() => handleCellClick(r, c)}
+                      disabled={cell.isFixed}
+                      className="rounded-md flex items-center justify-center transition-all select-none active:scale-95"
+                      style={{
+                        aspectRatio: '1 / 1',
+                        background: bg,
+                        border: `1px solid ${borderColor}`,
+                        boxShadow: shadowInside,
+                        cursor: cell.isFixed ? 'default' : 'pointer'
+                      }}
+                    >
+                      {cell.value ? (
+                        <span
+                          className="font-black"
+                          style={{
+                            fontSize: 'clamp(24px, 7vw, 34px)',
+                            color: cell.isWrong ? '#991b1b' : P.ink,
+                            fontFamily: 'Georgia, serif',
+                            lineHeight: 1
+                          }}
+                        >
+                          {cell.value}
+                        </span>
+                      ) : (
+                        <span
+                          className="font-black"
+                          style={{
+                            fontSize: 'clamp(20px, 6vw, 26px)',
+                            color: P.ink,
+                            opacity: 0.35,
+                            fontFamily: 'Georgia, serif',
+                            lineHeight: 1
+                          }}
+                        >
+                          ?
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
 
-                return (
-                  <button
-                    key={`${r}-${c}`}
-                    type="button"
-                    onClick={() => handleCellClick(r, c)}
-                    disabled={cell.isFixed}
-                    className="rounded-md flex items-center justify-center transition-all select-none active:scale-95"
-                    style={{
-                      aspectRatio: '1 / 1',
-                      background: bg,
-                      borderTopWidth: isQuadrantTop ? '3px' : '1.5px',
-                      borderLeftWidth: isQuadrantLeft ? '3px' : '1.5px',
-                      borderRightWidth: '1.5px',
-                      borderBottomWidth: '1.5px',
-                      borderStyle: 'solid',
-                      borderColor,
-                      boxShadow: shadowInside,
-                      cursor: cell.isFixed ? 'default' : 'pointer'
-                    }}
-                  >
-                    {cell.value ? (
-                      <span
-                        className="font-black"
-                        style={{
-                          fontSize: 'clamp(24px, 7vw, 34px)',
-                          color: cell.isWrong ? '#991b1b' : P.ink,
-                          fontFamily: 'Georgia, serif',
-                          lineHeight: 1
-                        }}
-                      >
-                        {cell.value}
-                      </span>
-                    ) : (
-                      <span
-                        className="font-black"
-                        style={{
-                          fontSize: 'clamp(20px, 6vw, 26px)',
-                          color: P.ink,
-                          opacity: 0.35,
-                          fontFamily: 'Georgia, serif',
-                          lineHeight: 1
-                        }}
-                      >
-                        ?
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
+            {/* Overlay con las líneas de cuadrícula */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                inset: '8px',
+                zIndex: 3
+              }}
+            >
+              {/* Línea horizontal (centro) */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: '50%',
+                  height: '3px',
+                  transform: 'translateY(-50%)',
+                  background: P.gridLine,
+                  borderRadius: '3px',
+                  boxShadow: `0 0 12px ${P.gridLineGlow}`
+                }}
+              />
+              {/* Línea vertical (centro) */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: '50%',
+                  width: '3px',
+                  transform: 'translateX(-50%)',
+                  background: P.gridLine,
+                  borderRadius: '3px',
+                  boxShadow: `0 0 12px ${P.gridLineGlow}`
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Botones de números — estilo papiro */}
+      {/* Botones de números 1-4 */}
+           {/* Botones de números 1-4 */}
       <div className="flex justify-center gap-3 mt-1">
         {[1, 2, 3, 4].map((n) => (
           <button
@@ -775,23 +780,40 @@ export default function SudokuGame({ onExit }) {
             type="button"
             onClick={() => handleNumberClick(n)}
             disabled={!selectedCell}
-            className="w-16 h-16 rounded-xl flex items-center justify-center font-black transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-16 h-16 flex items-center justify-center font-black transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
             style={{
-              background: `linear-gradient(180deg, ${P.scrollLight} 0%, ${P.scrollMid} 100%)`,
-              border: `2px solid ${P.scrollBorder}`,
+              backgroundImage: 'url(/memoria/fondo.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              border: `2px solid #7e22ce`,
               boxShadow: `
-                inset 0 3px 6px rgba(255,255,255,0.7),
-                inset 0 -4px 6px rgba(139, 111, 71, 0.3),
-                0 4px 0 ${P.scrollDeep}
+                inset 0 3px 6px rgba(255, 255, 255, 0.4),
+                inset 0 -4px 6px rgba(88, 28, 135, 0.5),
+                0 4px 0 #581c87
               `
             }}
           >
+            {/* Highlight superior */}
             <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '45%',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)'
+              }}
+            />
+
+            {/* Número */}
+            <span
+              className="relative z-10"
               style={{
                 fontSize: '30px',
-                color: P.ink,
+                color: '#1a1a1a',
                 fontFamily: 'Georgia, serif',
-                lineHeight: 1
+                lineHeight: 1,
+                textShadow: '0 1px 2px rgba(255,255,255,0.7), 0 0 4px rgba(255,255,255,0.5)'
               }}
             >
               {n}
@@ -799,7 +821,6 @@ export default function SudokuGame({ onExit }) {
           </button>
         ))}
       </div>
-
       {/* Botones de acción */}
       <div className="flex justify-center gap-2 mt-2">
         <button

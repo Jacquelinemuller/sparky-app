@@ -10,6 +10,8 @@ import MazeGame from './games/MazeGame';
 import StroopGame from './games/StroopGame';
 import SequencesGame from './games/SequencesGame';
 import SudokuGame from './games/SudokuGame';
+import DifferencesGame from './games/DifferencesGame';
+import ReactionGame from './games/ReactionGame';
 import ChestModal from './ChestModal';
 import GameTimer, { GameTimeUpModal } from './GameTimer';
 
@@ -34,6 +36,10 @@ export default function ArcadeTab() {
 
   const handlePlayAttempt = (game, isUnlocked) => {
     try { audioService.playClick(); } catch (e) {}
+    if (game.id === 'differences') {
+  setActiveGame('differences');
+  return;
+}
 
     if (!isUnlocked) {
       if (game.unlock.type === 'challenge') {
@@ -81,6 +87,10 @@ export default function ArcadeTab() {
       setActiveGame('sudoku4');
       return;
     }
+    if (game.id === 'reaction') {
+  setActiveGame('reaction');
+  return;
+}
 
     setFeedback(`¡${game.label} próximamente! 🎮`);
     setTimeout(() => setFeedback(null), 3000);
@@ -118,6 +128,7 @@ export default function ArcadeTab() {
           dailySecondsLeft={session.dailySecondsLeft}
           onExit={handleExitGame}
         />
+        {activeGame === 'reaction' && <ReactionGame onExit={handleExitGame} />}
         {activeGame === 'memory' && <MemoriaGame onExit={handleExitGame} />}
         {activeGame === 'simon' && <SimonGame onExit={handleExitGame} />}
         {activeGame === 'minesweeper' && <MinesweeperGame onExit={handleExitGame} />}
@@ -125,6 +136,7 @@ export default function ArcadeTab() {
         {activeGame === 'stroop' && <StroopGame onExit={handleExitGame} />}
         {activeGame === 'sequences' && <SequencesGame onExit={handleExitGame} />}
         {activeGame === 'sudoku4' && <SudokuGame onExit={handleExitGame} />}
+        {activeGame === 'differences' && <DifferencesGame onExit={handleExitGame} />}
       </div>
     );
   }
