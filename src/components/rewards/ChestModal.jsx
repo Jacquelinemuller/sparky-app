@@ -20,12 +20,11 @@ const C = {
   textMuted: '#94a3b8'
 };
 
-// ============================================
-// SPRITE SHEET DEL COFRE
-// ============================================
 const CHEST_FRAMES = 16;
 const CHEST_COLS = 4;
 const CHEST_ROWS = 4;
+
+const LOGO_SIZE = 140;
 
 // ============================================
 // PARTÍCULAS ORBITANDO
@@ -101,9 +100,6 @@ export default function ChestModal() {
   const game = GAMES_CATALOG.find((g) => g.id === pendingChest.gameId);
   const isFullReward = pendingChest.minutes >= 20;
 
-  // ============================================
-  // ANIMAR FRAMES DEL COFRE
-  // ============================================
   const animateChestFrames = (fromFrame, toFrame, durationMs) => {
     if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
 
@@ -125,20 +121,15 @@ export default function ChestModal() {
     }, stepDuration);
   };
 
-  // ============================================
-  // ABRIR EL COFRE
-  // ============================================
   const handleOpen = () => {
     if (stage !== 'closed') return;
 
-    // Vibración del celu
     try {
       if (navigator.vibrate) {
         navigator.vibrate([50, 30, 80, 30, 150, 50, 200]);
       }
     } catch (e) {}
 
-    // Sonido ascendente
     try {
       audioService.playTone(300, 0.12);
       setTimeout(() => { try { audioService.playTone(400, 0.12); } catch (e) {} }, 200);
@@ -147,11 +138,9 @@ export default function ChestModal() {
       setTimeout(() => { try { audioService.playTone(850, 0.2); } catch (e) {} }, 800);
     } catch (e) {}
 
-    // FASE 1: temblor (0-1s) → frames 0 a 6
     setStage('shaking');
-    animateChestFrames(0, 6, 1000);
+    animateChestFrames(0, 6, 990);
 
-    // FASE 2: explosión (1s) → frames 6 a 11
     timersRef.current.push(
       setTimeout(() => {
         try { audioService.playSuccess(); } catch (e) {}
@@ -174,24 +163,6 @@ export default function ChestModal() {
       }, 1000)
     );
 
-    // FASE 3: el juego vuela (1.8s)
-    timersRef.current.push(
-      setTimeout(() => {
-        setStage('flying');
-
-        try {
-          confetti({
-            particleCount: 100,
-            spread: 160,
-            origin: { y: 0.4 },
-            colors: ['#22c55e', '#4ade80', '#38bdf8', '#facc15'],
-            scalar: 1
-          });
-        } catch (e) {}
-      }, 1800)
-    );
-
-    // FASE 4: revelado (2.5s)
     timersRef.current.push(
       setTimeout(() => {
         setStage('revealed');
@@ -224,7 +195,7 @@ export default function ChestModal() {
           };
           frame();
         } catch (e) {}
-      }, 2500)
+      }, 4500)
     );
   };
 
@@ -241,7 +212,6 @@ export default function ChestModal() {
       className="fixed inset-0 z-[300] flex items-center justify-center p-4 overflow-hidden"
       style={{ background: C.overlay, backdropFilter: 'blur(10px)' }}
     >
-      {/* Flash blanco al explotar */}
       {stage === 'burst' && (
         <div
           className="absolute inset-0 pointer-events-none"
@@ -253,31 +223,34 @@ export default function ChestModal() {
         />
       )}
 
-      {/* Rayos de luz */}
-      {(stage === 'burst' || stage === 'flying' || stage === 'revealed') && (
+      {(stage === 'burst' || stage === 'revealed') && (
         <div
           className="absolute inset-0 pointer-events-none flex items-center justify-center"
           style={{ animation: 'raysIn 1.4s ease-out forwards' }}
         >
-          {Array.from({ length: 16 }).map((_, i) => (
-            <span
-              key={i}
-              className="absolute origin-center"
-              style={{
-                width: '5px',
-                height: '400px',
-                background: `linear-gradient(to top, transparent 0%, ${C.amber} 25%, ${C.amberBright} 50%, ${C.amber} 75%, transparent 100%)`,
-                transform: `rotate(${i * 22.5}deg)`,
-                opacity: 0.7,
-                animation: `rayPulse 1.6s ease-in-out infinite`,
-                animationDelay: `${i * 0.05}s`
-              }}
-            />
-          ))}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ animation: 'raysSpin 22s linear infinite' }}
+          >
+            {Array.from({ length: 16 }).map((_, i) => (
+              <span
+                key={i}
+                className="absolute origin-center"
+                style={{
+                  width: '5px',
+                  height: '400px',
+                  background: `linear-gradient(to top, transparent 0%, ${C.amber} 25%, ${C.amberBright} 50%, ${C.amber} 75%, transparent 100%)`,
+                  transform: `rotate(${i * 22.5}deg)`,
+                  opacity: 0.7,
+                  animation: `rayPulse 1.6s ease-in-out infinite`,
+                  animationDelay: `${i * 0.05}s`
+                }}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Card principal */}
       <div
         className="relative w-full max-w-sm rounded-3xl p-6 flex flex-col items-center text-center overflow-hidden"
         style={{
@@ -290,7 +263,6 @@ export default function ChestModal() {
           transition: 'border-color 0.5s ease, box-shadow 0.5s ease'
         }}
       >
-        {/* Estrellas de fondo */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {Array.from({ length: 28 }).map((_, i) => {
             const top = (i * 37) % 100;
@@ -343,7 +315,6 @@ export default function ChestModal() {
               className="relative w-60 h-60 flex items-center justify-center cursor-pointer z-10"
               aria-label="Abrir cofre"
             >
-              {/* Aura pulsante externa */}
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -352,7 +323,6 @@ export default function ChestModal() {
                 }}
               />
 
-              {/* Partículas orbitando */}
               {ORBITING_PARTICLES.map((p) => (
                 <span
                   key={p.id}
@@ -369,7 +339,6 @@ export default function ChestModal() {
                 </span>
               ))}
 
-              {/* Cofre con sprite sheet */}
               <div
                 className="relative z-10"
                 style={{ animation: 'chestWobble 2.5s ease-in-out infinite' }}
@@ -409,7 +378,6 @@ export default function ChestModal() {
             </h2>
 
             <div className="relative w-60 h-60 flex items-center justify-center z-10">
-              {/* Aura intensa */}
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -418,7 +386,6 @@ export default function ChestModal() {
                 }}
               />
 
-              {/* Partículas rápidas */}
               {ORBITING_PARTICLES.map((p) => (
                 <span
                   key={p.id}
@@ -435,7 +402,6 @@ export default function ChestModal() {
                 </span>
               ))}
 
-              {/* Cofre vibrando con sprite animado */}
               <div
                 className="relative z-10"
                 style={{ animation: 'chestShake 0.3s ease-in-out infinite' }}
@@ -447,83 +413,82 @@ export default function ChestModal() {
         )}
 
         {/* ============================================ */}
-        {/* FASE 3: Explosión + salida del juego         */}
+        {/* FASE 3: Explosión + logo emerge + grow +     */}
+        {/* cofre y logo con wobble pendular             */}
         {/* ============================================ */}
         {stage === 'burst' && (
           <div className="flex flex-col items-center justify-center py-10 z-10 min-h-[340px] relative">
-            {/* Cofre abierto al centro */}
             <div
               className="relative"
               style={{
                 animation: 'burstZoom 0.9s ease-out forwards'
               }}
             >
-              <ChestSprite frame={chestFrame} size={240} />
-
-              {/* Ícono del juego saliendo de adentro del cofre */}
-              <img
-                src={game?.icon}
-                alt={game?.label || ''}
-                className="absolute pointer-events-none"
+              {/* Cofre con wobble desde el inicio */}
+              <div
                 style={{
-                  left: '50%',
-                  top: '52%',
-                  width: '70px',
-                  height: '70px',
-                  objectFit: 'contain',
-                  transform: 'translate(-50%, -50%)',
-                  animation: 'treasureEmerge 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                  filter: 'drop-shadow(0 0 16px #fbbf24) drop-shadow(0 0 32px rgba(251,191,36,0.6))',
+                  animation: 'chestWobble 2.5s ease-in-out infinite'
+                }}
+              >
+                <ChestSprite frame={chestFrame} size={240} />
+              </div>
+
+              {/* 
+                Logo con:
+                1. treasureEmerge (0.8s): emerge de 0.30 a 0.50
+                2. logoBurstGrow (2.7s delay 0.8s): crece 30% de 0.50 a 0.65
+                
+                El wrapper usa logoWobble (misma cadencia 2.5s que el cofre,
+                pero con más amplitud) para que acompañe con más movimiento.
+              */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  pointerEvents: 'none',
+                  animation: 'logoWobble 2.5s ease-in-out infinite',
                   zIndex: 5
                 }}
-                draggable={false}
-              />
+              >
+                <img
+                  src={game?.icon}
+                  alt={game?.label || ''}
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: '50%',
+                    top: '15%',
+                    width: `${LOGO_SIZE}px`,
+                    height: `${LOGO_SIZE}px`,
+                    objectFit: 'contain',
+                    transform: 'translate(-50%, -50%) scale(0.30)',
+                    animation: `
+                      treasureEmerge 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+                      logoBurstGrow 2.7s 0.8s ease-in-out forwards
+                    `,
+                    filter: 'drop-shadow(0 0 16px #fbbf24) drop-shadow(0 0 32px rgba(251,191,36,0.6))'
+                  }}
+                  draggable={false}
+                />
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* ============================================ */}
-        {/* FASE 4: Carta volando                        */}
-        {/* ============================================ */}
-        {stage === 'flying' && (
-          <div className="flex flex-col items-center justify-center py-6 z-10 min-h-[340px] w-full relative">
-            {/* Cofre abierto en el fondo (más chico y oscuro) */}
-            <div
-              className="absolute top-12 opacity-50"
-              style={{
-                animation: 'chestFadeOut 0.6s ease-out forwards'
-              }}
-            >
-              <ChestSprite frame={chestFrame} size={150} />
-            </div>
-
-            {/* Ícono del juego ya salido y creciendo */}
-            <img
-              src={game?.icon}
-              alt={game?.label || ''}
-              className="object-contain relative z-10"
-              style={{
-                width: '140px',
-                height: '140px',
-                animation: 'cardFly 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                filter: 'drop-shadow(0 0 24px #fbbf24) drop-shadow(0 0 48px rgba(251,191,36,0.5))'
-              }}
-              draggable={false}
-            />
-            <span
-              className="text-sm font-black relative z-10 mt-2"
+            <p
+              className="mt-4 text-[13px] font-black z-10"
               style={{
                 color: C.amberBright,
-                animation: 'pulseText 0.8s ease-in-out infinite'
+                animation: 'pulseText 1.4s ease-in-out infinite'
               }}
             >
               ✨ ¡{game?.label}!
-            </span>
+            </p>
           </div>
         )}
 
         {/* ============================================ */}
-        {/* FASE 5: Revelado                             */}
+        {/* FASE 4: Revelado                             */}
         {/* ============================================ */}
         {stage === 'revealed' && game && (
           <div
@@ -537,10 +502,11 @@ export default function ChestModal() {
               🎉 ¡Nuevo juego desbloqueado!
             </span>
 
-            {/* Carta del juego con anillo giratorio */}
             <div
-              className="w-36 h-36 rounded-3xl flex items-center justify-center mb-4 relative overflow-hidden"
+              className="rounded-3xl flex items-center justify-center mb-4 relative overflow-hidden"
               style={{
+                width: `${LOGO_SIZE + 36}px`,
+                height: `${LOGO_SIZE + 36}px`,
                 background: `linear-gradient(135deg, ${C.lime}30 0%, ${C.cyan}30 100%)`,
                 border: `3px solid ${C.limeBright}`,
                 boxShadow: `0 0 40px ${C.lime}80, inset 0 0 24px ${C.lime}40`,
@@ -550,7 +516,11 @@ export default function ChestModal() {
               <img
                 src={game.icon}
                 alt={game.label}
-                className="w-full h-full object-contain p-3 relative z-10"
+                className="object-contain relative z-10"
+                style={{
+                  width: `${LOGO_SIZE}px`,
+                  height: `${LOGO_SIZE}px`
+                }}
                 draggable={false}
               />
 
@@ -574,7 +544,6 @@ export default function ChestModal() {
               {game.subtitle}
             </p>
 
-            {/* Bonus de minutos */}
             <div
               className="w-full p-3 rounded-2xl mb-4 flex items-center justify-center gap-2 relative overflow-hidden"
               style={{
@@ -598,7 +567,6 @@ export default function ChestModal() {
               </span>
             </div>
 
-            {/* Sparky festejando */}
             <div className="flex items-center gap-2 mb-4">
               <div
                 className="w-14 h-14 rounded-full overflow-hidden bg-white flex-shrink-0"
@@ -659,7 +627,19 @@ export default function ChestModal() {
         <style>{`
           @keyframes chestWobble {
             0%, 100% { transform: rotate(0deg) translateY(0); }
-            50% { transform: rotate(-2deg) translateY(-5px); }
+            25% { transform: rotate(-2deg) translateY(-2px); }
+            50% { transform: rotate(0deg) translateY(0); }
+            75% { transform: rotate(2deg) translateY(-2px); }
+          }
+          /* Wobble más notorio para el logo: mismos tiempos que chestWobble
+             pero con más ángulo, más desplazamiento vertical y un pequeño
+             balanceo lateral para que se sienta "flotando" más. */
+          @keyframes logoWobble {
+            0%   { transform: rotate(0deg)   translate(0, 0); }
+            25%  { transform: rotate(-4deg)  translate(-3px, -5px); }
+            50%  { transform: rotate(0deg)   translate(0, 0); }
+            75%  { transform: rotate(4deg)   translate(3px, -5px); }
+            100% { transform: rotate(0deg)   translate(0, 0); }
           }
           @keyframes chestShake {
             0% { transform: rotate(-6deg) scale(1); }
@@ -684,33 +664,38 @@ export default function ChestModal() {
             0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
             40% { transform: scale(1.4) rotate(8deg); opacity: 1; }
             70% { transform: scale(1.15) rotate(-4deg); opacity: 1; }
-            100% { transform: scale(1.2) rotate(0deg); opacity: 0.9; }
+            100% { transform: scale(1.2) rotate(0deg); opacity: 1; }
           }
+          /* Logo emerge: 0.30 (42px) → 0.50 (70px) */
           @keyframes treasureEmerge {
             0% {
-              transform: translate(-50%, -50%) scale(0.2);
+              transform: translate(-50%, -50%) scale(0.30);
               opacity: 0;
               top: 52%;
             }
             40% {
-              transform: translate(-50%, -50%) scale(0.9);
+              transform: translate(-50%, -50%) scale(0.42);
               opacity: 1;
-              top: 40%;
+              top: 38%;
             }
             100% {
-              transform: translate(-50%, -50%) scale(1.1);
+              transform: translate(-50%, -50%) scale(0.50);
               opacity: 1;
               top: 15%;
             }
           }
-          @keyframes chestFadeOut {
-            0% { opacity: 0.6; transform: scale(1); }
-            100% { opacity: 0.15; transform: scale(0.85); }
-          }
-          @keyframes cardFly {
-            0% { transform: translateY(80px) scale(0.3) rotate(-20deg); opacity: 0; }
-            60% { transform: translateY(-20px) scale(1.2) rotate(10deg); opacity: 1; }
-            100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+          /* Logo crece 30%: 0.50 (70px) → 0.65 (91px) */
+          @keyframes logoBurstGrow {
+            0% {
+              transform: translate(-50%, -50%) scale(0.50);
+              opacity: 1;
+              top: 15%;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(0.65);
+              opacity: 1;
+              top: 15%;
+            }
           }
           @keyframes revealIn {
             0% { opacity: 0; transform: scale(0.9); }
@@ -729,6 +714,10 @@ export default function ChestModal() {
             0% { opacity: 0; transform: scale(0.3) rotate(0deg); }
             50% { opacity: 1; }
             100% { opacity: 0.5; transform: scale(1.3) rotate(35deg); }
+          }
+          @keyframes raysSpin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
           }
           @keyframes rayPulse {
             0%, 100% { opacity: 0.4; }
