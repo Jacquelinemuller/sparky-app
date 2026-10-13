@@ -4,6 +4,7 @@ import { audioService } from '../../services/audioService';
 import { GAMES_CATALOG } from '../../services/gamesCatalog';
 import { useGameSession } from '../../hooks/useGameSession';
 import MemoriaGame from './games/MemoriaGame';
+import ChessGame from './games/ChessGame';
 import SimonGame from './games/SimonGame';
 import MinesweeperGame from './games/MinesweeperGame';
 import MazeGame from './games/MazeGame';
@@ -91,6 +92,10 @@ export default function ArcadeTab() {
   setActiveGame('reaction');
   return;
 }
+if (game.id === 'chess') {
+  setActiveGame('chess');
+  return;
+}
 
     setFeedback(`¡${game.label} próximamente! 🎮`);
     setTimeout(() => setFeedback(null), 3000);
@@ -137,6 +142,7 @@ export default function ArcadeTab() {
         {activeGame === 'sequences' && <SequencesGame onExit={handleExitGame} />}
         {activeGame === 'sudoku4' && <SudokuGame onExit={handleExitGame} />}
         {activeGame === 'differences' && <DifferencesGame onExit={handleExitGame} />}
+        {activeGame === 'chess' && <ChessGame onExit={handleExitGame} />}
       </div>
     );
   }

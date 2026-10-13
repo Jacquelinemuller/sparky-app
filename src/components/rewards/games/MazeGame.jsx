@@ -3,7 +3,7 @@ import { useApp } from '../../../context/AppContext';
 import { audioService } from '../../../services/audioService';
 
 // ============================================
-// COLORES ARCADE
+// COLORES GENERALES
 // ============================================
 const C = {
   bg: '#09090f',
@@ -21,17 +21,49 @@ const C = {
   amber: '#facc15',
   amberBright: '#fde047',
   text: '#ffffff',
-  textMuted: '#94a3b8'
+  textMuted: '#94a3b8',
+  violet: '#a855f7'
 };
 
 // ============================================
 // NIVELES
 // ============================================
 const LEVELS = {
-  facil:   { size: 5, mines: 3,  shields: 1, label: 'Fácil',   emoji: '🥉' },
-  medio:   { size: 7, mines: 6,  shields: 1, label: 'Medio',   emoji: '🥈' },
-  dificil: { size: 9, mines: 12, shields: 0, label: 'Difícil', emoji: '🥇' }
+  facil: {
+    id: 'facil',
+    size: 5,
+    label: 'Fácil',
+    visionRadius: 3,
+    colorTop: '#86efac',
+    colorMid: '#22c55e',
+    colorBot: '#15803d',
+    colorDeep: '#052e16',
+    colorBorder: '#14532d'
+  },
+  medio: {
+    id: 'medio',
+    size: 7,
+    label: 'Medio',
+    visionRadius: 3,
+    colorTop: '#fde68a',
+    colorMid: '#f59e0b',
+    colorBot: '#b45309',
+    colorDeep: '#451a03',
+    colorBorder: '#78350f'
+  },
+  dificil: {
+    id: 'dificil',
+    size: 9,
+    label: 'Difícil',
+    visionRadius: 2,
+    colorTop: '#fca5a5',
+    colorMid: '#ef4444',
+    colorBot: '#991b1b',
+    colorDeep: '#450a0a',
+    colorBorder: '#7f1d1d'
+  }
 };
+
 // ============================================
 // GENERACIÓN DEL LABERINTO (DFS)
 // ============================================
@@ -120,14 +152,15 @@ export default function MazeGame({ onExit }) {
   const touchStartRef = useRef(null);
   const exitPos = useRef(null);
 
-  const startGame = (levelKey, keepFog = null) => {
+  const startGame = (levelId, keepFog = null) => {
+    if (!LEVELS[levelId]) return;
     try { audioService.playPop(); } catch (e) {}
 
-    const level = LEVELS[levelKey];
+    const level = LEVELS[levelId];
     const newGrid = generateMaze(level.size);
     const exit = [level.size - 1, level.size - 1];
 
-    setDifficulty(levelKey);
+    setDifficulty(levelId);
     setGrid(newGrid);
     setPlayerPos([0, 0]);
     setSteps(0);
@@ -235,36 +268,101 @@ export default function MazeGame({ onExit }) {
         <img
           src="/games/laberinto.png"
           alt="Laberinto"
-          className="w-24 h-24 object-contain mb-2"
+          className="w-28 h-28 object-contain mb-2"
           draggable={false}
         />
-        <h2 className="text-2xl font-black text-white">Laberinto</h2>
-        <p className="text-xs font-bold text-center mb-4" style={{ color: C.textMuted }}>
+        <h2
+          className="text-3xl font-black text-white"
+          style={{ fontFamily: 'Georgia, serif', letterSpacing: '0.05em' }}
+        >
+          Laberinto
+        </h2>
+        <p className="text-xs font-bold text-center mb-4" style={{ color: '#a7f3d0' }}>
           Sparky se perdió. Encontralo.<br />
           Tocá o deslizá para moverte.
         </p>
 
-        <div className="w-full flex flex-col gap-2.5">
-          {Object.entries(LEVELS).map(([key, level]) => (
+        <div className="w-full flex flex-col gap-3">
+          {Object.values(LEVELS).map((level) => (
             <button
-              key={key}
+              key={level.id}
               type="button"
-              onClick={() => startGame(key)}
-              className="w-full p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all"
+              onClick={() => startGame(level.id)}
+              className="w-full p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden"
               style={{
-                background: C.card,
-                border: `1.5px solid ${C.cyan}40`
+                backgroundImage: 'url(/memoria/fondo.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                border: `3px solid ${level.colorBorder}`,
+                boxShadow: `
+                  0 5px 0 ${level.colorDeep},
+                  inset 0 2px 0 rgba(255,240,200,0.4),
+                  inset 0 -3px 0 rgba(0,0,0,0.4)
+                `
               }}
             >
-              <span className="text-3xl">{level.emoji}</span>
-              <div className="flex flex-col flex-1 items-start">
-                <span className="text-sm font-black text-white">{level.label}</span>
-                <span className="text-[10px] font-bold" style={{ color: C.textMuted }}>
+              {/* Overlay sutil del color del nivel */}
+              <span
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `linear-gradient(180deg, ${level.colorMid}25 0%, ${level.colorMid}10 100%)`,
+                  mixBlendMode: 'overlay'
+                }}
+              />
+
+              {/* Círculo de color */}
+              <span
+                className="w-14 h-14 rounded-full relative z-10 flex-shrink-0"
+                style={{
+                  background: `radial-gradient(circle at 30% 30%, ${level.colorTop} 0%, ${level.colorMid} 55%, ${level.colorBot} 100%)`,
+                  border: `2px solid ${level.colorBorder}`,
+                  boxShadow: `
+                    inset 0 -4px 8px rgba(0,0,0,0.4),
+                    inset 0 4px 8px rgba(255,255,255,0.7),
+                    0 3px 10px ${level.colorDeep}90
+                  `
+                }}
+              />
+
+              <div className="flex flex-col flex-1 items-start relative z-10">
+                <span
+                  className="text-base font-black"
+                  style={{
+                    color: '#ffffff',
+                    textShadow: `0 2px 0 ${level.colorDeep}, 0 3px 8px rgba(0,0,0,0.9)`
+                  }}
+                >
+                  {level.label}
+                </span>
+                <span
+                  className="text-[11px] font-bold"
+                  style={{
+                    color: 'rgba(255,255,255,0.95)',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.9)'
+                  }}
+                >
                   {level.size}×{level.size} casillas
                 </span>
               </div>
-              <span className="material-symbols-outlined text-[20px]" style={{ color: C.cyanBright }}>
-                arrow_forward
+
+              {/* Círculo de la flecha */}
+              <span
+                className="relative z-10 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: `radial-gradient(circle at 30% 30%, ${level.colorTop}80 0%, ${level.colorMid}60 100%)`,
+                  border: `2px solid ${level.colorBorder}`,
+                  boxShadow: `inset 0 -2px 3px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.4)`
+                }}
+              >
+                <span
+                  className="material-symbols-outlined text-[22px]"
+                  style={{
+                    color: '#ffffff',
+                    textShadow: `0 1px 3px ${level.colorDeep}`
+                  }}
+                >
+                  arrow_forward
+                </span>
               </span>
             </button>
           ))}
@@ -276,7 +374,7 @@ export default function MazeGame({ onExit }) {
           className="mt-4 px-6 py-3 rounded-2xl font-black text-xs cursor-pointer active:scale-95 transition-all"
           style={{
             background: 'rgba(148, 163, 184, 0.12)',
-            color: C.textMuted,
+            color: '#a7f3d0',
             border: '1px solid rgba(148, 163, 184, 0.2)'
           }}
         >
@@ -287,15 +385,31 @@ export default function MazeGame({ onExit }) {
   }
 
   // ============================================
-  // JUEGO
+  // JUEGO ACTIVO
   // ============================================
   const level = LEVELS[difficulty];
+  if (!level || !grid) {
+    return (
+      <div className="w-full flex flex-col gap-3 items-center py-8">
+        <p className="text-white font-bold">Cargando...</p>
+        <button
+          type="button"
+          onClick={handleChangeLevel}
+          className="px-4 py-2 rounded-xl bg-white/10 text-white font-bold"
+        >
+          Volver
+        </button>
+      </div>
+    );
+  }
+
   const size = level.size;
   const exit = exitPos.current;
   const distanceToExit = manhattan(playerPos, exit);
 
   return (
     <div className="w-full flex flex-col gap-3 select-none">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -331,16 +445,17 @@ export default function MazeGame({ onExit }) {
           <span
             className="px-2 py-1 rounded-full text-[10px] font-black"
             style={{
-              background: 'rgba(6, 182, 212, 0.15)',
-              color: C.cyanBright,
-              border: '1px solid rgba(6, 182, 212, 0.4)'
+              background: `${level.colorMid}25`,
+              color: level.colorTop,
+              border: `1px solid ${level.colorMid}80`
             }}
           >
-            {level.emoji} {level.label}
+            {level.label}
           </span>
         </div>
       </div>
 
+      {/* Info */}
       <div
         className="w-full px-3 py-2 rounded-xl flex items-center justify-between"
         style={{
@@ -356,6 +471,7 @@ export default function MazeGame({ onExit }) {
         </span>
       </div>
 
+      {/* Tablero */}
       <div
         className="w-full flex items-center justify-center touch-none"
         onTouchStart={handleTouchStart}
@@ -373,6 +489,7 @@ export default function MazeGame({ onExit }) {
         />
       </div>
 
+      {/* Botón reset */}
       <div className="flex items-center justify-center gap-2 mt-2">
         <button
           type="button"
@@ -393,6 +510,7 @@ export default function MazeGame({ onExit }) {
         👆 Tocá la celda de al lado o deslizá el dedo
       </p>
 
+      {/* Modal de victoria */}
       {gameState === 'won' && (
         <VictoryModal
           steps={steps}
@@ -406,13 +524,7 @@ export default function MazeGame({ onExit }) {
 }
 
 // ============================================
-// VISTA DEL LABERINTO
-// ============================================
-// ============================================
-// VISTA DEL LABERINTO — Estética de madera
-// ============================================
-// ============================================
-// VISTA DEL LABERINTO — Estética azul glossy
+// VISTA DEL LABERINTO — Azul glossy
 // ============================================
 function MazeView({
   grid,
@@ -433,14 +545,13 @@ function MazeView({
     return manhattan([r, c], playerPos) <= visionRadius;
   };
 
-  const wallSize = size <= 7 ? '6px' : size <= 10 ? '5px' : '4px';
-  const avatarSize = size <= 7 ? '30px' : size <= 10 ? '24px' : '18px';
+  const wallSize = size <= 5 ? '6px' : size <= 7 ? '5px' : '4px';
+  const avatarSize = size <= 5 ? '30px' : size <= 7 ? '24px' : '18px';
 
   return (
     <div
       className="relative p-2.5 rounded-3xl"
       style={{
-        // Marco exterior azul glossy
         background: 'linear-gradient(180deg, #60a5fa 0%, #2563eb 50%, #1e40af 100%)',
         border: '3px solid #1e3a8a',
         boxShadow: `
@@ -450,7 +561,7 @@ function MazeView({
           0 12px 28px rgba(0,0,0,0.6)
         `,
         width: '100%',
-        maxWidth: size <= 7 ? '340px' : size <= 10 ? '380px' : '410px'
+        maxWidth: size <= 5 ? '320px' : size <= 7 ? '360px' : '400px'
       }}
     >
       <div
@@ -472,7 +583,6 @@ function MazeView({
               gameState === 'playing' &&
               Math.abs(r - pr) + Math.abs(c - pc) === 1;
 
-            // Camino: azul muy oscuro
             const pathBase = '#0f2447';
             const pathDeep = '#030a1a';
 
@@ -488,7 +598,6 @@ function MazeView({
                   background: visible
                     ? `radial-gradient(circle at 50% 40%, ${pathBase} 0%, ${pathDeep} 100%)`
                     : 'rgba(0,0,0,0.95)',
-                  // Paredes azules con 3D (luz arriba, sombra abajo)
                   borderTop: cell.top
                     ? `${wallSize} solid #93c5fd`
                     : `${wallSize} solid transparent`,
@@ -509,7 +618,6 @@ function MazeView({
                     : 'inset 0 2px 4px rgba(0,0,0,0.7)'
                 }}
               >
-                {/* Brillo en el jugador */}
                 {isPlayer && (
                   <>
                     <span
@@ -541,7 +649,6 @@ function MazeView({
                   </>
                 )}
 
-                {/* Brillo en Sparky (la salida) */}
                 {isExit && !isPlayer && (
                   <>
                     <span
@@ -572,7 +679,6 @@ function MazeView({
                   </>
                 )}
 
-                {/* Celdas adyacentes — zona de tap */}
                 {isAdjacent && !isPlayer && !isExit && (
                   <span
                     className="absolute inset-0"
@@ -610,6 +716,7 @@ function MazeView({
     </div>
   );
 }
+
 // ============================================
 // MODAL DE VICTORIA
 // ============================================
