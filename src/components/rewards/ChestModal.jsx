@@ -160,7 +160,7 @@ export default function ChestModal() {
 
         setStage('burst');
         animateChestFrames(6, 11, 500);
-      }, 1000)
+      }, 990)
     );
 
     timersRef.current.push(

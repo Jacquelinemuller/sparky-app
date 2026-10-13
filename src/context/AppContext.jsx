@@ -733,7 +733,17 @@ export const AppProvider = ({ children }) => {
       }
     }));
   }, [recordActivity]);
-
+const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
+  recordActivity();
+  try { audioService.playClick(); } catch (e) {}
+  setState((prev) => ({
+    ...prev,
+    weeklyTemplate: {
+      ...prev.weeklyTemplate,
+      [dayId]: blocks
+    }
+  }));
+}, [recordActivity]);
   const setDayOverride = useCallback((dateKey, blocks) => {
     recordActivity();
     setState((prev) => ({
@@ -1425,6 +1435,7 @@ export const AppProvider = ({ children }) => {
         updateTemplateBlock,
         addTemplateBlock,
         deleteTemplateBlock,
+        setWeeklyTemplateDay,
         setDayOverride,
         clearDayOverride,
         completedTips: state.completedTips,

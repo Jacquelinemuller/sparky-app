@@ -18,6 +18,7 @@ export default function WeeklyTemplateModal({
   isOpen,
   onClose,
   weeklyTemplate,
+  onSetDay,                     // ← NUEVA
   onUpdateBlock,
   onAddBlock,
   onDeleteBlock
@@ -48,7 +49,8 @@ export default function WeeklyTemplateModal({
       type: 'fixed'
     };
     setDraftBlocks((prev) => [...prev, newBlock]);
-    setEditingIndex(draftBlocks.length);
+    // ← CAMBIO: ya NO entramos en modo edición automáticamente
+    //   Así se ven las flechas de reordenar al toque
   };
 
   const handleDeleteBlock = (index) => {
@@ -74,25 +76,13 @@ export default function WeeklyTemplateModal({
     });
   };
 
+  // ← CAMBIO: guardamos el array completo tal cual, preservando el orden
   const handleSaveDay = () => {
-    const original = weeklyTemplate[selectedDay] || [];
-
-    draftBlocks.forEach((block) => {
-      const wasOriginal = original.find((b) => b.id === block.id);
-      if (wasOriginal) {
-        onUpdateBlock(selectedDay, block.id, block);
-      } else {
-        onAddBlock(selectedDay, block);
-      }
-    });
-
-    original.forEach((origBlock) => {
-      const stillExists = draftBlocks.find((b) => b.id === origBlock.id);
-      if (!stillExists) {
-        onDeleteBlock(selectedDay, origBlock.id);
-      }
-    });
-
+    if (!onSetDay) {
+      console.warn('WeeklyTemplateModal: falta la prop onSetDay');
+      return;
+    }
+    onSetDay(selectedDay, draftBlocks);
     setEditingIndex(null);
   };
 
@@ -273,7 +263,7 @@ export default function WeeklyTemplateModal({
                       </div>
                     </div>
 
-                    {/* Íconos (reemplaza el input de texto que había antes) */}
+                    {/* Ícono */}
                     <div>
                       <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">
                         Ícono

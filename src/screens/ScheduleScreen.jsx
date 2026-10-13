@@ -57,6 +57,7 @@ export const ScheduleScreen = () => {
     updateTemplateBlock,
     addTemplateBlock,
     deleteTemplateBlock,
+    setWeeklyTemplateDay,        // ← NUEVO
     setActiveScreen,
     editTask,
     alarms
@@ -295,6 +296,7 @@ export const ScheduleScreen = () => {
         isOpen={isEditTemplateOpen}
         onClose={() => setIsEditTemplateOpen(false)}
         weeklyTemplate={weeklyTemplate}
+        onSetDay={setWeeklyTemplateDay}        /* ← NUEVO */
         onUpdateBlock={updateTemplateBlock}
         onAddBlock={addTemplateBlock}
         onDeleteBlock={deleteTemplateBlock}

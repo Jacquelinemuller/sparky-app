@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
 import VoiceInput from '../components/VoiceInput';
 import TypewriterText from '../components/diario/TypewriterText';
 import { getWeekTitle } from '../data/diaryIndex';
+import { useDiaryPagination } from '../hooks/useDiaryPagination';
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -48,8 +49,11 @@ export const DiarioScreen = () => {
     return saved === null ? true : saved === 'true';
   });
 
-  // 🆕 Cuántos mensajes ya se completaron en la página actual
-  const [revealedCount, setRevealedCount] = useState(0);
+  // Paginación de la hoja
+  const sheetRef = useRef(null);
+  const [sheetDims, setSheetDims] = useState({ width: 0, height: 0 });
+  const [subPage, setSubPage] = useState(0);
+  const [revealedPerPage, setRevealedPerPage] = useState({});
 
   useEffect(() => {
     localStorage.setItem(SOUND_KEY, String(soundEnabled));
@@ -98,33 +102,106 @@ export const DiarioScreen = () => {
 
   const totalPages = sortedEntries.length;
   const currentEntry = sortedEntries[pageIndex];
-  const canPrev = pageIndex > 0;
-  const canNext = pageIndex < totalPages - 1;
 
-  // 🆕 Resetear el contador cuando cambia la página
+  // Medir la hoja cuando estamos en lectura
   useEffect(() => {
-    setRevealedCount(0);
+    if (view !== 'lectura') return;
+    if (!sheetRef.current) return;
+
+    const measure = () => {
+      const el = sheetRef.current;
+      if (!el) return;
+      setSheetDims({
+        width: Math.max(0, el.clientWidth - PADDING_LEFT - PADDING_RIGHT),
+        height: Math.max(0, el.clientHeight - PADDING_TOP - PADDING_BOTTOM)
+      });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(sheetRef.current);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [view, pageIndex]);
+
+  // Mensajes del tip de la entrada actual
+  const tipMessages = useMemo(() => {
+    if (currentEntry?.tipMessages && currentEntry.tipMessages.length > 0) {
+      return currentEntry.tipMessages;
+    }
+    if (currentEntry?.tipExplanation) {
+      return [currentEntry.tipExplanation];
+    }
+    return [];
+  }, [currentEntry]);
+
+  // Texto del header (fecha) para calcular su altura
+  const friendly = currentEntry ? formatFriendlyDate(currentEntry.dateKey) : null;
+  const headerText = friendly ? `${friendly.day} ${friendly.num}:` : '';
+
+  // Calcular sub-páginas — AHORA con miTipHeight reducido
+  const { pages: subPages } = useDiaryPagination({
+    tipMessages,
+    headerText,
+    contentWidth: sheetDims.width,
+    availableHeight: sheetDims.height,
+    lineHeight: LINE_HEIGHT,
+    hasMiTip: true,
+    miTipHeight: 2 * LINE_HEIGHT
+  });
+
+  const totalSubPages = subPages.length || 1;
+  const currentSubPage =
+    subPages[subPage] || { messages: [], isFirst: true, isLast: true };
+
+  // Resetear sub-página cuando cambia la entrada
+  useEffect(() => {
+    setSubPage(0);
+    setRevealedPerPage({});
   }, [currentEntry?.id]);
 
+  const canPrevSub = subPage > 0;
+  const canNextSub = subPage < totalSubPages - 1;
+  const canPrev = canPrevSub || pageIndex > 0;
+  const canNext = canNextSub || pageIndex < totalPages - 1;
+
   const goPrev = () => {
-    if (!canPrev) return;
-    try { audioService.playClick(); } catch (e) {}
-    setPageIndex((i) => i - 1);
-    setRevealedCount(0);
+    if (canPrevSub) {
+      try { audioService.playClick(); } catch (e) {}
+      setSubPage((s) => s - 1);
+      return;
+    }
+    if (pageIndex > 0) {
+      try { audioService.playClick(); } catch (e) {}
+      setPageIndex((i) => i - 1);
+      setSubPage(0);
+      setRevealedPerPage({});
+    }
   };
 
   const goNext = () => {
-    if (!canNext) return;
-    try { audioService.playClick(); } catch (e) {}
-    setPageIndex((i) => i + 1);
-    setRevealedCount(0);
+    if (canNextSub) {
+      try { audioService.playClick(); } catch (e) {}
+      setSubPage((s) => s + 1);
+      return;
+    }
+    if (pageIndex < totalPages - 1) {
+      try { audioService.playClick(); } catch (e) {}
+      setPageIndex((i) => i + 1);
+      setSubPage(0);
+      setRevealedPerPage({});
+    }
   };
 
   const openLastEntry = () => {
     if (totalPages === 0) return;
     try { audioService.playSuccess(); } catch (e) {}
     setPageIndex(totalPages - 1);
-    setRevealedCount(0);
+    setSubPage(0);
+    setRevealedPerPage({});
     setView('lectura');
   };
 
@@ -135,7 +212,8 @@ export const DiarioScreen = () => {
     if (globalIndex === -1) return;
     try { audioService.playPop(); } catch (e) {}
     setPageIndex(globalIndex);
-    setRevealedCount(0);
+    setSubPage(0);
+    setRevealedPerPage({});
     setView('lectura');
   };
 
@@ -528,15 +606,6 @@ export const DiarioScreen = () => {
   }
 
   // ============ LECTURA ============
-  const friendly = currentEntry ? formatFriendlyDate(currentEntry.dateKey) : null;
-
-  // 🆕 Obtener los mensajes de Sparky
-  const tipMessages = currentEntry?.tipMessages && currentEntry.tipMessages.length > 0
-    ? currentEntry.tipMessages
-    : currentEntry?.tipExplanation
-    ? [currentEntry.tipExplanation]
-    : [];
-
   return (
     <div
       className="min-h-screen flex flex-col antialiased"
@@ -579,6 +648,7 @@ export const DiarioScreen = () => {
               }}
             >
               {pageIndex + 1} / {totalPages}
+              {totalSubPages > 1 && ` · ${subPage + 1}/${totalSubPages}`}
             </span>
           )}
 
@@ -624,10 +694,12 @@ export const DiarioScreen = () => {
           <>
             <div className="w-full relative">
               <img
+                ref={sheetRef}
                 src="/diario/hoja.png"
                 alt=""
                 className="w-full h-auto rounded-3xl shadow-[0_8px_24px_rgba(120,90,50,0.15)]"
                 draggable={false}
+                style={{ display: 'block' }}
               />
 
               <div
@@ -657,8 +729,8 @@ export const DiarioScreen = () => {
                     fontWeight: 400
                   }}
                 >
-                  {/* Fecha SUBRAYADA */}
-                  {friendly && (
+                  {/* Fecha (solo primera sub-página) */}
+                  {currentSubPage.isFirst && friendly && (
                     <div
                       style={{
                         fontFamily: TITLE_FONT,
@@ -680,22 +752,23 @@ export const DiarioScreen = () => {
                     </div>
                   )}
 
-                  {/* 1 renglón entre fecha y primer mensaje */}
-                  {friendly && tipMessages.length > 0 && (
-                    <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
-                  )}
+                  {/* 1/2 renglón entre fecha y primer mensaje */}
+                  {currentSubPage.isFirst &&
+                    friendly &&
+                    currentSubPage.messages.length > 0 && (
+                      <div style={{ height: `${LINE_HEIGHT / 2}px` }} aria-hidden="true" />
+                    )}
 
-                  {/* 🆕 MENSAJES DE SPARKY EN CADENA */}
-                  {tipMessages.map((msg, i) => {
-                    const isCompleted = i < revealedCount;       // ya se animó
-                    const isAnimating = i === revealedCount;      // se está animando ahora
-                    const isWaiting = i > revealedCount;          // todavía no arranca
+                  {/* Mensajes de esta sub-página */}
+                  {currentSubPage.messages.map((msgIdx, localIdx) => {
+                    const msg = tipMessages[msgIdx];
+                    const revealed = revealedPerPage[subPage] || 0;
+                    const isCompleted = localIdx < revealed;
 
-                    // Los que están esperando no se muestran (o se muestran vacíos)
-                    if (isWaiting) return null;
+                    if (localIdx > revealed) return null;
 
                     return (
-                      <React.Fragment key={i}>
+                      <React.Fragment key={msgIdx}>
                         <div
                           style={{
                             fontSize: '16px',
@@ -708,98 +781,106 @@ export const DiarioScreen = () => {
                             alignItems: 'flex-start'
                           }}
                         >
-                          <span style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}>•</span>
+                          <span style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}>
+                            •
+                          </span>
                           <span style={{ flex: 1, lineHeight: `${LINE_HEIGHT}px` }}>
                             {isCompleted ? (
-                              // Ya animado: mostrar texto plano (instantáneo)
                               msg
                             ) : (
-                              // Animando: usar TypewriterText
                               <TypewriterText
-                                key={`msg-${currentEntry.id}-${i}`}
+                                key={`msg-${currentEntry.id}-${subPage}-${msgIdx}`}
                                 text={msg}
                                 speed={22}
                                 soundEnabled={soundEnabled}
                                 onComplete={() => {
-                                  // Cuando termina este mensaje, pasar al siguiente
-                                  setRevealedCount((prev) => Math.max(prev, i + 1));
+                                  setRevealedPerPage((prev) => ({
+                                    ...prev,
+                                    [subPage]: Math.max(prev[subPage] || 0, localIdx + 1)
+                                  }));
                                 }}
                               />
                             )}
                           </span>
                         </div>
 
-                        {/* Renglón en blanco entre mensajes (no al final) */}
-                        {i < tipMessages.length - 1 && (
-                          <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
+                        {/* 1/2 renglón entre mensajes */}
+                        {localIdx < currentSubPage.messages.length - 1 && (
+                          <div style={{ height: `${LINE_HEIGHT / 2}px` }} aria-hidden="true" />
                         )}
                       </React.Fragment>
                     );
                   })}
 
-                  {/* 1 renglón entre el último mensaje y MI TIP */}
-                  {tipMessages.length > 0 && (
-                    <div style={{ height: `${LINE_HEIGHT}px` }} aria-hidden="true" />
-                  )}
+                  {/* MI TIP (solo en la última sub-página) */}
+                  {currentSubPage.isLast && (
+                    <>
+                      {/* 1/2 renglón antes de MI TIP */}
+                      {currentSubPage.messages.length > 0 && (
+                        <div style={{ height: `${LINE_HEIGHT / 2}px` }} aria-hidden="true" />
+                      )}
 
-                  {/* "MI TIP:" + input */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '6px',
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      margin: 0,
-                      padding: 0
-                    }}
-                  >
-                    <span style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}>
-                      •
-                    </span>
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        lineHeight: `${LINE_HEIGHT}px`,
-                        letterSpacing: '0.05em',
-                        opacity: 0.85
-                      }}
-                    >
-                      ✏️ MI TIP:
-                    </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        lineHeight: `${LINE_HEIGHT}px`
-                      }}
-                    >
-                      <VoiceInput
-                        value={currentEntry?.userNote || ''}
-                        onChange={handleNoteChange}
-                        placeholder="Escribí o dictá algo tuyo..."
-                        maxLength={200}
-                        color="#b45309"
-                        bg="transparent"
-                        borderColor="transparent"
-                        micIconSrc="/mic.png"
-                        micIconSize={56}
-                        micOffsetY="-12px"
+                      <div
                         style={{
-                          fontSize: '16px',
-                          fontFamily: HAND_FONT,
-                          padding: '0 0 0 2px',
-                          margin: 0,
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '6px',
                           lineHeight: `${LINE_HEIGHT}px`,
-                          background: 'transparent',
-                          border: 'none',
-                          minHeight: `${LINE_HEIGHT}px`,
-                          display: 'block',
-                          fontStyle: 'normal',
-                          resize: 'none'
+                          margin: 0,
+                          padding: 0
                         }}
-                      />
-                    </div>
-                  </div>
+                      >
+                        <span
+                          style={{ flexShrink: 0, lineHeight: `${LINE_HEIGHT}px` }}
+                        >
+                          •
+                        </span>
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            lineHeight: `${LINE_HEIGHT}px`,
+                            letterSpacing: '0.05em',
+                            opacity: 0.85
+                          }}
+                        >
+                          ✏️ MI TIP:
+                        </span>
+                        <div
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            lineHeight: `${LINE_HEIGHT}px`
+                          }}
+                        >
+                          <VoiceInput
+                            value={currentEntry?.userNote || ''}
+                            onChange={handleNoteChange}
+                            placeholder="Escribí o dictá algo tuyo..."
+                            maxLength={200}
+                            color="#b45309"
+                            bg="transparent"
+                            borderColor="transparent"
+                            micIconSrc="/mic.png"
+                            micIconSize={56}
+                            micOffsetY="-12px"
+                            style={{
+                              fontSize: '16px',
+                              fontFamily: HAND_FONT,
+                              padding: '0 0 0 2px',
+                              margin: 0,
+                              lineHeight: `${LINE_HEIGHT}px`,
+                              background: 'transparent',
+                              border: 'none',
+                              minHeight: `${LINE_HEIGHT}px`,
+                              display: 'block',
+                              fontStyle: 'normal',
+                              resize: 'none'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -843,7 +924,8 @@ export const DiarioScreen = () => {
                 <span className="material-symbols-outlined text-[20px]">chevron_right</span>
               </button>
             </div>
-          </>
+
+                      </>
         )}
       </main>
     </div>
