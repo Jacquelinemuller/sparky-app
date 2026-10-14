@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
 import VoiceInput from '../components/VoiceInput';
@@ -19,6 +19,19 @@ export const NotesScreen = () => {
   const [selectedColor, setSelectedColor] = useState('yellow');
   const [errorMsg, setErrorMsg] = useState('');
   const [convertingNote, setConvertingNote] = useState(null);
+
+  const containerRef = useRef(null);
+
+  // 🔑 Al tocar "Prefiero escribir", enfoca el textarea interno del VoiceInput
+  const handlePrefieroEscribir = () => {
+    try { audioService.playClick(); } catch (e) {}
+    if (!containerRef.current) return;
+    const textarea = containerRef.current.querySelector('textarea, input[type="text"]');
+    if (textarea) {
+      textarea.focus();
+      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   const saveNote = () => {
     const text = noteText.trim();
@@ -62,7 +75,10 @@ export const NotesScreen = () => {
         </div>
       </div>
 
-      <div className="w-full bg-white rounded-3xl p-5 shadow-[0_5px_0_0_#fed7aa] border-2 border-[#fed7aa] mb-4">
+      <div
+        ref={containerRef}
+        className="w-full bg-white rounded-3xl p-5 shadow-[0_5px_0_0_#fed7aa] border-2 border-[#fed7aa] mb-4"
+      >
         <div className="flex flex-col items-center mb-2">
           <p className="font-title-md text-title-md font-black text-on-surface text-center">
             Decí lo que querés recordar
@@ -88,6 +104,19 @@ export const NotesScreen = () => {
           bigMicLabelRecording="Estoy escuchando... 🎧"
         />
 
+        {/* 🔑 "Prefiero escribir" justo debajo del input */}
+        <button
+          type="button"
+          onClick={handlePrefieroEscribir}
+          className="w-full mt-3 py-2 text-[11px] font-black text-on-surface-variant uppercase tracking-wider text-center cursor-pointer active:scale-95 transition-all"
+          style={{
+            background: 'transparent',
+            border: 'none'
+          }}
+        >
+          Prefiero escribir
+        </button>
+
         {errorMsg && (
           <div className="w-full mt-3 p-2.5 rounded-xl bg-[#fee2e2] border border-[#fecaca] flex items-start gap-2">
             <span className="text-base">⚠️</span>
@@ -97,8 +126,9 @@ export const NotesScreen = () => {
           </div>
         )}
 
-        {/* Color de la nota */}
-        <div className="w-full mt-4 pt-3 border-t border-[#fed7aa]/50">
+        {/* Línea separadora */}
+        <div className="w-full mt-1 pt-2 border-t border-[#fed7aa]/50">
+          {/* Color de la nota */}
           <p className="text-[11px] font-black text-on-surface-variant uppercase tracking-wider mb-2 text-center">
             Color de la nota
           </p>
