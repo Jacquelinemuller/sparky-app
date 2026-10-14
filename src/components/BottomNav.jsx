@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 
 export const BottomNav = () => {
-  const { activeTab, setActiveTab, setActiveScreen } = useApp();
+  const { activeTab, activeScreen, setActiveTab, setActiveScreen } = useApp();
 
   const navItems = [
     { id: 'today',    label: 'Inicio',   icon: 'home',           fill: true,  isScreen: false },
@@ -32,7 +32,11 @@ export const BottomNav = () => {
     >
       <div className="flex items-center justify-around h-14 px-space-xs max-w-lg mx-auto">
         {navItems.map((item) => {
-          const isActive = !item.isScreen && activeTab === item.id;
+          // 🔑 FIX: si es pantalla interna, comparamos contra activeScreen
+          const isActive = item.isScreen
+            ? activeScreen === item.id
+            : activeTab === item.id;
+
           return (
             <button
               key={item.id}

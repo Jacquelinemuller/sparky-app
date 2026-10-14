@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
+import { BottomNav } from '../components/BottomNav';   // ← NUEVO
 
 const BUTTONS = [
   {
@@ -121,7 +122,8 @@ export const ApoyosScreen = () => {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col relative w-full pt-20 pb-12 px-4 max-w-md mx-auto">
+      {/* 🔑 Cambio: pb-12 → pb-24 para que el bottom nav no tape contenido */}
+      <main className="flex-1 flex flex-col relative w-full pt-20 pb-24 px-4 max-w-md mx-auto">
 
         <div className="w-full mb-5 text-center">
           <p
@@ -232,6 +234,9 @@ export const ApoyosScreen = () => {
         </div>
 
       </main>
+
+      {/* 🔑 NUEVO: Bottom nav claro, para poder navegar desde Mi Kit */}
+      <BottomNav />
     </div>
   );
 };

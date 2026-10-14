@@ -31,6 +31,14 @@ export function useGameSession(gameId, isActive) {
   const initialDailyLeftSecondsRef = useRef(0);
   const intervalRef = useRef(null);
 
+  // Guardamos el gameId y consumeGameTime en refs para que el useEffect
+  // principal no se re-ejecute cada vez que cambian (evita reiniciar el timer)
+  const gameIdRef = useRef(gameId);
+  const consumeGameTimeRef = useRef(consumeGameTime);
+
+  useEffect(() => { gameIdRef.current = gameId; }, [gameId]);
+  useEffect(() => { consumeGameTimeRef.current = consumeGameTime; }, [consumeGameTime]);
+
   useEffect(() => {
     if (!isActive || !gameId) {
       setSessionActive(false);
@@ -56,13 +64,17 @@ export function useGameSession(gameId, isActive) {
       return;
     }
 
+    // 🔑 Redondeamos a segundos enteros desde el inicio
+    const balanceSecs = Math.max(0, Math.round(balance * 60));
+    const dailySecs = Math.max(0, Math.round(dailyLeft * 60));
+
     elapsedSecondsRef.current = 0;
     lastSavedSecondsRef.current = 0;
-    initialBalanceSecondsRef.current = balance * 60;
-    initialDailyLeftSecondsRef.current = dailyLeft * 60;
+    initialBalanceSecondsRef.current = balanceSecs;
+    initialDailyLeftSecondsRef.current = dailySecs;
 
-    setSecondsLeft(balance * 60);
-    setDailySecondsLeft(dailyLeft * 60);
+    setSecondsLeft(balanceSecs);
+    setDailySecondsLeft(dailySecs);
     setBlockReason(null);
     setSessionActive(true);
   }, [isActive, gameId, sessionKey, maxDailyPlayMinutes, state.gameBalances, state.dailyPlayDate, state.dailyPlayMinutes]);
@@ -80,13 +92,14 @@ export function useGameSession(gameId, isActive) {
       const balanceLeft = initialBalanceSecondsRef.current - elapsed;
       const dailyLeft = initialDailyLeftSecondsRef.current - elapsed;
 
+      // Ya trabajamos con enteros, así que round queda solo como seguro
       setSecondsLeft(Math.max(0, Math.round(balanceLeft)));
       setDailySecondsLeft(Math.max(0, Math.round(dailyLeft)));
 
       if (balanceLeft <= 0 || dailyLeft <= 0) {
         const toSave = elapsedSecondsRef.current - lastSavedSecondsRef.current;
         if (toSave > 0) {
-          consumeGameTime(gameId, toSave / 60);
+          consumeGameTimeRef.current(gameIdRef.current, toSave / 60);
           lastSavedSecondsRef.current = elapsedSecondsRef.current;
         }
         setSessionActive(false);
@@ -96,7 +109,7 @@ export function useGameSession(gameId, isActive) {
 
       const secondsSinceLastSave = elapsedSecondsRef.current - lastSavedSecondsRef.current;
       if (secondsSinceLastSave * 1000 >= SAVE_TICK_MS) {
-        consumeGameTime(gameId, secondsSinceLastSave / 60);
+        consumeGameTimeRef.current(gameIdRef.current, secondsSinceLastSave / 60);
         lastSavedSecondsRef.current = elapsedSecondsRef.current;
       }
     }, UI_TICK_MS);
@@ -104,30 +117,31 @@ export function useGameSession(gameId, isActive) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [sessionActive, gameId, consumeGameTime]);
+  }, [sessionActive]);
 
   const endSession = useCallback(() => {
     const toSave = elapsedSecondsRef.current - lastSavedSecondsRef.current;
     if (toSave > 0) {
-      consumeGameTime(gameId, toSave / 60);
+      consumeGameTimeRef.current(gameIdRef.current, toSave / 60);
       lastSavedSecondsRef.current = elapsedSecondsRef.current;
     }
     setSessionActive(false);
-  }, [gameId, consumeGameTime]);
+  }, []);
 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       const toSave = elapsedSecondsRef.current - lastSavedSecondsRef.current;
       if (toSave > 0 && sessionActive) {
-        consumeGameTime(gameId, toSave / 60);
+        consumeGameTimeRef.current(gameIdRef.current, toSave / 60);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 🔑 FIX PRINCIPAL: redondeamos a entero antes de formatear
   const formatTime = (totalSeconds) => {
-    const s = Math.max(0, totalSeconds);
+    const s = Math.max(0, Math.round(totalSeconds));
     const m = Math.floor(s / 60);
     const r = s % 60;
     return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;

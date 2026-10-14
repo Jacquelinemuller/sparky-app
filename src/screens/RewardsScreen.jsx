@@ -37,6 +37,7 @@ export const RewardsScreen = () => {
     userAvatar,
     userName,
     activeTab,
+    activeScreen,       // ← NUEVO: necesario para saber si estamos en Kit u otra pantalla interna
     setActiveTab,
     setActiveScreen
   } = useApp();
@@ -50,15 +51,23 @@ export const RewardsScreen = () => {
 
   const handleNavClick = (id) => {
     try { audioService.playClick(); } catch (e) {}
+
+    // 🔑 Si es Kit (pantalla interna), navegamos con setActiveScreen
+    if (id === 'apoyos') {
+      setActiveScreen('apoyos');
+      return;
+    }
+
     setActiveScreen('none');
     setActiveTab(id);
   };
 
   const navItems = [
-    { id: 'today',    label: 'Inicio',   icon: 'home',           fill: true },
-    { id: 'missions', label: 'Misiones', icon: 'task_alt',       fill: false },
-    { id: 'schedule', label: 'Agenda',   icon: 'calendar_month', fill: false },
-    { id: 'rewards',  label: 'Premios',  icon: 'trophy',         fill: false }
+    { id: 'today',    label: 'Inicio',   icon: 'home',           fill: true,  isScreen: false },
+    { id: 'missions', label: 'Misiones', icon: 'task_alt',       fill: false, isScreen: false },
+    { id: 'schedule', label: 'Agenda',   icon: 'calendar_month', fill: false, isScreen: false },
+    { id: 'apoyos',   label: 'Kit',      icon: 'auto_awesome',   fill: true,  isScreen: true  },   // ← NUEVO
+    { id: 'rewards',  label: 'Premios',  icon: 'trophy',         fill: false, isScreen: false }
   ];
 
   return (
@@ -236,7 +245,11 @@ export const RewardsScreen = () => {
       >
         <div className="flex items-center justify-around h-14 px-2 max-w-lg mx-auto">
           {navItems.map((item) => {
-            const isActive = activeTab === item.id;
+            // 🔑 FIX: si es pantalla interna, comparamos contra activeScreen
+            const isActive = item.isScreen
+              ? activeScreen === item.id
+              : activeTab === item.id;
+
             return (
               <button
                 key={item.id}
