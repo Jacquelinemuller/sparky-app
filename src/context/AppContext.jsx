@@ -229,7 +229,7 @@ export const AppProvider = ({ children }) => {
         tasks: recomputeStatus([...prev.tasks, ...newTasks])
       };
     });
-  }, [state.lastResetDate]);
+  },  [state.lastResetDate, state.recurringTemplates]);
 
   useEffect(() => {
     storageService.save(state);
