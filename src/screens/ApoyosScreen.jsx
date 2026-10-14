@@ -46,6 +46,17 @@ const BUTTONS = [
     border: '#fbbf24',
     text: '#78350f',
     screen: 'diario'
+  },
+  {
+    id: 'midia',
+    label: 'Mi Día',
+    icon: 'wb_sunny',
+    emoji: '☀️',
+    image: '/kit/midia.png',
+    gradient: 'linear-gradient(135deg, #cfe8ff 0%, #b3dcff 100%)',
+    border: '#7cb8e8',
+    text: '#0c3a5c',
+    screen: 'midia'
   }
 ];
 
@@ -112,7 +123,6 @@ export const ApoyosScreen = () => {
 
       <main className="flex-1 flex flex-col relative w-full pt-20 pb-12 px-4 max-w-md mx-auto">
 
-        {/* Subtítulo (sin el H1 redundante) */}
         <div className="w-full mb-5 text-center">
           <p
             className="font-body-sm"

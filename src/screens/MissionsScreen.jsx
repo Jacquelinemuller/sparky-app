@@ -31,6 +31,31 @@ const DIFFICULTY_CONFIG = {
 
 const MAX_MICROSTEPS = 5;
 
+// Días: 1=Lun ... 7=Dom (igual que Date.getDay() normalizado)
+const DAY_CHIPS = [
+  { id: 1, label: 'L' },
+  { id: 2, label: 'M' },
+  { id: 3, label: 'M' },
+  { id: 4, label: 'J' },
+  { id: 5, label: 'V' },
+  { id: 6, label: 'S' },
+  { id: 7, label: 'D' }
+];
+
+// Presets
+const REPEAT_PRESETS = {
+  today:    { label: 'Solo hoy',      days: null },
+  weekdays: { label: 'Lun a Vie',     days: [1, 2, 3, 4, 5] },
+  everyday: { label: 'Todos los días',days: [1, 2, 3, 4, 5, 6, 7] },
+  custom:   { label: 'Elegir días',   days: null }
+};
+
+// Día de la semana de HOY (1=Lun ... 7=Dom)
+function getTodayDowNumber() {
+  const d = new Date().getDay();
+  return d === 0 ? 7 : d;
+}
+
 function PriorityDots({ current, onChange }) {
   return (
     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -60,6 +85,8 @@ export const MissionsScreen = () => {
   const {
     tasks,
     addTask,
+    addRecurringTemplate,
+    deleteRecurringTemplate,
     deleteTask,
     setTaskPriority,
     setTaskDifficulty,
@@ -84,6 +111,10 @@ export const MissionsScreen = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [alarmTask, setAlarmTask] = useState(null);
 
+  // Repetición
+  const [repeatPreset, setRepeatPreset] = useState('today');
+  const [customDays, setCustomDays] = useState([]);
+
   // Foto en creación
   const [newTaskPhoto, setNewTaskPhoto] = useState(null);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
@@ -97,6 +128,9 @@ export const MissionsScreen = () => {
   // Visor de foto
   const [photoToView, setPhotoToView] = useState(null);
   const [photoViewTitle, setPhotoViewTitle] = useState('');
+
+  // Confirmación de borrado de recurrente
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   useEffect(() => {
     if (!difficultyEdited) {
@@ -121,6 +155,25 @@ export const MissionsScreen = () => {
       handleAddStep();
     }
   };
+
+  const toggleCustomDay = (dayId) => {
+    setCustomDays((prev) =>
+      prev.includes(dayId)
+        ? prev.filter((d) => d !== dayId)
+        : [...prev, dayId].sort((a, b) => a - b)
+    );
+  };
+
+  // Días activos según el preset
+  const activeDays = (() => {
+    if (repeatPreset === 'today') return [];
+    if (repeatPreset === 'weekdays') return REPEAT_PRESETS.weekdays.days;
+    if (repeatPreset === 'everyday') return REPEAT_PRESETS.everyday.days;
+    return customDays;
+  })();
+
+  const todayDow = getTodayDowNumber();
+  const appliesToday = activeDays.includes(todayDow);
 
   // ============ FOTO EN CREACIÓN ============
   const handleNewTaskPhotoSelect = async (e) => {
@@ -211,13 +264,15 @@ export const MissionsScreen = () => {
     setNewTaskPhoto(null);
     setPhotoError('');
     setIsProcessingPhoto(false);
+    setRepeatPreset('today');
+    setCustomDays([]);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    addTask({
+    const baseTask = {
       title,
       timeMinutes: parseInt(timeMinutes, 10),
       difficulty,
@@ -230,7 +285,15 @@ export const MissionsScreen = () => {
         done: false
       })),
       photo: newTaskPhoto
-    });
+    };
+
+    if (repeatPreset === 'today' || activeDays.length === 0) {
+      // Tarea única, solo hoy
+      addTask(baseTask);
+    } else {
+      // Plantilla recurrente infinita
+      addRecurringTemplate(baseTask, activeDays);
+    }
 
     resetForm();
     setIsAdding(false);
@@ -492,6 +555,71 @@ export const MissionsScreen = () => {
             </div>
           )}
 
+          {/* 🔁 REPETICIÓN */}
+          <div className="p-3 rounded-2xl bg-[#ecfccb] border-2 border-[#bef264] flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔁</span>
+              <label className="text-xs font-bold text-[#365314] uppercase tracking-wide">
+                ¿Cuándo se repite?
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {Object.entries(REPEAT_PRESETS).map(([key, cfg]) => {
+                const isSelected = repeatPreset === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setRepeatPreset(key)}
+                    className={`py-2 px-2 rounded-xl text-[11px] font-black transition-all cursor-pointer border-2 ${
+                      isSelected
+                        ? 'bg-[#65a30d] text-white border-[#65a30d] shadow-[0_2px_0_0_#3f6212]'
+                        : 'bg-white text-[#365314] border-[#bef264]'
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {repeatPreset === 'custom' && (
+              <div className="flex items-center justify-between gap-1 mt-1">
+                {DAY_CHIPS.map((d) => {
+                  const isOn = customDays.includes(d.id);
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => toggleCustomDay(d.id)}
+                      className={`flex-1 h-9 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        isOn
+                          ? 'bg-[#65a30d] text-white'
+                          : 'bg-white text-[#365314] border border-[#bef264]'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {repeatPreset !== 'today' && activeDays.length > 0 && (
+              <p className="text-[11px] text-[#365314] font-bold leading-tight">
+                🔄 Se va a repetir <strong>todas las semanas</strong> hasta que la elimines.
+                {appliesToday ? ' Hoy también aparece.' : ' Hoy no aparece.'}
+              </p>
+            )}
+
+            {repeatPreset === 'custom' && customDays.length === 0 && (
+              <p className="text-[11px] text-[#a16207] font-bold leading-tight">
+                ⚠️ Elegí al menos un día
+              </p>
+            )}
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-on-surface-variant">
@@ -696,6 +824,11 @@ export const MissionsScreen = () => {
                             notifications_active
                           </span>
                         )}
+                        {task.recurrenceId && (
+                          <span className="material-symbols-outlined text-[#65a30d] text-[16px]" title="Se repite">
+                            repeat
+                          </span>
+                        )}
                         <span
                           className={`font-title-md font-bold break-words whitespace-normal leading-tight ${
                             isCompleted ? 'line-through text-gray-500' : 'text-on-surface'
@@ -770,7 +903,6 @@ export const MissionsScreen = () => {
                       </div>
 
                       <div className="flex items-center gap-0.5">
-                        {/* ⬆️ Subir */}
                         <button
                           type="button"
                           onClick={() => moveTaskOrder(task.id, 'up')}
@@ -783,7 +915,6 @@ export const MissionsScreen = () => {
                           </span>
                         </button>
 
-                        {/* ⬇️ Bajar */}
                         <button
                           type="button"
                           onClick={() => moveTaskOrder(task.id, 'down')}
@@ -796,7 +927,6 @@ export const MissionsScreen = () => {
                           </span>
                         </button>
 
-                        {/* 🔔 Alarma */}
                         <button
                           type="button"
                           onClick={() => setAlarmTask(task)}
@@ -814,7 +944,6 @@ export const MissionsScreen = () => {
                           </span>
                         </button>
 
-                        {/* 📷 Foto */}
                         <button
                           type="button"
                           onClick={() => handleQuickPhotoClick(task)}
@@ -832,7 +961,6 @@ export const MissionsScreen = () => {
                           </span>
                         </button>
 
-                        {/* ✏️ Editar */}
                         <button
                           type="button"
                           onClick={() => setEditingTask(task)}
@@ -842,9 +970,14 @@ export const MissionsScreen = () => {
                           <span className="material-symbols-outlined text-[#ea580c] text-[20px]">edit</span>
                         </button>
 
-                        {/* 🗑️ Eliminar */}
                         <button
-                          onClick={() => deleteTask(task.id)}
+                          onClick={() => {
+                            if (task.recurrenceId) {
+                              setTaskToDelete(task);
+                            } else {
+                              deleteTask(task.id);
+                            }
+                          }}
                           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-100 active:scale-95 transition-all cursor-pointer"
                           title="Eliminar misión"
                           type="button"
@@ -878,7 +1011,13 @@ export const MissionsScreen = () => {
                         check_circle
                       </span>
                       <button
-                        onClick={() => deleteTask(task.id)}
+                        onClick={() => {
+                          if (task.recurrenceId) {
+                            setTaskToDelete(task);
+                          } else {
+                            deleteTask(task.id);
+                          }
+                        }}
                         className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-100 active:scale-95 transition-all cursor-pointer"
                         title="Eliminar misión"
                         type="button"
@@ -965,6 +1104,52 @@ export const MissionsScreen = () => {
         photo={photoToView}
         title={photoViewTitle}
       />
+
+      {/* Mini-modal de eliminación de tarea recurrente */}
+      {taskToDelete && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-3xl border-4 border-[#ea580c] shadow-[0_10px_0_0_#c2410c] p-6">
+            <span className="text-4xl block text-center mb-2">🔁</span>
+            <h3 className="font-headline-md text-headline-md font-black text-on-surface text-center mb-2">
+              Esta misión se repite
+            </h3>
+            <p className="font-body-sm text-body-sm text-on-surface-variant text-center mb-5">
+              "{taskToDelete.title}" se repite varias veces por semana. ¿Qué querés hacer?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  deleteTask(taskToDelete.id);
+                  setTaskToDelete(null);
+                  try { audioService.playClick(); } catch (e) {}
+                }}
+                className="w-full h-12 rounded-2xl bg-white border-2 border-[#e2e8f0] text-on-surface font-bold active:scale-95 transition-all cursor-pointer"
+              >
+                Solo esta vez
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteRecurringTemplate(taskToDelete.recurrenceId, true);
+                  setTaskToDelete(null);
+                  try { audioService.playClick(); } catch (e) {}
+                }}
+                className="w-full h-12 rounded-2xl bg-[#ef4444] text-white font-black shadow-[0_4px_0_0_#991b1b] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+              >
+                Todas las semanas
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaskToDelete(null)}
+                className="w-full h-10 text-on-surface-variant font-bold text-sm cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

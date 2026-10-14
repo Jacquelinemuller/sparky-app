@@ -3,6 +3,7 @@ import { useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import MiniToast from './components/MiniToast';
+import { MiDiaScreen } from './screens/MiDiaScreen';
 import PinModal from './components/PinModal';
 import { TodayScreen } from './screens/TodayScreen';
 import { ScheduleScreen } from './screens/ScheduleScreen';
@@ -41,9 +42,10 @@ export function AppContent() {
 
   const isMiniCelebration = celebration?.type === 'mini';
 
-  // 🆕 Función que decide qué contenido mostrar (sin return temprano)
   const renderScreen = () => {
-    // Pantallas internas
+    // ============================================
+    // PANTALLAS INTERNAS (full-screen, con su propio header)
+    // ============================================
     if (activeScreen === 'pomodoro') return <PomodoroScreen />;
     if (activeScreen === 'stats') return <StatsScreen />;
     if (activeScreen === 'monthly') return <MonthlyCalendarScreen />;
@@ -54,6 +56,7 @@ export function AppContent() {
     if (activeScreen === 'alarms') return <AlarmsScreen />;
     if (activeScreen === 'calma') return <CalmaScreen />;
     if (activeScreen === 'diario') return <DiarioScreen />;
+    if (activeScreen === 'midia') return <MiDiaScreen />;   {/* ← MOVIDO ACÁ */}
 
     if (activeScreen === 'parents') {
       if (!parentsUnlocked) {
@@ -102,7 +105,6 @@ export function AppContent() {
     <>
       {renderScreen()}
 
-      {/* 🆕 SIEMPRE montado, en cualquier pantalla */}
       <AlarmManager />
 
       <MiniToast

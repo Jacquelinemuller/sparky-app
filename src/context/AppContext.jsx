@@ -38,6 +38,11 @@ function getTodayKeyForPlay() {
   return getTodayKey();
 }
 
+function getDayOfWeekNumber() {
+  const d = new Date().getDay();
+  return d === 0 ? 7 : d; // 1=Lun ... 7=Dom
+}
+
 function getNextMonday() {
   const now = new Date();
   const day = now.getDay();
@@ -96,15 +101,20 @@ function sortTasksByPriority(tasks) {
 }
 
 function recomputeStatus(tasks) {
-  const completed = tasks.filter((t) => t.status === 'completed');
-  const pending = sortTasksByPriority(tasks.filter((t) => t.status !== 'completed'));
+  const today = getTodayKey();
+
+  const visible = tasks.filter((t) => !t.notBefore || t.notBefore <= today);
+  const future = tasks.filter((t) => t.notBefore && t.notBefore > today);
+
+  const completed = visible.filter((t) => t.status === 'completed');
+  const pending = sortTasksByPriority(visible.filter((t) => t.status !== 'completed'));
 
   const recomputed = pending.map((t, i) => ({
     ...t,
     status: i === 0 ? 'active' : 'queued'
   }));
 
-  return [...recomputed, ...completed];
+  return [...recomputed, ...completed, ...future];
 }
 
 function grantReward(stats, amount) {
@@ -163,6 +173,63 @@ export const AppProvider = ({ children }) => {
     const interval = setInterval(checkDailyReset, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // ============================================
+  // EFECTO: MATERIALIZAR RECURRENTES DEL DÍA
+  // ============================================
+  useEffect(() => {
+    const today = getTodayKey();
+    const dow = getDayOfWeekNumber(); // 1=Lun ... 7=Dom
+
+    setState((prev) => {
+      const templates = prev.recurringTemplates || [];
+      if (templates.length === 0) return prev;
+
+      let changed = false;
+      const newTasks = [];
+      const updatedTemplates = templates.map((tpl) => {
+        const appliesToday = tpl.days.includes(dow);
+        const alreadyDone = tpl.lastMaterializedDate === today;
+
+        if (!appliesToday || alreadyDone) return tpl;
+
+        changed = true;
+
+        newTasks.push({
+          id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          title: tpl.title,
+          timeMinutes: tpl.timeMinutes,
+          difficulty: tpl.difficulty,
+          xpReward: tpl.xpReward,
+          category: tpl.category,
+          status: 'queued',
+          priority: tpl.priority,
+          color: tpl.color,
+          microSteps: (tpl.microSteps || []).map((s, i) => ({
+            id: `ms_i_${Date.now()}_${i}`,
+            text: s.text,
+            done: false
+          })),
+          slotId: null,
+          slotDate: null,
+          photo: tpl.photo,
+          order: Date.now() + newTasks.length,
+          recurrenceId: tpl.id,
+          materializedDate: today
+        });
+
+        return { ...tpl, lastMaterializedDate: today };
+      });
+
+      if (!changed) return prev;
+
+      return {
+        ...prev,
+        recurringTemplates: updatedTemplates,
+        tasks: recomputeStatus([...prev.tasks, ...newTasks])
+      };
+    });
+  }, [state.lastResetDate]);
 
   useEffect(() => {
     storageService.save(state);
@@ -458,6 +525,79 @@ export const AppProvider = ({ children }) => {
     });
   }, [recordActivity]);
 
+  // ==========================================
+  // ACCIONES: PLANTILLAS RECURRENTES
+  // ==========================================
+  const addRecurringTemplate = useCallback((baseTask, days) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+
+    if (!days || days.length === 0) return;
+
+    setState((prev) => {
+      const timeMinutes = baseTask.timeMinutes || 10;
+      const difficulty = baseTask.difficulty || suggestDifficultyFromTime(timeMinutes);
+      const xpReward = getXpFromDifficulty(difficulty);
+
+      const template = {
+        id: 'rt_' + Date.now(),
+        title: baseTask.title,
+        timeMinutes,
+        difficulty,
+        xpReward,
+        category: baseTask.category || 'general',
+        priority: baseTask.priority || 'yellow',
+        color: baseTask.color || '#ff6b00',
+        microSteps: (baseTask.microSteps || []).map((s, i) => ({
+          id: `ms_t_${Date.now()}_${i}`,
+          text: typeof s === 'string' ? s : s.text,
+          done: false
+        })),
+        photo: baseTask.photo || null,
+        days: [...days].sort((a, b) => a - b),
+        createdAt: Date.now(),
+        lastMaterializedDate: null
+      };
+
+      return {
+        ...prev,
+        recurringTemplates: [...(prev.recurringTemplates || []), template]
+      };
+    });
+  }, [recordActivity]);
+
+  const deleteRecurringTemplate = useCallback((templateId, alsoDeleteMaterialized = false) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+    setState((prev) => {
+      const nextTemplates = (prev.recurringTemplates || []).filter(
+        (t) => t.id !== templateId
+      );
+      let nextTasks = prev.tasks;
+      if (alsoDeleteMaterialized) {
+        nextTasks = prev.tasks.filter(
+          (t) => !(t.recurrenceId === templateId && t.status !== 'completed')
+        );
+      }
+      return {
+        ...prev,
+        recurringTemplates: nextTemplates,
+        tasks: recomputeStatus(nextTasks)
+      };
+    });
+  }, [recordActivity]);
+
+  const updateRecurringTemplate = useCallback((templateId, updates) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      recurringTemplates: (prev.recurringTemplates || []).map((t) =>
+        t.id === templateId ? { ...t, ...updates } : t
+      )
+    }));
+  }, [recordActivity]);
+
   const deleteTask = useCallback((taskId) => {
     recordActivity();
     try { audioService.playClick(); } catch (e) {}
@@ -733,17 +873,19 @@ export const AppProvider = ({ children }) => {
       }
     }));
   }, [recordActivity]);
-const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
-  recordActivity();
-  try { audioService.playClick(); } catch (e) {}
-  setState((prev) => ({
-    ...prev,
-    weeklyTemplate: {
-      ...prev.weeklyTemplate,
-      [dayId]: blocks
-    }
-  }));
-}, [recordActivity]);
+
+  const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
+    recordActivity();
+    try { audioService.playClick(); } catch (e) {}
+    setState((prev) => ({
+      ...prev,
+      weeklyTemplate: {
+        ...prev.weeklyTemplate,
+        [dayId]: Array.isArray(blocks) ? blocks : []
+      }
+    }));
+  }, [recordActivity]);
+
   const setDayOverride = useCallback((dateKey, blocks) => {
     recordActivity();
     setState((prev) => ({
@@ -1335,6 +1477,22 @@ const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
       };
     });
   }, [recordActivity]);
+    // ==========================================
+  // MI DÍA
+  // ==========================================
+  const saveMiDiaEntry = useCallback((dateKey, data) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      miDiaEntries: {
+        ...(prev.miDiaEntries || {}),
+        [dateKey]: {
+          ...data,
+          updatedAt: Date.now()
+        }
+      }
+    }));
+  }, [recordActivity]);
 
   const closeCelebration = useCallback(() => setCelebration(null), []);
 
@@ -1352,7 +1510,10 @@ const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
     setSparkyNudge(null);
   }, []);
 
-  const sortedTasks = sortTasksByPriority(state.tasks);
+  const todayKey = getTodayKey();
+  const sortedTasks = sortTasksByPriority(
+    state.tasks.filter((t) => !t.notBefore || t.notBefore <= todayKey)
+  );
   const activeTask = sortedTasks.find((t) => t.status !== 'completed') || null;
 
   const level = Math.floor((state.stats.xp || 0) / 100) + 1;
@@ -1417,6 +1578,10 @@ const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
         tasks: sortedTasks,
         activeTask,
         addTask,
+        addRecurringTemplate,
+        updateRecurringTemplate,
+        deleteRecurringTemplate,
+        recurringTemplates: state.recurringTemplates || [],
         deleteTask,
         completeActiveTask,
         toggleMicroStep,
@@ -1456,6 +1621,8 @@ const setWeeklyTemplateDay = useCallback((dayId, blocks) => {
         alarms: state.alarms || [],
         diaryEntries: state.diaryEntries || [],
         addDiaryEntry,
+        miDiaEntries: state.miDiaEntries || {},
+        saveMiDiaEntry,
         updateDiaryNote,
         addAlarm,
         removeAlarm,
