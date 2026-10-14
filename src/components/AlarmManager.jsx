@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { audioService } from '../services/audioService';
+import { Capacitor } from '@capacitor/core';
+import {
+  requestNotificationPermission,
+  syncAlarms
+} from '../services/localNotificationService';
 
 // Convierte "HH:MM" a minutos totales desde 00:00
 function timeToMinutes(hhmm) {
@@ -115,6 +120,39 @@ export const AlarmManager = () => {
       }
     };
   }, [activeAlarm, settings]);
+// ============================================
+// 🆕 Sincronizar alarmas con notificaciones locales
+// (para que el reloj vibre)
+// ============================================
+const alarmsSyncRef = useRef('');
+
+useEffect(() => {
+  if (!Capacitor.isNativePlatform()) return;
+
+  // Firma simple para no re-sincronizar si nada cambió
+  const signature = JSON.stringify(
+    (alarms || []).map((a) => ({
+      id: a.id,
+      time: a.time,
+      dateKey: a.dateKey,
+      enabled: a.enabled,
+      triggered: a.triggered,
+      label: a.label
+    }))
+  );
+
+  if (signature === alarmsSyncRef.current) return;
+  alarmsSyncRef.current = signature;
+
+  (async () => {
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      console.warn('⚠️ Permisos de notificación denegados');
+      return;
+    }
+    await syncAlarms(alarms || []);
+  })();
+}, [alarms]);
 
   if (!activeAlarm) return null;
 

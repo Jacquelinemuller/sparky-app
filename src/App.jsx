@@ -22,6 +22,8 @@ import { AlarmsScreen } from './screens/AlarmsScreen';
 import { CalmaScreen } from './screens/CalmaScreen';
 import { DiarioScreen } from './screens/DiarioScreen';
 import { AlarmManager } from './components/AlarmManager';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 
 const BACKGROUNDS = {
   today: 'radial-gradient(circle at 50% 0%, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)',
@@ -31,8 +33,30 @@ const BACKGROUNDS = {
 };
 
 export function AppContent() {
-  const { activeTab, activeScreen, setActiveScreen, celebration, closeCelebration } = useApp();
+  const { activeTab, activeScreen, setActiveScreen, setActiveTab, celebration, closeCelebration } = useApp();
   const [parentsUnlocked, setParentsUnlocked] = useState(false);
+
+  // ============================================
+  // Notificaciones locales → abren la app en Hoy
+  // ============================================
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listenerPromise = LocalNotifications.addListener(
+      'localNotificationActionPerformed',
+      (notification) => {
+        const extra = notification.notification.extra || {};
+        if (extra.route === 'alarm') {
+          setActiveScreen('none');
+          setActiveTab('today');
+        }
+      }
+    );
+
+    return () => {
+      listenerPromise.then((l) => l.remove());
+    };
+  }, [setActiveScreen, setActiveTab]);
 
   useEffect(() => {
     if (activeScreen !== 'parents' && parentsUnlocked) {
@@ -56,7 +80,7 @@ export function AppContent() {
     if (activeScreen === 'alarms') return <AlarmsScreen />;
     if (activeScreen === 'calma') return <CalmaScreen />;
     if (activeScreen === 'diario') return <DiarioScreen />;
-    if (activeScreen === 'midia') return <MiDiaScreen />;   {/* ← MOVIDO ACÁ */}
+    if (activeScreen === 'midia') return <MiDiaScreen />;
 
     if (activeScreen === 'parents') {
       if (!parentsUnlocked) {
