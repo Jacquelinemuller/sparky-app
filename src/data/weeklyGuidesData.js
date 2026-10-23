@@ -281,6 +281,76 @@ export const WEEKLY_GUIDES = [
         reward: 20
       }
     ]
+  },
+  {
+    id: 5,
+    weekNumber: 5,
+    category: 'habilidades',
+    categoryName: 'Autorregulación',
+    title: 'TDAH y Autorregulación e Impulsividad',
+    subtitle: 'Pensar antes de actuar es una habilidad que se entrena.',
+    sheetImage: '/sheets/autorregulacion/autorregulacion 1.jpeg', // (Opcional, si tenés la lámina)
+    author: 'Coach Marco - Universo TDAH',
+    colorTheme: 'orange',
+    summary: 'El TDAH puede hacer que actuar sin pensar parezca automático. Con estrategias, se puede pausar, elegir y actuar mejor.',
+    tips: [
+      {
+        day: 1,
+        dayName: 'Lunes',
+        title: 'Actuar sin pensar',
+        explanation: 'El TDAH puede hacer que las reacciones sean automáticas. Aprender a frenar un segundo es el primer paso.',
+        action: 'Antes de contestar hoy, respirá profundo una vez.',
+        reward: 15
+      },
+      {
+        day: 2,
+        dayName: 'Martes',
+        title: 'Interrumpir',
+        explanation: 'A veces las ideas van más rápido que la boca. Esperar el turno es un músculo que se entrena.',
+        action: 'Espera a que la otra persona termine de hablar antes de decir tu idea.',
+        reward: 15
+      },
+      {
+        day: 3,
+        dayName: 'Miércoles',
+        title: 'Reacciones impulsivas',
+        explanation: 'Cuando el enojo sube muy rápido, es difícil tomar buenas decisiones. Pausar cambia el resultado.',
+        action: 'Si te enojás, cuenta hasta 4 en tu cabeza antes de hablar.',
+        reward: 15
+      },
+      {
+        day: 4,
+        dayName: 'Jueves',
+        title: 'El semáforo del impulso',
+        explanation: 'Rojo (frená), Amarillo (pensá qué pasará), Verde (elegí la mejor opción).',
+        action: 'Usa tu semáforo mental hoy en la escuela o en casa.',
+        reward: 15
+      },
+      {
+        day: 5,
+        dayName: 'Viernes',
+        title: 'Mis estrategias',
+        explanation: 'Las listas cortas, los recordatorios y las pausas estratégicas nos ayudan a controlar los impulsos.',
+        action: 'Elegí una estrategia de las 6 y probala hoy.',
+        reward: 15
+      },
+      {
+        day: 6,
+        dayName: 'Sábado',
+        title: 'Mi espejo de la semana',
+        explanation: 'Revisar cómo reaccionamos nos ayuda a conocer nuestro cerebro.',
+        action: 'Completa el quiz de autoevaluación.',
+        reward: 15
+      },
+      {
+        day: 7,
+        dayName: 'Domingo',
+        title: 'El reto del semáforo',
+        explanation: 'Pensar antes de actuar es una habilidad que se entrena día a día.',
+        action: 'Acepta el reto "El Semáforo del Impulso".',
+        reward: 20
+      }
+    ]
   }
 ];
 

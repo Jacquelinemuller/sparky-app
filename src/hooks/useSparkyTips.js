@@ -17,7 +17,7 @@ import { audioService } from '../services/audioService';
 //
 // ⚠️ Recordá volver a null antes de subir a producción
 //
-const DEBUG_SIMULATE_DAY = null;
+const DEBUG_SIMULATE_DAY = 30;
 
 // Fecha de referencia para modo debug (un lunes cualquiera)
 const DEBUG_REF_MONDAY = new Date(2026, 9, 6);

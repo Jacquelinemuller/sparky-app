@@ -11,6 +11,8 @@ const MICROSTEP_XP_BONUS = 2;
 
 const MAX_DAILY_PLAY_MINUTES = 30;
 
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnn0taMt3JeE1kZrmGbNEj6aJVM22dsfFbs6khmKCXJEG31v5ZNcHXKSE1nipMqcXT/exec';
+
 // ============================================
 // MAPEO RETO → JUEGO
 // ============================================
@@ -158,7 +160,54 @@ export const AppProvider = ({ children }) => {
 
         const remaining = prev.tasks.filter((t) => t.status !== 'completed');
         const recomputed = recomputeStatus(remaining);
+  // ==========================================
+  // REPORTE DIARIO
+  // ==========================================
+  const setParentEmail = useCallback((email) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      profile: { ...prev.profile, parentEmail: email }
+    }));
+  }, [recordActivity]);
 
+  const sendDailyReport = useCallback(async () => {
+    if (!state.settings.parentReportEnabled) return;
+    if (!state.profile.parentEmail) return alert('Falta configurar el email del padre');
+
+    const hoy = getTodayKey();
+    const misionesCompletadas = state.tasks.filter(
+      (t) => t.status === 'completed'
+    ).length;
+
+    // Buscamos si completó "Mi Día" hoy
+    const miDiaHoy = (state.miDiaEntries || {})[hoy];
+    const textoMiDia = miDiaHoy ? miDiaHoy.textoDia : '';
+    
+    // Contamos los tips completados
+    const tipsUsados = (state.completedTips || []).length;
+
+    const datosReporte = {
+      emailPadre: state.profile.parentEmail,
+      nombreNino: state.profile.username,
+      tipsUsados: tipsUsados,
+      misionesCompletadas: misionesCompletadas,
+      miDia: textoMiDia
+    };
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(datosReporte),
+      });
+      console.log('✅ Reporte enviado');
+      alert('¡Reporte enviado al correo del padre!');
+    } catch (error) {
+      console.error('❌ Error al enviar reporte:', error);
+      alert('Hubo un error al enviar el reporte');
+    }
+  }, [state.settings.parentReportEnabled, state.profile, state.tasks, state.completedTips, state.miDiaEntries]);
         return {
           ...prev,
           tasks: recomputed,
@@ -378,6 +427,113 @@ export const AppProvider = ({ children }) => {
     lastActivityRef.current = Date.now();
     if (sparkyNudge) setSparkyNudge(null);
   }, [sparkyNudge]);
+
+   // ==========================================
+  // REPORTE DIARIO (Va acá, en el nivel principal)
+  // ==========================================
+  const setParentEmail = useCallback((email) => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      profile: { ...prev.profile, parentEmail: email }
+    }));
+  }, [recordActivity]);
+
+  const toggleParentReport = useCallback(() => {
+    recordActivity();
+    setState((prev) => ({
+      ...prev,
+      settings: { ...prev.settings, parentReportEnabled: !prev.settings.parentReportEnabled }
+    }));
+  }, [recordActivity]);
+
+    const resetTipsToWeek = useCallback((targetWeek) => {
+    recordActivity();
+    
+    // Calculamos cuántos días hacia atrás para que hoy sea LUNES de esa semana
+    const daysOffset = (targetWeek - 1) * 7; 
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysOffset);
+    
+    // Formateamos a YYYY-MM-DD
+    const y = startDate.getFullYear();
+    const m = String(startDate.getMonth() + 1).padStart(2, '0');
+    const d = String(startDate.getDate()).padStart(2, '0');
+    const dateKey = `${y}-${m}-${d}`;
+
+    // Guardamos la nueva fecha de inicio en el localStorage
+    localStorage.setItem('sparky_tips_start', dateKey);
+    
+    // Limpiamos los tips completados para que pueda leerlos de nuevo
+    setState((prev) => ({
+      ...prev,
+      completedTips: [] 
+    }));
+    
+    // Recargamos para que el hook useSparkyTips tome la nueva fecha
+    setTimeout(() => window.location.reload(), 100);
+  }, [recordActivity]);
+
+// ==========================================
+// CONTROL DE PADRES: TIPS Y JUEGOS
+// ==========================================
+const resetTipsProgress = useCallback(() => {
+  recordActivity();
+  setState((prev) => ({
+    ...prev,
+    completedTips: [], // 🔑 Borra el historial de tips
+    activeWeek: 1      // 🔑 Vuelve a la semana 1
+  }));
+}, [recordActivity]);
+
+const toggleLockGame = useCallback((gameId) => {
+  recordActivity();
+  setState((prev) => {
+    const locked = prev.lockedGames || [];
+    const isLocked = locked.includes(gameId);
+    return {
+      ...prev,
+      lockedGames: isLocked
+        ? locked.filter(id => id !== gameId) // Desbloquear
+        : [...locked, gameId]                // Bloquear
+    };
+  });
+}, [recordActivity]);
+
+  const sendDailyReport = useCallback(async () => {
+    if (!state.settings.parentReportEnabled) return;
+    if (!state.profile.parentEmail) return alert('Falta configurar el email del padre');
+
+    const hoy = getTodayKey();
+    const misionesCompletadas = state.tasks.filter(
+      (t) => t.status === 'completed'
+    ).length;
+    const miDiaHoy = (state.miDiaEntries || {})[hoy];
+    const textoMiDia = miDiaHoy ? miDiaHoy.textoDia : '';
+    const tipsUsados = (state.completedTips || []).length;
+
+    const datosReporte = {
+      emailPadre: state.profile.parentEmail,
+      nombreNino: state.profile.username,
+      tipsUsados: tipsUsados,
+      misionesCompletadas: misionesCompletadas,
+      miDia: textoMiDia
+    };
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(datosReporte),
+      });
+      console.log('✅ Reporte enviado');
+      alert('¡Reporte enviado al correo del padre!');
+    } catch (error) {
+      console.error('❌ Error al enviar reporte:', error);
+      alert('Hubo un error al enviar el reporte');
+    }
+  }, [state.settings.parentReportEnabled, state.profile, state.tasks, state.completedTips, state.miDiaEntries]);
 
   // ==========================================
   // ACCIONES: PERFIL
@@ -1574,6 +1730,12 @@ export const AppProvider = ({ children }) => {
         setUserAvatar,
         settings: state.settings,
         updateSettings,
+        parentReportEnabled: state.settings.parentReportEnabled || false,
+        parentEmail: state.profile.parentEmail || '',
+        setParentEmail,
+        toggleParentReport,
+        sendDailyReport,
+        resetTipsToWeek,
         toggleSound,
         tasks: sortedTasks,
         activeTask,
@@ -1679,6 +1841,9 @@ export const AppProvider = ({ children }) => {
         sparkyNudge,
         dismissNudge,
         recordActivity,
+        resetTipsProgress,
+        toggleLockGame,
+        lockedGames: state.lockedGames || [],
         dailyHistory: state.dailyHistory || [],
         sparkyMessage:
           state.sparkyMessage ||

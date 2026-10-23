@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import UpcomingEventBanner from '../components/UpcomingEventBanner';
 import { audioService } from '../services/audioService';
+import { ttsService } from '../services/ttsService';
 import confetti from 'canvas-confetti';
 import sparkyVideo from '../assets/sparky.mp4';
 
@@ -59,10 +60,9 @@ export const TodayScreen = () => {
     setActiveScreen
   } = useApp();
 
+  // 🔑 ESTADOS
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCompletedAnim, setIsCompletedAnim] = useState(false);
-
-  // Alternancia de mensajes del saludo
   const [greetingIndex, setGreetingIndex] = useState(0);
   const [isSparkyBouncing, setIsSparkyBouncing] = useState(false);
 
@@ -72,9 +72,34 @@ export const TodayScreen = () => {
   const timerRef = useRef(null);
   const [showTimeUpModal, setShowTimeUpModal] = useState(false);
 
+  // 🔑 ESTADOS DE VOZ
+  const [isTtsMuted, setIsTtsMuted] = useState(ttsService.isMuted);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   const queuedTasks = tasks.filter((t) => t.status === 'queued');
 
-  // Auto-rotación del saludo cada 6 segundos
+  // 🔑 EFECTO DE VOZ AUTOMÁTICA AL INICIAR EL DÍA
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastPlayed = localStorage.getItem('sparky_home_tts_date');
+    
+    if (lastPlayed !== today && !isTtsMuted) {
+      const dialogos = [
+        getGreetingMessage(userName, 0),
+        getGreetingMessage(userName, 1)
+      ];
+      
+      const timer = setTimeout(() => {
+        ttsService.speak(dialogos, () => setIsSpeaking(false));
+        setIsSpeaking(true);
+        localStorage.setItem('sparky_home_tts_date', today);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userName, isTtsMuted]);
+
+  // Rotación del saludo
   useEffect(() => {
     const interval = setInterval(() => {
       setGreetingIndex((i) => (i === 0 ? 1 : 0));
@@ -114,17 +139,30 @@ export const TodayScreen = () => {
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [timerState]);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
+  const replayVoice = () => {
+    if (isTtsMuted) {
+      setIsTtsMuted(false);
+      ttsService.setMuted(false);
+    }
+    const dialogos = [
+      getGreetingMessage(userName, 0),
+      getGreetingMessage(userName, 1)
+    ];
+    ttsService.speak(dialogos, () => setIsSpeaking(false));
+    setIsSpeaking(true);
+  };
+
+  const toggleMute = () => {
+    const newMuted = !isTtsMuted;
+    setIsTtsMuted(newMuted);
+    ttsService.setMuted(newMuted);
+    if (newMuted) setIsSpeaking(false);
+  };
 
   const handleBubbleClick = () => {
     if (!activeTask) return;
@@ -190,7 +228,6 @@ export const TodayScreen = () => {
     setActiveTab('notes');
   };
 
-  // Tocar la burbuja → navega según el mensaje activo
   const handleGreetingClick = () => {
     try { audioService.playPop(); } catch (e) {}
     setActiveScreen('none');
@@ -201,13 +238,10 @@ export const TodayScreen = () => {
     }
   };
 
-  // Tocar a Sparky → alterna el diálogo + rebote + sonido
   const handleSparkyTap = () => {
     try { audioService.playBark(); } catch (e) {}
-
     setIsSparkyBouncing(false);
     setTimeout(() => setIsSparkyBouncing(true), 10);
-
     setGreetingIndex((i) => (i === 0 ? 1 : 0));
   };
 
@@ -241,13 +275,8 @@ export const TodayScreen = () => {
       className="flex flex-col w-full max-w-md mx-auto items-center select-none pb-8"
       id="focus-screen-root"
     >
-      {/* ============================================
-          BLOQUE 1: Sparky animado + burbuja alternante
-          ============================================ */}
       <section className="w-full flex items-start gap-3 mb-4">
-        {/* Columna izquierda: Sparky + botones verticales */}
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
-          {/* Sparky animado (video) — tocar alterna el diálogo */}
           <button
             type="button"
             onClick={handleSparkyTap}
@@ -273,30 +302,53 @@ export const TodayScreen = () => {
             </span>
           </button>
 
-          {/* 🆕 Botón Tips — debajo de Sparky, con foco negro */}
-          <button
-            type="button"
-            onClick={() => {
-              try { audioService.playPop(); } catch (e) {}
-              setActiveScreen('tips');
-            }}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border-2 border-[#fed7aa] text-[#ea580c] font-black text-[11px] shadow-[0_2px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer whitespace-nowrap"
-            title="Ver los tips de Sparky"
-          >
-            <span
-              className="material-symbols-outlined text-[16px]"
-              style={{
-                color: '#1a1a1a',
-                fontVariationSettings: '"FILL" 1'
+          <div className="flex items-center gap-1.5 mt-1">
+            <button
+              type="button"
+              onClick={() => {
+                try { audioService.playPop(); } catch (e) {}
+                setActiveScreen('tips');
               }}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white hover:bg-[#ffedd5] border-2 border-[#fed7aa] text-[#ea580c] font-black text-[10px] shadow-[0_2px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer whitespace-nowrap"
+              title="Ver los tips de Sparky"
             >
-              lightbulb
-            </span>
-            <span>Tip</span>
-          </button>
+              <span
+                className="material-symbols-outlined text-[14px]"
+                style={{ color: '#1a1a1a', fontVariationSettings: '"FILL" 1' }}
+              >
+                lightbulb
+              </span>
+              <span>Tip</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={replayVoice}
+              className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-[0_2px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-none border-2 cursor-pointer ${
+                isSpeaking ? 'bg-orange-100 border-orange-400 text-orange-600 animate-pulse' : 'bg-white border-[#fed7aa] text-[#ea580c]'
+              }`}
+              title="Escuchar a Sparky"
+            >
+              <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: '"FILL" 1' }}>
+                {isSpeaking ? 'stop_circle' : 'volume_up'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleMute}
+              className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-[0_2px_0_0_#fed7aa] active:translate-y-0.5 active:shadow-none border-2 cursor-pointer ${
+                isTtsMuted ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-[#fed7aa] text-[#ea580c]'
+              }`}
+              title={isTtsMuted ? 'Activar voz' : 'Silenciar'}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {isTtsMuted ? 'volume_off' : 'volume_mute'}
+              </span>
+            </button>
+          </div>
         </div>
 
-        {/* Columna derecha: burbuja + puntitos */}
         <div className="relative flex-1 min-w-0">
           <button
             type="button"
@@ -315,7 +367,6 @@ export const TodayScreen = () => {
             </p>
           </button>
 
-          {/* Puntitos indicadores */}
           <div className="flex items-center justify-center gap-1.5 mt-2">
             {[0, 1].map((i) => (
               <button
@@ -336,28 +387,25 @@ export const TodayScreen = () => {
         </div>
       </section>
 
-      {/* ============================================
-          BLOQUE 2: 🎤 + Círculo con timer + 🍅
-          ============================================ */}
       <section className="w-full flex items-start justify-center my-3">
        <button
-  type="button"
-  onClick={goToNotes}
-  className="relative z-20 flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-[#1a1a1a] shadow-[0_3px_0_0_#000000] flex items-center justify-center active:translate-y-0.5 active:shadow-none transition-all cursor-pointer -mr-3"
-  title="Mis notas de voz"
->
-  <img
-    src="/micprincipal.png"
-    alt="Mis notas de voz"
-    draggable={false}
-    style={{
-      width: '30px',
-      height: '30px',
-      objectFit: 'contain',
-      pointerEvents: 'none'
-    }}
-  />
-</button>
+          type="button"
+          onClick={goToNotes}
+          className="relative z-20 flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-[#1a1a1a] shadow-[0_3px_0_0_#000000] flex items-center justify-center active:translate-y-0.5 active:shadow-none transition-all cursor-pointer -mr-3"
+          title="Mis notas de voz"
+        >
+          <img
+            src="/micprincipal.png"
+            alt="Mis notas de voz"
+            draggable={false}
+            style={{
+              width: '30px',
+              height: '30px',
+              objectFit: 'contain',
+              pointerEvents: 'none'
+            }}
+          />
+        </button>
 
         <div className="relative flex-shrink-0">
           <div className="absolute w-72 h-72 rounded-full bg-[#ff6b00]/15 blur-2xl -z-10 pointer-events-none"></div>
@@ -494,7 +542,6 @@ export const TodayScreen = () => {
         </button>
       </section>
 
-      {/* Botón completado */}
       {activeTask && (
         <div className="w-full px-2 mt-4">
           <button
@@ -508,12 +555,10 @@ export const TodayScreen = () => {
         </div>
       )}
 
-      {/* Banner de evento próximo */}
       <div className="w-full mt-3">
         <UpcomingEventBanner />
       </div>
 
-      {/* Micro-pasos */}
       {activeTask && hasMicroSteps && (
         <section className="w-full mt-4 px-2">
           <div className="bg-white rounded-2xl border-2 border-[#fed7aa] shadow-[0_3px_0_0_#fed7aa] p-4">
@@ -539,42 +584,41 @@ export const TodayScreen = () => {
             <div className="flex flex-col gap-2">
               {activeMicroSteps.map((step, idx) => (
                <button
-  key={step.id}
-  type="button"
-  onClick={() => toggleMicroStep(activeTask.id, step.id)}
-  className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 text-left transition-all cursor-pointer active:scale-[0.98] overflow-hidden ${
-    step.done
-      ? 'bg-[#f0fdf4] border-[#10b981]/40'
-      : 'bg-[#fff7ed] border-[#fed7aa] hover:border-[#ff6b00]'
-  }`}
->
-  <span
-    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${
-      step.done
-        ? 'bg-[#10b981] text-white'
-        : 'bg-white text-[#ea580c] border-2 border-[#fed7aa]'
-    }`}
-  >
-    {step.done ? (
-      <span className="material-symbols-outlined text-[18px]">check</span>
-    ) : (
-      idx + 1
-    )}
-  </span>
-  {/* 🆕 min-w-0 permite que el texto se achique; break-words lo parte */}
- <span
-  className={`font-body-md text-body-md font-bold flex-1 min-w-0 break-all ${
-    step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
-  }`}
->
-  {step.text}
-</span>
-  {!step.done && (
-    <span className="text-[10px] font-black text-[#ea580c] px-1.5 py-0.5 rounded-full bg-[#ffedd5] border border-[#fed7aa] flex-shrink-0">
-      +2 XP
-    </span>
-  )}
-</button>
+                  key={step.id}
+                  type="button"
+                  onClick={() => toggleMicroStep(activeTask.id, step.id)}
+                  className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 text-left transition-all cursor-pointer active:scale-[0.98] overflow-hidden ${
+                    step.done
+                      ? 'bg-[#f0fdf4] border-[#10b981]/40'
+                      : 'bg-[#fff7ed] border-[#fed7aa] hover:border-[#ff6b00]'
+                  }`}
+                >
+                  <span
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${
+                      step.done
+                        ? 'bg-[#10b981] text-white'
+                        : 'bg-white text-[#ea580c] border-2 border-[#fed7aa]'
+                    }`}
+                  >
+                    {step.done ? (
+                      <span className="material-symbols-outlined text-[18px]">check</span>
+                    ) : (
+                      idx + 1
+                    )}
+                  </span>
+                 <span
+                  className={`font-body-md text-body-md font-bold flex-1 min-w-0 break-all ${
+                    step.done ? 'line-through text-on-surface-variant opacity-60' : 'text-on-surface'
+                  }`}
+                >
+                  {step.text}
+                </span>
+                  {!step.done && (
+                    <span className="text-[10px] font-black text-[#ea580c] px-1.5 py-0.5 rounded-full bg-[#ffedd5] border border-[#fed7aa] flex-shrink-0">
+                      +2 XP
+                    </span>
+                  )}
+                </button>
               ))}
             </div>
 
@@ -592,7 +636,6 @@ export const TodayScreen = () => {
         </section>
       )}
 
-      {/* Tareas guardadas */}
       <section aria-label="Tareas en espera protegidas" className="w-full mt-5 px-2 flex flex-col items-center">
         <button
           onClick={() => setIsDrawerOpen(!isDrawerOpen)}
@@ -637,7 +680,6 @@ export const TodayScreen = () => {
         )}
       </section>
 
-      {/* Modal "¡Tiempo cumplido!" */}
       {showTimeUpModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-white rounded-3xl border-4 border-[#ea580c] shadow-[0_10px_0_0_#c2410c] p-6 text-center">

@@ -34,6 +34,9 @@ export default function ArcadeTab() {
   const [activeGame, setActiveGame] = useState(null);
 
   const session = useGameSession(activeGame, !!activeGame);
+  const isUnlocked =
+  (game.unlock.type === 'free' || unlockedGames?.includes(game.id)) &&
+  !lockedGames?.includes(game.id); // 🔑 Nuevo: si está bloqueado por el padre, no se muestra
 
   const handlePlayAttempt = (game, isUnlocked) => {
     try { audioService.playClick(); } catch (e) {}
