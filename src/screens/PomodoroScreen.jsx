@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { usePomodoro, POMODORO_MODES, QUICK_MINUTES } from '../hooks/usePomodoro';
+import { BottomNav } from '../components/BottomNav';
+import ActiveBreakModal from '../components/ActiveBreakModal'; // 🔑 IMPORTAMOS EL MODAL
 
-// Tema de colores por modo
 const MODE_THEMES = {
   focus: {
     primary: '#dc2626',
@@ -32,6 +33,8 @@ const MODE_THEMES = {
 
 export const PomodoroScreen = () => {
   const { activeTask, setActiveScreen, userName } = useApp();
+  
+  // 🔑 EXTRAEMOS showActiveBreak y closeActiveBreak DEL HOOK
   const {
     currentMode,
     customMinutes,
@@ -46,7 +49,9 @@ export const PomodoroScreen = () => {
     changeCustomMinutes,
     togglePlay,
     resetTimer,
-    toggleAmbient
+    toggleAmbient,
+    showActiveBreak,
+    closeActiveBreak
   } = usePomodoro();
 
   const [inputMinutes, setInputMinutes] = useState(String(customMinutes));
@@ -79,7 +84,6 @@ export const PomodoroScreen = () => {
       className="min-h-screen flex flex-col antialiased transition-all duration-500"
       style={{ background: theme.bg }}
     >
-      {/* Header */}
       <header
         className="fixed top-0 w-full z-50 pt-safe backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.06)]"
         style={{ background: 'rgba(255,255,255,0.9)' }}
@@ -121,16 +125,12 @@ export const PomodoroScreen = () => {
 
       <main className="flex-1 flex flex-col relative w-full pt-20 pb-28 px-4 max-w-md mx-auto">
 
-        {/* ================================================ */}
-        {/* Misión Actual en Foco - CON BARRA LATERAL */}
-        {/* ================================================ */}
+        {/* Misión Actual en Foco */}
         <div className="bg-white rounded-2xl shadow-[0_4px_0_0_#efdfda] flex items-stretch overflow-hidden mb-4">
-          {/* Barra lateral de color - siempre visible */}
           <div
             className="w-2 flex-shrink-0 transition-colors duration-500"
             style={{ background: theme.primary }}
           />
-          {/* Contenido del card */}
           <div className="flex items-center gap-3 min-w-0 flex-1 p-4">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-500"
@@ -186,7 +186,6 @@ export const PomodoroScreen = () => {
           })}
         </div>
 
-        {/* Ajuste de tiempo - solo en modo Enfoque */}
         {currentMode === 'focus' && (
           <div
             className="bg-white/80 backdrop-blur-sm border-2 border-dashed rounded-2xl p-3 mb-4"
@@ -207,7 +206,6 @@ export const PomodoroScreen = () => {
               </span>
             </div>
 
-            {/* Botones rápidos */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               {QUICK_MINUTES.map((mins) => (
                 <button
@@ -234,7 +232,6 @@ export const PomodoroScreen = () => {
               ))}
             </div>
 
-            {/* Input personalizado */}
             <div className="flex items-center gap-2">
               <span className="font-label-sm text-label-sm text-on-surface-variant font-bold">
                 Personalizar:
@@ -268,14 +265,7 @@ export const PomodoroScreen = () => {
         <div className="bg-white p-6 rounded-3xl shadow-[0_6px_0_0_#efdfda] flex flex-col items-center justify-center relative mb-4">
           <div className="relative w-64 h-64 flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 240 240">
-              <circle
-                cx="120"
-                cy="120"
-                fill="transparent"
-                r={RADIUS}
-                stroke={theme.light}
-                strokeWidth="16"
-              />
+              <circle cx="120" cy="120" fill="transparent" r={RADIUS} stroke={theme.light} strokeWidth="16" />
               <circle
                 className="transition-all duration-700 ease-out"
                 cx="120"
@@ -298,7 +288,7 @@ export const PomodoroScreen = () => {
                 style={{ background: theme.light, color: theme.primary }}
               >
                 <span className="w-2 h-2 rounded-full" style={{ background: theme.primary }} />
-                {isRunning ? 'EN MARCHA' : 'LISTO'}
+                {isRunning ? 'EN MARCHA' : timeLeft === 0 ? 'TERMINADO' : 'LISTO'}
               </span>
               <span className="font-headline-xl-mobile text-headline-xl-mobile text-on-surface font-black tracking-tight">
                 {formattedTime}
@@ -315,7 +305,6 @@ export const PomodoroScreen = () => {
             </div>
           </div>
 
-          {/* Track de tomates */}
           <div className="mt-5 flex flex-col items-center gap-2 w-full pt-3 border-t border-[#efdfda]">
             <div className="flex items-center justify-between w-full max-w-[260px] px-2">
               <span className="font-label-sm text-label-sm text-on-surface-variant font-bold">
@@ -373,7 +362,7 @@ export const PomodoroScreen = () => {
               {isRunning
                 ? 'Pausar'
                 : timeLeft === 0
-                ? 'Reiniciar'
+                ? '¡Empezar de nuevo!'
                 : `¡Empezar ${
                     currentMode === 'focus' ? customMinutes : POMODORO_MODES[currentMode].minutes
                   } min!`}
@@ -521,6 +510,14 @@ export const PomodoroScreen = () => {
         </div>
 
       </main>
+
+      {/* 🔑 RENDERIZAMOS EL MODAL ACÁ */}
+      <ActiveBreakModal 
+        isOpen={showActiveBreak} 
+        onClose={closeActiveBreak} 
+      />
+
+      <BottomNav />
     </div>
   );
 };

@@ -24,6 +24,9 @@ export function usePomodoro() {
   const [isRunning, setIsRunning] = useState(false);
   const [ambientSound, setAmbientSound] = useState('none');
   const [tomatoesToday, setTomatoesToday] = useState(0);
+  
+  // 🔑 NUEVO ESTADO: Para las pausas activas
+  const [showActiveBreak, setShowActiveBreak] = useState(false);
 
   // 🔑 Guardamos la hora exacta en la que debe terminar
   const targetTimeRef = useRef(null);
@@ -37,7 +40,7 @@ export function usePomodoro() {
   );
 
   // ============================================
-  // 🔑 FUNCIÓN PARA CANCELAR NOTIFICACIÓN
+  // 🔑 FUNCIONES DE NOTIFICACIÓN
   // ============================================
   const cancelPomodoroNotification = async () => {
     if (!Capacitor.isNativePlatform()) return;
@@ -46,14 +49,10 @@ export function usePomodoro() {
     } catch (e) {}
   };
 
-  // ============================================
-  // 🔑 FUNCIÓN PARA PROGRAMAR NOTIFICACIÓN
-  // ============================================
   const schedulePomodoroNotification = async (secondsToEnd) => {
     if (!Capacitor.isNativePlatform()) return;
     
     try {
-      // Pedimos permisos si es necesario
       let perm = await LocalNotifications.checkPermissions();
       if (perm.display !== 'granted') {
         await LocalNotifications.requestPermissions();
@@ -69,7 +68,7 @@ export function usePomodoro() {
             body: currentMode === 'focus' ? '¡Excelente trabajo! Es hora de descansar.' : '¡Descanso terminado! ¿Listo para enfocarte?',
             schedule: { at: targetDate, allowWhileIdle: true },
             sound: 'default',
-            channelId: 'alarmas' // Usa el canal que ya creaste para las alarmas
+            channelId: 'alarmas'
           }
         ]
       });
@@ -117,11 +116,9 @@ export function usePomodoro() {
     setIsRunning((prev) => {
       const next = !prev;
       if (!next) {
-        // Al pausar, cancelamos la alarma
         cancelPomodoroNotification();
         try { audioService.stopAmbient(); } catch (e) {}
       } else {
-        // Al arrancar, guardamos la hora de fin y programamos la alarma
         targetTimeRef.current = Date.now() + (timeLeft * 1000);
         schedulePomodoroNotification(timeLeft);
         
@@ -194,6 +191,10 @@ export function usePomodoro() {
           setSparkyMessage(
             `¡Guau ${userName}! ¡Terminaste un Pomodoro completo! 🍅 +${modeConfig.xp} XP. ¡A descansar!`
           );
+          
+          // 🔑 DISPARAMOS LA PAUSA ACTIVA
+          setShowActiveBreak(true);
+          
         } else {
           setSparkyMessage(`¡Buen descanso ${userName}! ¿Listo para el siguiente foco? 💪`);
         }
@@ -201,16 +202,13 @@ export function usePomodoro() {
     };
 
     if (isRunning) {
-      // Si recién arrancamos, calculamos la hora de fin
       if (!targetTimeRef.current) {
         targetTimeRef.current = Date.now() + (timeLeft * 1000);
       }
       
-      // Actualizamos inmediatamente y luego cada 1 segundo
       updateTimer();
       timerRef.current = setInterval(updateTimer, 1000);
       
-      // 🔑 Cuando el celular vuelve de segundo plano, forzamos la actualización
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
           updateTimer();
@@ -253,6 +251,10 @@ export function usePomodoro() {
     togglePlay,
     resetTimer,
     toggleAmbient,
-    resetTomatoes
+    resetTomatoes,
+    
+    // 🔑 NUEVAS PROPIEDADES EXPORTADAS
+    showActiveBreak,
+    closeActiveBreak: () => setShowActiveBreak(false)
   };
 }

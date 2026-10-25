@@ -160,54 +160,6 @@ export const AppProvider = ({ children }) => {
 
         const remaining = prev.tasks.filter((t) => t.status !== 'completed');
         const recomputed = recomputeStatus(remaining);
-  // ==========================================
-  // REPORTE DIARIO
-  // ==========================================
-  const setParentEmail = useCallback((email) => {
-    recordActivity();
-    setState((prev) => ({
-      ...prev,
-      profile: { ...prev.profile, parentEmail: email }
-    }));
-  }, [recordActivity]);
-
-  const sendDailyReport = useCallback(async () => {
-    if (!state.settings.parentReportEnabled) return;
-    if (!state.profile.parentEmail) return alert('Falta configurar el email del padre');
-
-    const hoy = getTodayKey();
-    const misionesCompletadas = state.tasks.filter(
-      (t) => t.status === 'completed'
-    ).length;
-
-    // Buscamos si completó "Mi Día" hoy
-    const miDiaHoy = (state.miDiaEntries || {})[hoy];
-    const textoMiDia = miDiaHoy ? miDiaHoy.textoDia : '';
-    
-    // Contamos los tips completados
-    const tipsUsados = (state.completedTips || []).length;
-
-    const datosReporte = {
-      emailPadre: state.profile.parentEmail,
-      nombreNino: state.profile.username,
-      tipsUsados: tipsUsados,
-      misionesCompletadas: misionesCompletadas,
-      miDia: textoMiDia
-    };
-
-    try {
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(datosReporte),
-      });
-      console.log('✅ Reporte enviado');
-      alert('¡Reporte enviado al correo del padre!');
-    } catch (error) {
-      console.error('❌ Error al enviar reporte:', error);
-      alert('Hubo un error al enviar el reporte');
-    }
-  }, [state.settings.parentReportEnabled, state.profile, state.tasks, state.completedTips, state.miDiaEntries]);
         return {
           ...prev,
           tasks: recomputed,

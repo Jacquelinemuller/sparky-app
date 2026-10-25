@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import UpcomingEventBanner from '../components/UpcomingEventBanner';
 import { audioService } from '../services/audioService';
 import { ttsService } from '../services/ttsService';
+import ActiveBreakModal from '../components/ActiveBreakModal';
 import confetti from 'canvas-confetti';
 import sparkyVideo from '../assets/sparky.mp4';
 
@@ -60,7 +61,9 @@ export const TodayScreen = () => {
     setActiveScreen
   } = useApp();
 
-  // 🔑 ESTADOS
+  // ============================================
+  // ESTADOS
+  // ============================================
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCompletedAnim, setIsCompletedAnim] = useState(false);
   const [greetingIndex, setGreetingIndex] = useState(0);
@@ -71,6 +74,9 @@ export const TodayScreen = () => {
   const [totalSeconds, setTotalSeconds] = useState(0);
   const timerRef = useRef(null);
   const [showTimeUpModal, setShowTimeUpModal] = useState(false);
+  
+  // 🔑 ESTADO DE PAUSA ACTIVA
+  const [showActiveBreak, setShowActiveBreak] = useState(false);
 
   // 🔑 ESTADOS DE VOZ
   const [isTtsMuted, setIsTtsMuted] = useState(ttsService.isMuted);
@@ -78,7 +84,9 @@ export const TodayScreen = () => {
 
   const queuedTasks = tasks.filter((t) => t.status === 'queued');
 
-  // 🔑 EFECTO DE VOZ AUTOMÁTICA AL INICIAR EL DÍA
+  // ============================================
+  // EFECTOS DE VOZ Y SALUDO
+  // ============================================
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const lastPlayed = localStorage.getItem('sparky_home_tts_date');
@@ -99,7 +107,6 @@ export const TodayScreen = () => {
     }
   }, [userName, isTtsMuted]);
 
-  // Rotación del saludo
   useEffect(() => {
     const interval = setInterval(() => {
       setGreetingIndex((i) => (i === 0 ? 1 : 0));
@@ -107,6 +114,9 @@ export const TodayScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // ============================================
+  // LÓGICA DEL TIMER
+  // ============================================
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setTimerState('idle');
@@ -130,7 +140,11 @@ export const TodayScreen = () => {
             clearInterval(timerRef.current);
             setTimerState('finished');
             try { audioService.playPomodoroAlarm(); } catch (e) {}
-            setShowTimeUpModal(true);
+            
+            // 🔑 DISPARAMOS LA PAUSA ACTIVA Y EL MODAL
+            setShowActiveBreak(true);
+            setShowTimeUpModal(true); 
+            
             return 0;
           }
           return prev - 1;
@@ -144,6 +158,9 @@ export const TodayScreen = () => {
     };
   }, [timerState]);
 
+  // ============================================
+  // FUNCIONES DE VOZ
+  // ============================================
   const replayVoice = () => {
     if (isTtsMuted) {
       setIsTtsMuted(false);
@@ -164,6 +181,9 @@ export const TodayScreen = () => {
     if (newMuted) setIsSpeaking(false);
   };
 
+  // ============================================
+  // INTERACCIONES
+  // ============================================
   const handleBubbleClick = () => {
     if (!activeTask) return;
 
@@ -250,6 +270,9 @@ export const TodayScreen = () => {
     setGreetingIndex(index);
   };
 
+  // ============================================
+  // VARIABLES DERIVADAS
+  // ============================================
   const activePriority = activeTask?.priority || 'yellow';
   const activeDifficulty = activeTask?.difficulty || 'media';
   const diffCfg = DIFFICULTY_CONFIG[activeDifficulty] || DIFFICULTY_CONFIG.media;
@@ -275,6 +298,9 @@ export const TodayScreen = () => {
       className="flex flex-col w-full max-w-md mx-auto items-center select-none pb-8"
       id="focus-screen-root"
     >
+      {/* ============================================
+          BLOQUE 1: Sparky + Burbuja
+          ============================================ */}
       <section className="w-full flex items-start gap-3 mb-4">
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
           <button
@@ -387,6 +413,9 @@ export const TodayScreen = () => {
         </div>
       </section>
 
+      {/* ============================================
+          BLOQUE 2: Timer circular
+          ============================================ */}
       <section className="w-full flex items-start justify-center my-3">
        <button
           type="button"
@@ -542,6 +571,7 @@ export const TodayScreen = () => {
         </button>
       </section>
 
+      {/* Botón completado */}
       {activeTask && (
         <div className="w-full px-2 mt-4">
           <button
@@ -555,10 +585,12 @@ export const TodayScreen = () => {
         </div>
       )}
 
+      {/* Banner de evento próximo */}
       <div className="w-full mt-3">
         <UpcomingEventBanner />
       </div>
 
+      {/* Micro-pasos */}
       {activeTask && hasMicroSteps && (
         <section className="w-full mt-4 px-2">
           <div className="bg-white rounded-2xl border-2 border-[#fed7aa] shadow-[0_3px_0_0_#fed7aa] p-4">
@@ -636,6 +668,7 @@ export const TodayScreen = () => {
         </section>
       )}
 
+      {/* Tareas guardadas */}
       <section aria-label="Tareas en espera protegidas" className="w-full mt-5 px-2 flex flex-col items-center">
         <button
           onClick={() => setIsDrawerOpen(!isDrawerOpen)}
@@ -680,6 +713,7 @@ export const TodayScreen = () => {
         )}
       </section>
 
+      {/* Modal "¡Tiempo cumplido!" */}
       {showTimeUpModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-white rounded-3xl border-4 border-[#ea580c] shadow-[0_10px_0_0_#c2410c] p-6 text-center">
@@ -710,6 +744,12 @@ export const TodayScreen = () => {
           </div>
         </div>
       )}
+
+      {/* 🔑 MODAL DE PAUSA ACTIVA */}
+      <ActiveBreakModal 
+        isOpen={showActiveBreak} 
+        onClose={() => setShowActiveBreak(false)} 
+      />
 
       <style>{`
         @keyframes pulseSoft {
