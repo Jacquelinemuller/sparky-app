@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { audioService } from '../../services/audioService';
-import { ttsService } from '../../services/ttsService';
 
 const PALETTE = {
   paper: '#fefcf6',
@@ -32,31 +31,6 @@ export default function TipCard({
   const allRevealed = isMultipleReveal 
     ? data.revealCards.every(c => revealed[c.id])
     : (revealed['main-card'] || false);
-
-  // 🔑 ESTADOS DE VOZ
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isTtsMuted, setIsTtsMuted] = useState(ttsService.isMuted);
-
-  // 🔑 EFECTO: Hablar automáticamente al entrar al tip
-  useEffect(() => {
-    if (isTtsMuted) return;
-    if (!data) return;
-
-    const textsToSpeak = data.sparkyIntro 
-      ? [...data.sparkyIntro, data.subtitle] 
-      : (data.subtitle ? [data.subtitle] : []);
-
-    // Delay chiquito para que la animación de entrada se vea bien
-    const timer = setTimeout(() => {
-      ttsService.speak(textsToSpeak, () => setIsSpeaking(false));
-      setIsSpeaking(true);
-    }, 500);
-
-    return () => {
-      clearTimeout(timer);
-      ttsService.stop(); // Corta el audio si cambia de día rápido
-    };
-  }, [data, isTtsMuted]);
 
   const handleComplete = () => {
     if (!allRevealed || isCompleted) return;
@@ -97,53 +71,6 @@ export default function TipCard({
             <span className="font-black leading-[1.05] flex-1 pt-1" style={{ fontSize: '22px', color: PALETTE.navy, fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.01em' }}>
               {data.titleAccent}
             </span>
-          </div>
-
-          {/* 🔑 BOTONES DE VOZ */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (isSpeaking) {
-                  ttsService.stop();
-                  setIsSpeaking(false);
-                } else {
-                  const textsToSpeak = data.sparkyIntro ? [...data.sparkyIntro, data.subtitle] : [data.subtitle];
-                  ttsService.speak(textsToSpeak, () => setIsSpeaking(false));
-                  setIsSpeaking(true);
-                }
-              }}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm border-2 ${
-                isSpeaking 
-                  ? 'bg-orange-100 border-orange-400 text-orange-600 animate-pulse' 
-                  : 'bg-white border-[#e2e8f0] text-[#64748b]'
-              }`}
-              title={isSpeaking ? 'Detener voz' : 'Escuchar a Sparky'}
-            >
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: '"FILL" 1' }}>
-                {isSpeaking ? 'stop_circle' : 'volume_up'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                const newMuted = !isTtsMuted;
-                setIsTtsMuted(newMuted);
-                ttsService.setMuted(newMuted);
-                if (newMuted) setIsSpeaking(false);
-              }}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm border-2 ${
-                isTtsMuted 
-                  ? 'bg-red-50 border-red-200 text-red-500' 
-                  : 'bg-white border-[#e2e8f0] text-[#64748b]'
-              }`}
-              title={isTtsMuted ? 'Activar voz' : 'Silenciar'}
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                {isTtsMuted ? 'volume_off' : 'volume_mute'}
-              </span>
-            </button>
           </div>
         </div>
 

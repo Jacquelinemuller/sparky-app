@@ -25,12 +25,28 @@ const EMOTIONS = [
   { id: 'sorprendido', emoji: '😲', label: 'Sorprendido' }
 ];
 
+// ============================================
+// UTILIDADES DE FECHA
+// ============================================
 function getTodayKey() {
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+function getPastDays(n = 7) {
+  const days = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    days.push(`${y}-${m}-${day}`);
+  }
+  return days;
 }
 
 function formatShortDate(dateOrKey) {
@@ -364,10 +380,10 @@ function SheetLine({ children }) {
 }
 
 // ============================================
-// DIARIO HISTÓRICO
+// DIARIO HISTÓRICO (ÚLTIMOS 7 DÍAS)
 // ============================================
-function DiaryHistory({ entries, onBack }) {
-  const sortedDates = Object.keys(entries).sort((a, b) => b.localeCompare(a));
+function DiaryHistory({ entries, onBack, onEdit }) {
+  const recentDays = getPastDays(7);
 
   return (
     <div className="min-h-screen flex flex-col antialiased" style={{ background: PAPER_BG }}>
@@ -396,24 +412,42 @@ function DiaryHistory({ entries, onBack }) {
       </header>
 
       <main className="flex-1 flex flex-col relative w-full pt-20 pb-10 px-4 max-w-md mx-auto gap-4">
-        {sortedDates.length === 0 ? (
-          <RuledSheet>
-            <div className="text-center py-6">
-              <span className="text-5xl block mb-3">📖</span>
-              <p className="font-black text-lg" style={{ color: '#6b4a1f', fontFamily: TITLE_FONT }}>
-                Todavía no hay días guardados
-              </p>
-              <p className="text-sm mt-1" style={{ color: '#8b6f47', fontFamily: HAND_FONT }}>
-                Completá tu primer día y va a aparecer acá ✨
-              </p>
-            </div>
-          </RuledSheet>
-        ) : (
-          sortedDates.map((dateKey) => {
-            const entry = entries[dateKey];
-            const emotion = getEmotionById(entry.emocion);
+        {recentDays.map((dateKey) => {
+          const entry = entries[dateKey];
+          
+          if (!entry) {
             return (
-              <RuledSheet key={dateKey}>
+              <div key={dateKey} className="relative opacity-70 hover:opacity-100 transition-opacity">
+                <RuledSheet>
+                  <div style={{ fontFamily: TITLE_FONT, fontSize: '26px', color: '#a8a29e', marginBottom: '20px' }}>
+                    <span style={{ borderBottom: '2px solid #a8a29e', paddingBottom: '2px', display: 'inline-block' }}>
+                      {formatShortDate(dateKey)}:
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-stone-500" style={{ fontFamily: HAND_FONT }}>
+                    Todavía no escribiste nada este día...
+                  </p>
+                </RuledSheet>
+                {/* 🔑 z-50 para que el botón esté siempre por encima */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("Click en Completar día:", dateKey);
+                    onEdit(dateKey);
+                  }}
+                  className="absolute top-4 right-4 z-50 bg-white/90 px-3 py-1.5 rounded-full shadow-md border border-[#e8dfc8] active:scale-90 transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-amber-700">add</span>
+                  <span className="text-[12px] font-black text-amber-800" style={{ fontFamily: HAND_FONT }}>Completar</span>
+                </button>
+              </div>
+            );
+          }
+
+          const emotion = getEmotionById(entry.emocion);
+          return (
+            <div key={dateKey} className="relative">
+              <RuledSheet>
                 <div
                   style={{
                     fontFamily: TITLE_FONT,
@@ -479,9 +513,21 @@ function DiaryHistory({ entries, onBack }) {
                   </SheetLine>
                 )}
               </RuledSheet>
-            );
-          })
-        )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  console.log("Click en Editar día:", dateKey);
+                  onEdit(dateKey);
+                }}
+                className="absolute top-4 right-4 z-50 bg-white/90 p-2 rounded-full shadow-md border border-[#e8dfc8] active:scale-90 transition-all cursor-pointer flex items-center justify-center"
+                title="Editar este día"
+              >
+                <span className="material-symbols-outlined text-[20px] text-amber-700">edit</span>
+              </button>
+            </div>
+          );
+        })}
       </main>
     </div>
   );
@@ -494,28 +540,48 @@ export const MiDiaScreen = () => {
   const { setActiveScreen, saveMiDiaEntry, miDiaEntries, userName } = useApp();
 
   const todayKey = getTodayKey();
-  const existing = (miDiaEntries || {})[todayKey] || {};
-
+  
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [view, setView] = useState('hoy');
-
-  const [logro, setLogro] = useState(existing.logro || '');
-  const [desafio, setDesafio] = useState(existing.desafio || '');
-  const [emocion, setEmocion] = useState(existing.emocion || null);
-  const [comoMeSenti, setComoMeSenti] = useState(existing.comoMeSenti || '');
-  const [textoDia, setTextoDia] = useState(existing.textoDia || '');
-  const [audioBase64, setAudioBase64] = useState(existing.audio || null);
-  const [transcripcion, setTranscripcion] = useState(existing.transcripcion || '');
+  
+  const [logro, setLogro] = useState('');
+  const [desafio, setDesafio] = useState('');
+  const [emocion, setEmocion] = useState(null);
+  const [comoMeSenti, setComoMeSenti] = useState('');
+  const [textoDia, setTextoDia] = useState('');
+  const [audioBase64, setAudioBase64] = useState(null);
+  const [transcripcion, setTranscripcion] = useState('');
   const [savedFlash, setSavedFlash] = useState(false);
 
+  const loadedDateRef = useRef(null);
+
   useEffect(() => {
+    if (loadedDateRef.current === selectedDateKey) return;
+    
+    const existingData = (miDiaEntries || {})[selectedDateKey] || {};
+    
+    setLogro(existingData.logro || '');
+    setDesafio(existingData.desafio || '');
+    setEmocion(existingData.emocion || null);
+    setComoMeSenti(existingData.comoMeSenti || '');
+    setTextoDia(existingData.textoDia || '');
+    setAudioBase64(existingData.audio || null);
+    setTranscripcion(existingData.transcripcion || '');
+    
+    loadedDateRef.current = selectedDateKey;
+  }, [selectedDateKey, miDiaEntries]);
+
+  useEffect(() => {
+    if (loadedDateRef.current !== selectedDateKey) return;
+
     const timer = setTimeout(() => {
-      saveMiDiaEntry(todayKey, {
+      saveMiDiaEntry(selectedDateKey, {
         logro, desafio, emocion, comoMeSenti, textoDia,
         audio: audioBase64, transcripcion
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [logro, desafio, emocion, comoMeSenti, textoDia, audioBase64, transcripcion, todayKey]);
+  }, [logro, desafio, emocion, comoMeSenti, textoDia, audioBase64, transcripcion, selectedDateKey, saveMiDiaEntry]);
 
   const goBack = () => {
     try { audioService.playClick(); } catch (e) {}
@@ -533,7 +599,7 @@ export const MiDiaScreen = () => {
   };
 
   const handleSaveManual = () => {
-    saveMiDiaEntry(todayKey, {
+    saveMiDiaEntry(selectedDateKey, {
       logro, desafio, emocion, comoMeSenti, textoDia,
       audio: audioBase64, transcripcion
     });
@@ -546,12 +612,22 @@ export const MiDiaScreen = () => {
     return (
       <DiaryHistory
         entries={miDiaEntries || {}}
-        onBack={() => { try { audioService.playClick(); } catch (e) {} setView('hoy'); }}
+        onBack={() => { 
+          try { audioService.playClick(); } catch (e) {} 
+          setView('hoy'); 
+        }}
+        onEdit={(dateKey) => {
+          try { audioService.playClick(); } catch (e) {}
+          loadedDateRef.current = null; 
+          setSelectedDateKey(dateKey);
+          setView('hoy');
+        }}
       />
     );
   }
 
   const numDays = Object.keys(miDiaEntries || {}).length;
+  const isEditingPast = selectedDateKey !== todayKey;
 
   return (
     <div className="min-h-screen flex flex-col antialiased" style={{ background: PAPER_BG }}>
@@ -591,14 +667,30 @@ export const MiDiaScreen = () => {
             ¡Hola, {userName || 'amiguito'}! 👋
           </p>
           <p className="text-sm mt-0.5" style={{ color: '#8b6f47', fontFamily: HAND_FONT }}>
-            {formatFriendlyDate()}
+            {isEditingPast ? 'Estás editando un día pasado' : '¿Cómo fue tu día hoy?'}
           </p>
         </div>
+
+        {isEditingPast && (
+          <button
+            type="button"
+            onClick={() => {
+              try { audioService.playPop(); } catch (e) {}
+              loadedDateRef.current = null;
+              setSelectedDateKey(todayKey);
+            }}
+            className="mx-auto -mt-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-100 border-2 border-amber-300 text-amber-800 font-black text-xs active:scale-95 transition-all shadow-sm cursor-pointer"
+            style={{ fontFamily: HAND_FONT }}
+          >
+            <span className="material-symbols-outlined text-[16px]">today</span>
+            Volver a Hoy
+          </button>
+        )}
 
         <RuledSheet>
           <div style={{ fontFamily: TITLE_FONT, fontSize: '26px', color: '#6b4a1f', marginBottom: '20px' }}>
             <span style={{ borderBottom: '2px solid #6b4a1f', paddingBottom: '2px', display: 'inline-block' }}>
-              {formatFriendlyDate()}
+              {formatFriendlyDate(selectedDateKey)}
             </span>
           </div>
 
@@ -796,7 +888,7 @@ export const MiDiaScreen = () => {
             fontFamily: HAND_FONT
           }}
         >
-          {savedFlash ? '✅ ¡Guardado!' : '💾 Guardar mi día'}
+          {savedFlash ? '✅ ¡Guardado!' : (isEditingPast ? '💾 Guardar día pasado' : '💾 Guardar mi día')}
         </button>
 
         <p className="text-[11px] text-center font-bold" style={{ color: '#8b6f47', fontFamily: HAND_FONT }}>

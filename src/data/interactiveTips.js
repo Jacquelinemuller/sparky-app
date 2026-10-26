@@ -8,8 +8,8 @@ export const INTERACTIVE_TIPS = {
   'w1-d1': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'El TDAH puede dificultar la organización porque cuesta planificar, recordar, ordenar y mantener el enfoque en lo importante. ¡Con las herramientas adecuadas, sí es posible!',
-      'No es que no quieras. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
+      '{{nombre}}, el T.D.A.H. puede dificultar la organización porque cuesta planificar, recordar, ordenar y mantener el enfoque en lo importante. ¡Con las herramientas adecuadas, sí es posible!',
+      'No es que no quieras, {{nombre}}. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
     ],
     titleAccent: 'y organización escolar',
     subtitle: 'Cómo manejar tareas, materiales, fechas y responsabilidades.',
@@ -38,7 +38,7 @@ export const INTERACTIVE_TIPS = {
   'w1-d2': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'Una mochila ordenada es una cabeza ordenada. Cuando tenés carpetas o separadores por materia, tu cerebro deja de gastar energía buscando cosas y la usa para lo que realmente importa.',
+      '{{nombre}}, una mochila ordenada es una cabeza ordenada. Cuando tenés carpetas o separadores por materia, tu cerebro deja de gastar energía buscando cosas y la usa para lo que realmente importa.',
       'No es que no quieras. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
     ],
     titleAccent: 'y organización escolar',
@@ -68,7 +68,7 @@ export const INTERACTIVE_TIPS = {
   'w1-d3': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'Tu cerebro no mide el tiempo con un reloj: lo siente. Por eso "5 minutos" se vuelven una hora, o una hora pasa volando. No es falta de atención: es que necesita ver el tiempo para poder manejarlo.',
+      '{{nombre}}, tu cerebro no mide el tiempo con un reloj: lo siente. Por eso "5 minutos" se vuelven una hora, o una hora pasa volando. No es falta de atención: es que necesita ver el tiempo para poder manejarlo.',
       'Cuando sentís que todo se junta y no sabés por dónde empezar, no es debilidad. Es que tu cerebro ve todo al mismo tiempo. Respirá. Un paso. Después otro.'
     ],
     titleAccent: 'y manejo del tiempo',
@@ -99,7 +99,7 @@ export const INTERACTIVE_TIPS = {
     layout: 'twoColumns',
     sparkyIntro: [
       'Empezar muchas cosas y no terminar ninguna no es falta de compromiso. Tu cerebro se entusiasma rápido, pero también se cansa rápido. Con recordatorios y pasos cortos, podés cerrar el círculo.',
-      'Sentir que "no servís para esto" es la mentira más grande del TDAH. No es que no puedas: es que todavía no encontraste tu manera. Y eso se entrena.'
+      'Sentir que "no servís para esto" es la mentira más grande del T.D.A.H. No es que no puedas: es que todavía no encontraste tu manera. Y eso se entrena.'
     ],
     titleAccent: 'y rendimiento',
     subtitle: 'Cómo cerrar lo que empezás y confiar en tu proceso.',
@@ -212,7 +212,7 @@ export const INTERACTIVE_TIPS = {
   'w2-d1': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'El TDAH puede hacer que iniciar tareas sea difícil porque el cerebro busca estimulación inmediata. Entenderlo es el primer paso, actuar es el cambio.',
+      '{{nombre}}, el T.D.A.H. puede hacer que iniciar tareas sea difícil porque el cerebro busca estimulación inmediata. Entenderlo es el primer paso, actuar es el cambio.',
       'No es que no quieras. Es que tu cerebro tiene otro camino para llegar. Cuando encuentra el suyo, vuela.'
     ],
     titleAccent: 'y procrastinación',
@@ -411,18 +411,15 @@ export const INTERACTIVE_TIPS = {
   // ============================================
   // SEMANA 3: TDAH y Manejo del Tiempo
   // ============================================
-   // ============================================
-  // SEMANA 3: TDAH y Manejo del Tiempo
-  // ============================================
   'w3-d1': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'El TDAH afecta la percepción del tiempo. Por eso a veces subestimamos cuánto tarda una tarea o perdemos la noción del tiempo. No es tu culpa, es tu cerebro.',
+      'El T.D.A.H. afecta la percepción del tiempo. Por eso a veces subestimamos cuánto tarda una tarea o perdemos la noción del tiempo. No es tu culpa, es tu cerebro.',
       'Planificar y visualizar ayuda a mantenerse en camino. ¡Hoy vamos a aprender a dominar el reloj!'
     ],
     titleAccent: 'y manejo del tiempo',
     subtitle: 'Aprender a calcular, dividir y administrar.',
-    disclaimer: 'El TDAH puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
+    disclaimer: 'El T.D.A.H. puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
     cards: {
       problem: {
         title: '¿QUÉ PUEDE PASAR?',
@@ -452,7 +449,7 @@ export const INTERACTIVE_TIPS = {
     ],
     titleAccent: 'y manejo del tiempo',
     subtitle: 'Aprender a calcular, dividir y administrar.',
-    disclaimer: 'El TDAH puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
+    disclaimer: 'El T.D.A.H. puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
     cards: {
       problem: {
         title: '¿QUÉ PUEDE PASAR?',
@@ -482,7 +479,7 @@ export const INTERACTIVE_TIPS = {
     ],
     titleAccent: 'y manejo del tiempo',
     subtitle: 'Aprender a calcular, dividir y administrar.',
-    disclaimer: 'El TDAH puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
+    disclaimer: 'El T.D.A.H. puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
     cards: {
       problem: {
         title: '¿QUÉ PUEDE PASAR?',
@@ -504,7 +501,7 @@ export const INTERACTIVE_TIPS = {
     reward: 15
   },
 
-    'w3-d4': {
+  'w3-d4': {
     layout: 'single',
     sparkyIntro: [
       '¿Sabías que existe una fórmula secreta para dominar el tiempo? No es magia, es pura estrategia.',
@@ -512,12 +509,13 @@ export const INTERACTIVE_TIPS = {
     ],
     titleAccent: 'y manejo del tiempo',
     subtitle: 'La fórmula secreta.',
-    disclaimer: 'El TDAH puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
+    disclaimer: 'El T.D.A.H. puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
     revealImage: '/tips/tarjeta.png',
     solutionImage: '/tips/icons/formula.png',
     reward: 15
   },
-    'w3-d5': {
+
+  'w3-d5': {
     layout: 'single',
     sparkyIntro: [
       'No necesitás hacer todo de golpe. Estas 6 estrategias marcan la diferencia en tu día a día.',
@@ -525,7 +523,7 @@ export const INTERACTIVE_TIPS = {
     ],
     titleAccent: 'y manejo del tiempo',
     subtitle: 'Las estrategias que marcan la diferencia.',
-    disclaimer: 'El TDAH puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
+    disclaimer: 'El T.D.A.H. puede hacer que el *tiempo* se sienta distinto. *Con estrategias*, se puede *dominar.*',
     
     revealCards: [
       {
@@ -536,7 +534,6 @@ export const INTERACTIVE_TIPS = {
       {
         id: 'card-trofeo',
         revealImage: '/tips/tarjeta2.png',
-        // 🔑 Acá corregimos el nombre del archivo
         solutionImage: '/tips/icons/trofeo-estrategia.png', 
         overlayIcon: '/tips/icons/trofeo.png' 
       }
@@ -591,16 +588,14 @@ export const INTERACTIVE_TIPS = {
     },
     reward: 15
   },
-    // ============================================
-  // SEMANA 4: TDAH y Emociones Intensas
+
   // ============================================
-    // ============================================
   // SEMANA 4: TDAH y Emociones Intensas
   // ============================================
   'w4-d1': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'Sentir mucho no es el problema. El TDAH puede hacer que las emociones se sientan más intensas y difíciles de controlar. No estás roto, solo sentís a todo volumen.',
+      'Sentir mucho no es el problema. El T.D.A.H. puede hacer que las emociones se sientan más intensas y difíciles de controlar. No estás roto, solo sentís a todo volumen.',
       'Reconocer lo que siento es el primer paso para elegir cómo responder. ¡Hoy vamos a practicar eso!'
     ],
     titleAccent: 'y emociones intensas',
@@ -700,7 +695,8 @@ export const INTERACTIVE_TIPS = {
     solutionImage: '/tips/icons/tarjeta3.png',
     reward: 15
   },
-      'w4-d5': {
+
+  'w4-d5': {
     layout: 'single',
     sparkyIntro: [
       '¡Ya casi terminamos la semana! Hoy te dejo las estrategias finales para que las emociones no te dominen.',
@@ -716,17 +712,17 @@ export const INTERACTIVE_TIPS = {
         revealImage: '/tips/tarjeta2.png',
         solutionImage: '/tips/icons/tarjeta4.png'
       },
-            {
+      {
         id: 'card-mensaje-final',
         revealImage: '/tips/tarjeta2.png',
         solutionImage: '/tips/icons/tarjeta5.png',
         overlayIcon: '/tips/icons/corazon.png'
-        // 🔑 Ya no ponemos overlayPosition, así que se va al centro
       }
     ],
     reward: 15
   },
-    'w4-d6': {
+
+  'w4-d6': {
     layout: 'quiz',
     sparkyIntro: [
       'Llegó el momento de mirar hacia adentro. Las emociones intensas son parte de tu día, pero conocerlas es el primer paso para manejarlas.',
@@ -752,7 +748,9 @@ export const INTERACTIVE_TIPS = {
       ]
     },
     reward: 15
-  },  'w4-d7': {
+  },
+
+  'w4-d7': {
     layout: 'challenge',
     sparkyIntro: [
       '¡Semana completada! Ya conocés tus emociones y sabés que tenés herramientas para manejarlas.',
@@ -765,19 +763,20 @@ export const INTERACTIVE_TIPS = {
       id: 'ch-pausa-magica',
       title: 'Mi Pausa Mágica',
       description: 'Cuando sientas una emoción muy fuerte, frená y usá tu Plan Rápido: Detente, Respira, Identifica qué sentís, Elige cómo actuar y Actúa.',
-      icon: 'corazon.png', // Usamos el ícono del corazón que ya tenés
+      icon: 'corazon.png',
       why: 'Porque no podés controlar la ola, pero sí podés aprender a surfearla. Practicar la pausa te da tiempo para elegir mejor.',
       durationDays: 14
     },
     reward: 15
   },
-    // ============================================
+
+  // ============================================
   // SEMANA 5: TDAH y Autorregulación e Impulsividad
   // ============================================
-    'w5-d1': {
+  'w5-d1': {
     layout: 'twoColumns',
     sparkyIntro: [
-      'El TDAH puede hacer que actuar sin pensar parezca automático. Pero pensar antes de actuar es una habilidad que se entrena.',
+      'El T.D.A.H. puede hacer que actuar sin pensar parezca automático. Pero pensar antes de actuar es una habilidad que se entrena.',
       'Con estrategias, se puede pausar, elegir y actuar mejor. ¡Hoy empezamos con el primer paso!'
     ],
     titleAccent: 'y autorregulación e impulsividad',

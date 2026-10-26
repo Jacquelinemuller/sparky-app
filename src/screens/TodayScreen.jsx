@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import UpcomingEventBanner from '../components/UpcomingEventBanner';
 import { audioService } from '../services/audioService';
@@ -22,6 +22,12 @@ const DIFFICULTY_CONFIG = {
 
 const DAY_NAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
+// 🔑 NUEVO: Lista de meses en español
+const MONTH_NAMES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+
 function PriorityDot({ priority }) {
   const cfg = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.yellow;
   return (
@@ -33,14 +39,17 @@ function PriorityDot({ priority }) {
   );
 }
 
+// 🔑 MODIFICADO: Ahora incluye el mes en el saludo
 function getGreetingMessage(userName, index) {
   if (index === 0) {
     const now = new Date();
     const dayName = DAY_NAMES[now.getDay()];
     const day = now.getDate();
-    return `¡hola ${userName}! hoy es ${dayName} ${day}. ¿qué planes tenés para hoy?`;
+    const monthName = MONTH_NAMES[now.getMonth()]; // Trae el mes actual
+    
+    return `¡hola ${userName}! hoy es ${dayName} ${day} de ${monthName}. ¿qué planes tenés para hoy?`;
   }
-  return `¿Querés ver el tip de hoy, ${userName}? 💡`;
+  return `¿Querés ver el tip del día?`;
 }
 
 function formatTime(seconds) {
@@ -85,6 +94,50 @@ export const TodayScreen = () => {
   const queuedTasks = tasks.filter((t) => t.status === 'queued');
 
   // ============================================
+  // 🔑 FUNCIÓN DE VOZ SINCRONIZADA
+  // ============================================
+  const playGreeting = useCallback(() => {
+    if (isTtsMuted) return;
+    
+    const dialogos = [
+      getGreetingMessage(userName, 0),
+      getGreetingMessage(userName, 1)
+    ];
+    
+    let currentIdx = 0;
+    setIsSpeaking(true);
+    
+    const speakNext = () => {
+      if (currentIdx >= dialogos.length) {
+        setIsSpeaking(false);
+        return;
+      }
+      
+      // Cambiamos la burbuja justo antes de que empiece a hablar
+      setGreetingIndex(currentIdx);
+      
+      const utterance = new SpeechSynthesisUtterance(dialogos[currentIdx]);
+      utterance.lang = 'es-MX';
+      utterance.pitch = 1.2; 
+      utterance.rate = 1.0;
+      
+      utterance.onend = () => {
+        currentIdx++;
+        speakNext();
+      };
+      
+      utterance.onerror = () => {
+        currentIdx++;
+        speakNext();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+    
+    speakNext();
+  }, [userName, isTtsMuted]);
+
+  // ============================================
   // EFECTOS DE VOZ Y SALUDO
   // ============================================
   useEffect(() => {
@@ -92,27 +145,24 @@ export const TodayScreen = () => {
     const lastPlayed = localStorage.getItem('sparky_home_tts_date');
     
     if (lastPlayed !== today && !isTtsMuted) {
-      const dialogos = [
-        getGreetingMessage(userName, 0),
-        getGreetingMessage(userName, 1)
-      ];
-      
       const timer = setTimeout(() => {
-        ttsService.speak(dialogos, () => setIsSpeaking(false));
-        setIsSpeaking(true);
+        playGreeting(); // 🔑 Usamos la nueva función
         localStorage.setItem('sparky_home_tts_date', today);
       }, 1000);
       
       return () => clearTimeout(timer);
     }
-  }, [userName, isTtsMuted]);
+  }, [playGreeting, isTtsMuted]);
 
   useEffect(() => {
+    // 🔑 Si está hablando, pausamos el auto-cambio de la burbuja
+    if (isSpeaking) return; 
+    
     const interval = setInterval(() => {
       setGreetingIndex((i) => (i === 0 ? 1 : 0));
     }, 6000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isSpeaking]);
 
   // ============================================
   // LÓGICA DEL TIMER
@@ -166,19 +216,19 @@ export const TodayScreen = () => {
       setIsTtsMuted(false);
       ttsService.setMuted(false);
     }
-    const dialogos = [
-      getGreetingMessage(userName, 0),
-      getGreetingMessage(userName, 1)
-    ];
-    ttsService.speak(dialogos, () => setIsSpeaking(false));
-    setIsSpeaking(true);
+    playGreeting(); // 🔑 Usamos la nueva función
   };
 
   const toggleMute = () => {
     const newMuted = !isTtsMuted;
     setIsTtsMuted(newMuted);
     ttsService.setMuted(newMuted);
-    if (newMuted) setIsSpeaking(false);
+    if (newMuted) {
+      setIsSpeaking(false);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 🔑 Detiene la voz de inmediato si se mutea
+      }
+    }
   };
 
   // ============================================

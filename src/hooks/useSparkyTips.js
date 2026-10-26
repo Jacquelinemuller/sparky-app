@@ -17,7 +17,7 @@ import { audioService } from '../services/audioService';
 //
 // ⚠️ Recordá volver a null antes de subir a producción
 //
-const DEBUG_SIMULATE_DAY = 30;
+const DEBUG_SIMULATE_DAY = null;
 
 // Fecha de referencia para modo debug (un lunes cualquiera)
 const DEBUG_REF_MONDAY = new Date(2026, 9, 6);
@@ -87,13 +87,17 @@ function getStartMonday() {
       const date = fromKey(saved);
       if (date) return date;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn("No se pudo leer el localStorage:", e);
+  }
 
   // Primera vez: guardar el próximo lunes
   const nextMonday = getNextMonday(new Date());
   try {
     localStorage.setItem(START_KEY, toKey(nextMonday));
-  } catch (e) {}
+  } catch (e) {
+    console.warn("No se pudo guardar en localStorage:", e);
+  }
   return nextMonday;
 }
 
@@ -134,6 +138,23 @@ export function useSparkyTips() {
 
   const [startMonday] = useState(() => getStartMonday());
 
+  // 🔑 EFECTO DE VOZ CORREGIDO: Solo se ejecuta en el cliente y dentro del ciclo de vida de React
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const texto = "¡Hola! Soy Sparky. Vamos a jugar un rato.";
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = 'es-MX';
+      utterance.pitch = 1;
+      utterance.rate = 1.8;
+
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.warn("El navegador bloqueó la reproducción automática de voz:", error);
+      }
+    }
+  }, []);
+
   // 🧪 AUTO-COMPLETAR días anteriores (solo en modo debug)
   useEffect(() => {
     if (DEBUG_SIMULATE_DAY === null) return;
@@ -154,7 +175,9 @@ export function useSparkyTips() {
       localStorage.setItem('sparky_planner_v1', JSON.stringify(saved));
 
       console.log('🧪 Auto-completados:', newCompleted);
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Error en modo debug:", e);
+    }
   }, []);
 
   const currentDayOfWeek = useMemo(() => {

@@ -6,6 +6,7 @@ import SheetViewerModal from './tips/SheetViewerModal';
 import InteractiveTip from './tips/InteractiveTip';
 import { getInteractiveTip } from '../data/interactiveTips';
 import { audioService } from '../services/audioService';
+import { ttsService } from '../services/ttsService'; // 🔑 Traemos el servicio de voz
 import sparkyVideo from '../assets/sparky.mp4';
 
 export const SparkyCompanion = () => {
@@ -35,6 +36,11 @@ export const SparkyCompanion = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const [introIndex, setIntroIndex] = useState(0);
+  
+  // 🔑 Estados para los botones de voz
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isTtsMuted, setIsTtsMuted] = useState(ttsService.isMuted);
+  
   const videoRef = useRef(null);
 
   const interactiveTip = getInteractiveTip(activeWeekId, activeDay);
@@ -51,6 +57,25 @@ export const SparkyCompanion = () => {
   useEffect(() => {
     setIntroIndex(0);
   }, [activeWeekId, activeDay]);
+
+  // 🔑 EFECTO: Hablar automáticamente al entrar al tip
+  useEffect(() => {
+    if (!isInteractiveMode || isTtsMuted) return;
+
+    const rawMessage = introMessages[introIndex] || '';
+    const personalizedMessage = rawMessage
+      .replace(/\{\{nombre\}\}/gi, userName || 'amiguito')
+      .replace(/[{}]/g, ''); 
+
+    if (personalizedMessage) {
+      const timer = setTimeout(() => {
+        ttsService.speak([personalizedMessage], () => setIsSpeaking(false));
+        setIsSpeaking(true);
+      }, 500); // Pequeño delay para que se abra la pantalla
+      
+      return () => clearTimeout(timer);
+    }
+  }, [introIndex, isInteractiveMode, isTtsMuted, userName, introMessages]);
 
   const affectionPhrases = [
     `¡Guau guau! Me alegra que me toques, ${userName}. ¡Vamos que tú puedes con todo!`,
@@ -72,8 +97,6 @@ export const SparkyCompanion = () => {
   };
 
   const handleSparkyTouch = () => {
-    if (mode === 'tip') return;
-
     triggerBounce();
     setBadgeIcon('❤️');
     setTimeout(() => setBadgeIcon('⚡'), 1200);
@@ -151,39 +174,23 @@ export const SparkyCompanion = () => {
     setTimeout(() => setSpeechPopState(true), 10);
   };
 
-    const handleCompleteTip = () => {
-    console.log('🎯 handleCompleteTip llamado');
-    console.log('  isTipCompleted:', isTipCompleted);
-    console.log('  isReviewing:', isReviewing);
-    console.log('  activeWeekId:', activeWeekId);
-    console.log('  activeDay:', activeDay);
-    console.log('  addDiaryEntry existe?:', typeof addDiaryEntry);
-    console.log('  introMessages:', introMessages);
-    console.log('  currentDailyTip:', currentDailyTip);
-    console.log('  interactiveTip:', interactiveTip);
-
-    if (isTipCompleted || isReviewing) {
-      console.log('❌ BLOQUEADO: isTipCompleted o isReviewing');
-      return;
-    }
+  const handleCompleteTip = () => {
+    if (isTipCompleted || isReviewing) return;
     try { audioService.playSuccess(); } catch (e) {}
 
     try {
       const dateKey = getTodayDateKey();
-      console.log('  📅 dateKey calculado:', dateKey);
-
       const tipTitle = currentDailyTip?.title || interactiveTip?.titleAccent || '';
-      console.log('  📝 tipTitle:', tipTitle);
-
+      
       const tipMessages = introMessages.length > 0
-        ? introMessages
+        ? introMessages.map(msg => 
+            msg.replace(/\{\{nombre\}\}/gi, userName || 'amiguito').replace(/[{}]/g, '')
+          )
         : currentDailyTip?.explanation
         ? [currentDailyTip.explanation]
         : [];
-      console.log('  💬 tipMessages:', tipMessages);
 
       if (addDiaryEntry && tipTitle) {
-        console.log('  ✅ Guardando entrada en el diario...');
         addDiaryEntry({
           dateKey,
           weekId: activeWeekId,
@@ -191,9 +198,6 @@ export const SparkyCompanion = () => {
           tipTitle,
           tipMessages
         });
-        console.log('  ✅ addDiaryEntry ejecutado');
-      } else {
-        console.log('  ❌ NO se guarda: addDiaryEntry o tipTitle faltan');
       }
     } catch (e) {
       console.log('  ❌ Error:', e);
@@ -216,6 +220,31 @@ export const SparkyCompanion = () => {
   const isCustomTip = currentDailyTip?.isCustom === true;
   const hasSheet = !isCustomTip && currentWeekGuide?.sheetImage;
   const tipReward = currentDailyTip?.reward || 15;
+
+  // 🔑 Función para leer manualmente (botón de play)
+  const playVoice = () => {
+    if (isSpeaking) {
+      ttsService.stop();
+      setIsSpeaking(false);
+    } else {
+      const rawMessage = introMessages[introIndex] || '';
+      const personalizedMessage = rawMessage
+        .replace(/\{\{nombre\}\}/gi, userName || 'amiguito')
+        .replace(/[{}]/g, ''); 
+      
+      if (personalizedMessage) {
+        ttsService.speak([personalizedMessage], () => setIsSpeaking(false));
+        setIsSpeaking(true);
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    const newMuted = !isTtsMuted;
+    setIsTtsMuted(newMuted);
+    ttsService.setMuted(newMuted);
+    if (newMuted) setIsSpeaking(false);
+  };
 
   const renderNavigation = () => {
     return (
@@ -289,30 +318,66 @@ export const SparkyCompanion = () => {
 
   const renderSparkyIntroBubble = () => {
     const currentMessage = introMessages[introIndex] || '';
+    
+    const personalizedMessage = currentMessage
+      .replace(/\{\{nombre\}\}/gi, userName || 'amiguito')
+      .replace(/[{}]/g, '');
+    
     const hasMultiple = introCount > 1;
 
     return (
       <div className="flex flex-col gap-2 w-full">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
-            🧠 Sparky te cuenta
-          </span>
-          {isReviewing && (
-            <span className="px-1.5 py-0.5 rounded-full bg-[#fef3c7] text-[#78350f] border border-[#fbbf24] font-label-sm text-[10px] font-black">
-              📖 Repaso
+        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-label-sm text-[10px] font-black uppercase tracking-wider text-[#ea580c]">
+              🧠 Sparky te cuenta
             </span>
-          )}
-          {isReviewing && isDisplayCompleted && (
-            <span className="px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#065f46] border border-[#86efac] font-label-sm text-[10px] font-black">
-              ✓ Completado
-            </span>
-          )}
+            {isReviewing && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#fef3c7] text-[#78350f] border border-[#fbbf24] font-label-sm text-[10px] font-black">
+                📖 Repaso
+              </span>
+            )}
+          </div>
+
+          {/* 🔑 BOTONES DE VOZ AQUÍ */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={playVoice}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm border ${
+                isSpeaking 
+                  ? 'bg-orange-100 border-orange-400 text-orange-600 animate-pulse' 
+                  : 'bg-white border-[#e2e8f0] text-[#64748b]'
+              }`}
+              title={isSpeaking ? 'Detener voz' : 'Escuchar a Sparky'}
+            >
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: '"FILL" 1' }}>
+                {isSpeaking ? 'stop_circle' : 'volume_up'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleMute}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm border ${
+                isTtsMuted 
+                  ? 'bg-red-50 border-red-200 text-red-500' 
+                  : 'bg-white border-[#e2e8f0] text-[#64748b]'
+              }`}
+              title={isTtsMuted ? 'Activar voz' : 'Silenciar'}
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                {isTtsMuted ? 'volume_off' : 'volume_mute'}
+              </span>
+            </button>
+          </div>
         </div>
+
         <p
           key={introIndex}
           className="font-body-sm text-body-sm text-on-surface font-bold leading-snug break-words animate-[fadeIn_0.4s_ease-out]"
         >
-          {currentMessage}
+          {personalizedMessage}
         </p>
 
         {hasMultiple && (
@@ -343,21 +408,6 @@ export const SparkyCompanion = () => {
         <span className="px-1.5 py-0.5 rounded-full bg-[#ede9fe] text-[#6d28d9] border border-[#c4b5fd] font-label-sm text-[10px] font-black">
           Semana {currentWeekGuide?.weekNumber || 1}
         </span>
-        {isCustomTip && (
-          <span className="px-1.5 py-0.5 rounded-full bg-[#ede9fe] text-[#6d28d9] border border-[#c4b5fd] font-label-sm text-[10px] font-black">
-            👨‍👩‍👧 De casa
-          </span>
-        )}
-        {isReviewing && (
-          <span className="px-1.5 py-0.5 rounded-full bg-[#fef3c7] text-[#78350f] border border-[#fbbf24] font-label-sm text-[10px] font-black">
-            📖 Repaso
-          </span>
-        )}
-        {isReviewing && isDisplayCompleted && (
-          <span className="px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#065f46] border border-[#86efac] font-label-sm text-[10px] font-black">
-            ✓ Completado
-          </span>
-        )}
       </div>
       <p className="font-body-md text-body-md text-on-surface font-black leading-tight break-words">
         {currentDailyTip?.title}
